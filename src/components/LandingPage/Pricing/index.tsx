@@ -87,11 +87,14 @@ const Pricing = () => {
   };
 
   return (
-    <div id="pricing" className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden">
+    <div
+      id="pricing"
+      className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden"
+    >
       <div className="w-[110px] h-[33px] flex items-center justify-center rounded-[50px] bg-[#6A43D733] ">
         <p className="text-sm font-normal text-[var(--font-purple-shade-1)] leading-4">Pricing</p>
       </div>
-      <div className="md:w-[700px] w-full px-4 mt-4">
+      <div className="md:w-[750px] w-full px-4 mt-4">
         <h2 className="md:text-[42px] text-[28px] text-center leading-[34px] md:leading-[50px] text-[var(--font-black-shade-1)] font-semibold ">
           Choose your Subscription package
         </h2>
@@ -147,6 +150,11 @@ const Pricing = () => {
           </div>
         ))}
       </div>
+
+      <p className="mt-10 text-center text-[13px] md:text-[16px] leading-4 md:leading-5 font-normal">
+        To view a sample PRINT edition,{" "}
+        <button className="text-[#6A43D7] underline cursor-pointer">click here</button>
+      </p>
     </div>
   );
 };
