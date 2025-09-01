@@ -75,7 +75,7 @@ const HomePage = () => {
           onClick={scrollToPricing}
           className="bg-[var(--font-orange-main-color)] cursor-pointer hover:bg-orange-600 text-[var(--font-white-shade-1)] font-semibold text-[20px] leading-6 px-8 py-4 rounded-[20px] transition-colors duration-300 mb-8 shadow-lg"
         >
-          Subscribe Today
+          Subscribe Now
         </button>
 
         {/* Curved Arrow */}
