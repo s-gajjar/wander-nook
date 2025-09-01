@@ -49,28 +49,10 @@ const Footer = () => {
 
               {/* Social Media Icons */}
               <div className="flex space-x-4 mt-4">
-                <Link href="#">
-                  <Image src={XLogo} alt="X" width={33} height={33} />
-                </Link>
+              
                 <Link href="https://www.instagram.com/wandernooknewspaper/">
                   <Image
                     src={logoInstagram}
-                    alt="Instagram"
-                    width={33}
-                    height={33}
-                  />
-                </Link>
-                <Link href="#">
-                  <Image
-                    src={logoYoutube}
-                    alt="Youtube"
-                    width={33}
-                    height={33}
-                  />
-                </Link>
-                <Link href="#">
-                  <Image
-                    src={logoLinkedIn}
                     alt="Instagram"
                     width={33}
                     height={33}
