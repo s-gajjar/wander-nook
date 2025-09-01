@@ -45,7 +45,7 @@ const KeyBenefits = () => {
   ];
 
   return (
-    <div id="home" className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden">
+    <div id="home" className="container mx-auto py-12 px-6 sm:px-4 bg-white flex flex-col items-center justify-center relative overflow-hidden">
       {/* <div className="w-[110px] h-[33px] flex items-center justify-center rounded-[50px] bg-[#6A43D733] ">
         <p className="text-sm font-normal text-[var(--font-purple-shade-1)] leading-4">
           Key Benefits
@@ -64,7 +64,7 @@ const KeyBenefits = () => {
         {benefitsData.map((benefit, index) => (
           <div
             key={benefit.id + index}
-            className={`${benefit.bgColor} rounded-2xl p-6 w-full md:w-[340px] h-[370px] relative overflow-hidden shadow-lg `}
+            className={`${benefit.bgColor} rounded-2xl p-6 w-full md:w-[340px] h-[300px] relative overflow-hidden shadow-lg `}
           >
             {/* Background decorative image */}
             <div className="absolute top-0 right-0 text-6xl z-10 ">
@@ -80,14 +80,6 @@ const KeyBenefits = () => {
             {/* Icon */}
             <div className="flex flex-col relative z-20 justify-between h-full">
               <div>
-                <Image
-                  src={benefit.icon}
-                  alt={benefit.heading}
-                  width={2000}
-                  height={2000}
-                  className="w-14 h-14 mb-3"
-                />
-
                 {/* Heading */}
                 <h3 className={`${benefit.textColor} text-[24px] font-semibold mb-4 leading-7`}>
                   {benefit.heading}
