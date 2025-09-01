@@ -44,7 +44,7 @@ const NewsBlogs = () => {
   ];
 
   return (
-    <div className="bg-white flex flex-col items-center justify-center container mx-auto py-16 px-4 overflow-hidden">
+    <div id="blogs" className="bg-white flex flex-col items-center justify-center container mx-auto py-16 px-4 overflow-hidden">
       <div className="max-w-6xl w-full mx-auto">
         {/* Header Section */}
         <div className="flex px-4 items-center justify-start gap-4 mb-12 ">

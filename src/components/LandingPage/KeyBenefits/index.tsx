@@ -45,7 +45,7 @@ const KeyBenefits = () => {
   ];
 
   return (
-    <div className="container mx-auto py-12 px-4 bg-white flex flex-col items-center justify-center relative overflow-hidden">
+    <div id="home" className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden">
       {/* <div className="w-[110px] h-[33px] flex items-center justify-center rounded-[50px] bg-[#6A43D733] ">
         <p className="text-sm font-normal text-[var(--font-purple-shade-1)] leading-4">
           Key Benefits

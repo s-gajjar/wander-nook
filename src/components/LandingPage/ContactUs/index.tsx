@@ -9,7 +9,7 @@ import remoteVector from "@/public/svgs/remoteVector.svg";
 
 const ContactUs = () => {
   return (
-    <div className="bg-white py-16 container mx-auto px-4 relative overflow-hidden">
+    <div id="contact" className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden">
       <Image
         src={carrotVector}
         alt=""

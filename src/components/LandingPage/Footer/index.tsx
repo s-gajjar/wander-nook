@@ -1,3 +1,5 @@
+"use client";
+
 // Next imports
 import Image from "next/image";
 
@@ -13,6 +15,16 @@ import XLogo from "@/public/svgs/XLogo.svg";
 import Link from "next/link";
 
 const Footer = () => {
+  const scrollToSection = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   return (
     <footer className="bg-white pt-20">
       <div className="container mx-auto px-4">
@@ -65,30 +77,30 @@ const Footer = () => {
             <div className="relative mb-10">
               <h3 className="text-2xl font-bold text-black mb-4">Explore</h3>
               <div className="space-y-3 mb-48">
-                <a
-                  href="#"
-                  className="block text-gray-600 hover:text-black transition-colors"
+                <button
+                  onClick={() => scrollToSection('home')}
+                  className="block text-gray-600 hover:text-black transition-colors text-left w-full"
                 >
                   Home
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-600 hover:text-black transition-colors"
+                </button>
+                <button
+                  onClick={() => scrollToSection('blogs')}
+                  className="block text-gray-600 hover:text-black transition-colors text-left w-full"
                 >
                   Blogs
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-600 hover:text-black transition-colors"
+                </button>
+                <button
+                  onClick={() => scrollToSection('pricing')}
+                  className="block text-gray-600 hover:text-black transition-colors text-left w-full"
                 >
                   Pricing
-                </a>
-                <a
-                  href="#"
-                  className="block text-gray-600 hover:text-black transition-colors"
+                </button>
+                <button
+                  onClick={() => scrollToSection('contact')}
+                  className="block text-gray-600 hover:text-black transition-colors text-left w-full"
                 >
                   Contact
-                </a>
+                </button>
               </div>
               {/* Logo */}
               <Image
