@@ -91,9 +91,9 @@ const Pricing = () => {
       id="pricing"
       className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden"
     >
-      <div className="w-[110px] h-[33px] flex items-center justify-center rounded-[50px] bg-[#6A43D733] ">
+      {/* <div className="w-[110px] h-[33px] flex items-center justify-center rounded-[50px] bg-[#6A43D733] ">
         <p className="text-sm font-normal text-[var(--font-purple-shade-1)] leading-4">Pricing</p>
-      </div>
+      </div> */}
       <div className="md:w-[750px] w-full px-4 mt-4">
         <h2 className="md:text-[42px] text-[28px] text-center leading-[34px] md:leading-[50px] text-[var(--font-black-shade-1)] font-semibold ">
           Choose your Subscription package

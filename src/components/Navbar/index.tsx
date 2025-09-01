@@ -73,22 +73,12 @@ const Navbar = () => {
               About Us
             </Link>
             <Link
-              href="/blogs"
-              className="text-[#555555] font-medium hidden hover:text-[#3a3a3a] transition-colors duration-200 text-sm lg:text-base"
-            >
-              Blogs
-            </Link>
-            <Link
               href="/pricing"
-              className="text-[#555555] font-medium hidden hover:text-[#3a3a3a] transition-colors duration-200 text-sm lg:text-base"
+              className={`${
+                pathname === "/pricing" ? "text-[#F0624F]" : "text-[#555555]"
+              } font-medium hover:text-[#d54a3a] transition-colors duration-200 text-sm lg:text-base`}
             >
               Pricing
-            </Link>
-            <Link
-              href="/contact"
-              className="text-[#555555] font-medium hidden hover:text-[#3a3a3a] transition-colors duration-200 text-sm lg:text-base"
-            >
-              Contact
             </Link>
           </div>
         </div>
