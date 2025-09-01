@@ -3,7 +3,7 @@
 // Next imports
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 // Images
@@ -11,6 +11,7 @@ import logo from "@/public/wander-logo.png";
 
 const Navbar = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -24,11 +25,13 @@ const Navbar = () => {
   }, []);
 
   return (
-    <nav className={`w-full fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled 
-        ? "bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-100/50" 
-        : "bg-white"
-    }`}>
+    <nav
+      className={`w-full fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-100/50"
+          : "bg-white"
+      }`}
+    >
       <div className="container mx-auto px-12 sm:px-6 py-4 lg:py-6">
         <div className="mx-auto w-full flex items-center justify-between">
           {/* Logo */}
@@ -55,9 +58,19 @@ const Navbar = () => {
           <div className="flex items-center space-x-6 lg:space-x-8">
             <Link
               href="/"
-              className="text-[#F0624F] font-medium hover:text-[#d54a3a] transition-colors duration-200 text-sm lg:text-base"
+              className={`${
+                pathname === "/" ? "text-[#F0624F]" : "text-[#555555]"
+              } font-medium hover:text-[#d54a3a] transition-colors duration-200 text-sm lg:text-base`}
             >
               Home
+            </Link>
+            <Link
+              href="/about-us"
+              className={`${
+                pathname === "/about-us" ? "text-[#F0624F]" : "text-[#555555]"
+              } font-medium hover:text-[#d54a3a] transition-colors duration-200 text-sm lg:text-base`}
+            >
+              About Us
             </Link>
             <Link
               href="/blogs"
