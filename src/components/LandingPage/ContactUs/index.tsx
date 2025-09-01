@@ -40,7 +40,7 @@ const ContactUs = () => {
       />
       <div className="max-w-4xl mx-auto relative z-10">
         {/* Header */}
-        <div className="text-center mb-16">
+        {/* <div className="text-center mb-16">
           <h1 className="text-[42px] font-semibold text-[var(--font-black-shade-1)] mb-1">
             Ready to Start the Adventure?
           </h1>
@@ -61,7 +61,7 @@ const ContactUs = () => {
               Submit
             </button>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

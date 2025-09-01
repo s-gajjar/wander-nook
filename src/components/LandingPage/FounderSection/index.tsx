@@ -21,14 +21,17 @@ const FounderSection = () => {
             {/* <p className="text-[20px] leading-6 text-[#757575] mb-6">[WIREFRAME PLACEHOLDER]</p> */}
             <div className="space-y-4">
               <p className="text-base font-normal leading-[18px] text-[var(--font-black-shade-1)] mb-6">
-                Hi! I’m <b>Pranjali Salaye Shastri</b>, a proud mom to a curious toddler who keeps
-                me on my toes.
+                Hi! I’m Pranjali Salaye Shastri, a proud mom to a curious child
+                who keeps me on my toes.
               </p>
               <p className="text-base font-normal leading-[18px] text-[var(--font-black-shade-1)]">
-                I’ve always been a wildlife enthusiast, a nature lover, and someone who believes in
-                living a life rooted in sustainability and conservation. These passions inspired me
-                to create Wander Stamps—a playful and educational venture to spark curiosity in
-                little ones about the world around them.
+                I’ve always been a wildlife enthusiast, a nature lover, and
+                someone who believes in living a life rooted in sustainability
+                and curiosity. These passions, along with my love for
+                storytelling, inspired me to create Wander Nook - an engaging
+                kids’ newspaper where young readers can wander, wonder, and
+                learn about the world around them through stories, fun facts,
+                games, and activities.
               </p>
             </div>
           </div>

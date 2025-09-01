@@ -23,23 +23,22 @@ const NewsBlogs = () => {
     {
       id: 1,
       image: "/svgs/newsBlog1.svg", // Using existing SVG as placeholder
-      title: "The Butterfly Migration",
-      description: "Follow millions of butterflies on their incredible journey...",
+      title: "Discover India",
+      description: "Hyderabad is the capital of Telangana, India’s youngest state. It’s a popular city...",
       readMoreText: "Read More!",
     },
     {
       id: 2,
       image: "/svgs/newsBlog2.svg", // Using existing SVG as placeholder
-      title: "The Butterfly Migration",
-      description: "Follow millions of butterflies on their incredible journey...",
+      title: "India News",
+      description: "FIndia’s coastline has become longer, not because of new land, but because...",
       readMoreText: "Read More!",
     },
     {
       id: 3,
       image: "/svgs/newsBlog3.svg", // Using existing SVG as placeholder
-      title: "The Butterfly Migration",
-      description: "Follow millions of butterflies on their incredible journey...",
-      readMoreText: "Read More!",
+      title: "Culture",
+      description: "India is famous for its colorful festivals, dances, clothes—and of course, its...",
     },
   ];
 
@@ -96,9 +95,6 @@ const NewsBlogs = () => {
                   {article.title}
                 </h3>
                 <p className="text-[#757575] font-normal text-sm mb-4">{article.description}</p>
-                <button className="w-[120px] bg-[#6A43D799] text-sm font-normal text-[var(--font-white-shade-1)] py-3 px-4 rounded-[22px] hover:bg-purple-500 cursor-pointer transition-colors">
-                  {article.readMoreText}
-                </button>
               </div>
             </div>
           ))}
