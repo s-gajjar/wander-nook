@@ -1,3 +1,5 @@
+"use client";
+
 // Next imports
 import Image from "next/image";
 
@@ -6,6 +8,16 @@ import teddyBearVector from "@/public/svgs/teddyBearVector.svg";
 import youtubeVector from "@/public/svgs/youtubeVector.svg";
 
 const NewsBlogs = () => {
+  const scrollToPricing = () => {
+    const pricingSection = document.getElementById('pricing');
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   // Array of JSON data for the article cards
   const articles = [
     {
@@ -94,7 +106,10 @@ const NewsBlogs = () => {
 
         {/* Subscribe Button */}
         <div className="text-center">
-          <button className="w-[290px] md:w-[340px] bg-[#FBCE3E] text-white py-4 px-8 leading-6 font-semibold rounded-[20px] text-[16px] md:text-[20px]  hover:bg-yellow-400 cursor-pointer transition-colors">
+          <button 
+            onClick={scrollToPricing}
+            className="w-[290px] md:w-[340px] bg-[#FBCE3E] text-white py-4 px-8 leading-6 font-semibold rounded-[20px] text-[16px] md:text-[20px]  hover:bg-yellow-400 cursor-pointer transition-colors"
+          >
             Want More? Subscribe Now!
           </button>
         </div>

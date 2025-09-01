@@ -1,3 +1,5 @@
+"use client";
+
 // Next imports
 import Image from "next/image";
 
@@ -13,6 +15,16 @@ import remoteVector from "@/public/svgs/remoteVector.svg";
 import squarePurpleVector from "@/public/svgs/squarePurpleVector.svg";
 
 const HomePage = () => {
+  const scrollToPricing = () => {
+    const pricingSection = document.getElementById('pricing');
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto bg-white relative overflow-hidden">
       {/* Scattered Icons - Top Left */}
@@ -59,19 +71,22 @@ const HomePage = () => {
         </p>
 
         {/* Call to Action Button */}
-        {/* <button className="bg-[var(--font-orange-main-color)] cursor-pointer hover:bg-orange-600 text-[var(--font-white-shade-1)] font-semibold text-[20px] leading-6 px-8 py-4 rounded-[20px] transition-colors duration-300 mb-8 shadow-lg">
+        <button 
+          onClick={scrollToPricing}
+          className="bg-[var(--font-orange-main-color)] cursor-pointer hover:bg-orange-600 text-[var(--font-white-shade-1)] font-semibold text-[20px] leading-6 px-8 py-4 rounded-[20px] transition-colors duration-300 mb-8 shadow-lg"
+        >
           Subscribe Today
-        </button> */}
+        </button>
 
         {/* Curved Arrow */}
-        {/* <div className="relative -top-10 -left-30 mb-8">
+        <div className="relative -top-10 -left-30 mb-8">
           <Image src={arrowVector} alt="Curved Arrow" width={45} height={50} />
-        </div> */}
+        </div>
 
         {/* Testimonial Section */}
-        {/* <div className="flex flex-col relative items-center -top-15 "> */}
+        <div className="flex flex-col relative items-center -top-15 ">
           {/* Profile Pictures */}
-          {/* <div className="flex space-x-3 mb-3">
+          <div className="flex space-x-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
               <Image
                 src={avatarShape1}
@@ -99,13 +114,13 @@ const HomePage = () => {
                 className="w-10 h-10 object-cover rounded-full"
               />
             </div>
-          </div> */}
+          </div>
 
           {/* Testimonial Text */}
           {/* <p className="text-[var(--font-blue-shade-1)] text-center w-[180px] text-base leading-5 font-normal">
             Thousands of parents trust our mission.
           </p> */}
-        {/* </div> */}
+        </div>
       </div>
     </div>
   );
