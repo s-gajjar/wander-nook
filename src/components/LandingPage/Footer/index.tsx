@@ -44,7 +44,7 @@ const Footer = () => {
               </div>
 
               <p className="text-[20px] leading-6 font-semibold text-black mb-2">
-                2024, All rights Reserved
+                2025, All rights Reserved
               </p>
 
               {/* Social Media Icons */}
