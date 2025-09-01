@@ -6,19 +6,17 @@ import HomePage from "./HomePage";
 import KeyBenefits from "./KeyBenefits";
 import NewsBlogs from "./NewsBlogs";
 import Pricing from "./Pricing";
-// import ProductShowcase from "./ProductShowCase";
 
 const LandingPage = () => {
   return (
     <>
       <HomePage />
       <KeyBenefits />
+      <Pricing />
+      <FounderSection />
       <NewsBlogs />
       {/* <ProductShowcase /> */}
-      <Pricing />
       {/* <OurMission /> */}
-      <FounderSection />
-      {/* <NewsBlogs /> */}
       <FAQs />
       <ContactUs />
       <Footer />

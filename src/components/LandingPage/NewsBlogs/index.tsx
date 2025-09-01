@@ -9,11 +9,11 @@ import youtubeVector from "@/public/svgs/youtubeVector.svg";
 
 const NewsBlogs = () => {
   const scrollToPricing = () => {
-    const pricingSection = document.getElementById('pricing');
+    const pricingSection = document.getElementById("pricing");
     if (pricingSection) {
-      pricingSection.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'start'
+      pricingSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
       });
     }
   };
@@ -23,27 +23,25 @@ const NewsBlogs = () => {
     {
       id: 1,
       image: "/svgs/newsBlog1.svg", // Using existing SVG as placeholder
-      title: "Discover India",
-      description: "Hyderabad is the capital of Telangana, India’s youngest state. It’s a popular city...",
-      readMoreText: "Read More!",
+      title: "India News",
     },
     {
       id: 2,
       image: "/svgs/newsBlog2.svg", // Using existing SVG as placeholder
-      title: "India News",
-      description: "FIndia’s coastline has become longer, not because of new land, but because...",
-      readMoreText: "Read More!",
+      title: "Discover India",
     },
     {
       id: 3,
       image: "/svgs/newsBlog3.svg", // Using existing SVG as placeholder
       title: "Culture",
-      description: "India is famous for its colorful festivals, dances, clothes—and of course, its...",
     },
   ];
 
   return (
-    <div id="blogs" className="bg-white flex flex-col items-center justify-center container mx-auto py-16 px-4 overflow-hidden">
+    <div
+      id="blogs"
+      className="bg-white flex flex-col items-center justify-center container mx-auto py-16 px-4 overflow-hidden"
+    >
       <div className="max-w-6xl w-full mx-auto">
         {/* Header Section */}
         <div className="flex px-4 items-center justify-start gap-4 mb-12 ">
@@ -79,13 +77,13 @@ const NewsBlogs = () => {
               className="bg-white w-[290px] md:w-[337px] rounded-[20px] border border-[#D9D9D9] px-6 py-6 overflow-hidden flex-shrink-0"
             >
               {/* Article Image */}
-              <div className="w-full md:w-[289px] h-[160px] flex items-center justify-center rounded-[8px] overflow-hidden">
+              <div className="w-full md:w-[289px] h-[370px] flex items-center justify-center rounded-[8px] overflow-hidden">
                 <Image
                   src={article.image}
                   alt={article.title}
-                  width={289}
-                  height={160}
-                  className="w-[250px] md:w-[289px] h-[160px] rounded-[8px] object-contain"
+                  width={2000}
+                  height={2000}
+                  className="w-[250px] md:w-[289px] h-[370px] rounded-[8px] object-contain"
                 />
               </div>
 
@@ -94,7 +92,6 @@ const NewsBlogs = () => {
                 <h3 className="text-[24px] leading-7 font-semibold text-[var(--font-black-shade-1)] mb-3">
                   {article.title}
                 </h3>
-                <p className="text-[#757575] font-normal text-sm mb-4">{article.description}</p>
               </div>
             </div>
           ))}
@@ -102,7 +99,7 @@ const NewsBlogs = () => {
 
         {/* Subscribe Button */}
         <div className="text-center">
-          <button 
+          <button
             onClick={scrollToPricing}
             className="w-[290px] md:w-[340px] bg-[#FBCE3E] text-white py-4 px-8 leading-6 font-semibold rounded-[20px] text-[16px] md:text-[20px]  hover:bg-yellow-400 cursor-pointer transition-colors"
           >
