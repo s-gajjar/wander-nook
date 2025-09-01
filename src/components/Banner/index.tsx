@@ -15,7 +15,7 @@ const Banner = ({ text, imageSrc }: BannerProps) => {
         height={2000}
         className="w-full h-auto max-h-72 md:max-h-96 object-cover"
       />
-      <p className="text-white text-4xl md:text-7xl font-medium absolute left-1/3 bottom-1/3 md:left-2/5 md:top-2/5">
+      <p className="text-white text-4xl md:text-6xl font-medium absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
         {text}
       </p>
     </div>
