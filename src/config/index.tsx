@@ -1,0 +1,4 @@
+const VARIANT_ID_1 = process.env.NEXT_PUBLIC_SHOPIFY_VARIANT_ID1 || "";
+const VARIANT_ID_2 = process.env.NEXT_PUBLIC_SHOPIFY_VARIANT_ID2 || "";
+
+export { VARIANT_ID_1, VARIANT_ID_2 };

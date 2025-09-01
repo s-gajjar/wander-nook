@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-black-shade-1: #1E1E1E;
+  --font-black-shade-2: #616161;
+  --font-black-shade-3: #414141;
+  --font-white-shade-1: #F5F5F5;
+  --font-blue-shade-1: #4E61BF;
+  --font-purple-shade-1: #6A43D7;
+  --font-orange-main-color: #FE5923;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-black-shade-1: var(--font-black-shade-1);
+  --font-black-shade-2: var(--font-black-shade-2);
+  --font-black-shade-3: var(--font-black-shade-3);
+  --font-white-shade-1: var(--font-white-shade-1);
+  --font-blue-shade-1: var(--font-blue-shade-1);
+  --font-purple-shade-1: var(--font-purple-shade-1);
+  --font-orange-main-color: var(--font-orange-main-color);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-plus-jakarta);
+}
