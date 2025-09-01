@@ -29,7 +29,7 @@ const Navbar = () => {
         ? "bg-white/80 backdrop-blur-md shadow-lg border-b border-gray-100/50" 
         : "bg-white"
     }`}>
-      <div className="container mx-auto px-6 py-4 lg:py-6">
+      <div className="container mx-auto px-12 sm:px-6 py-4 lg:py-6">
         <div className="mx-auto w-full flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
@@ -43,10 +43,10 @@ const Navbar = () => {
                   alt="Wander Nook Logo"
                   width={2000}
                   height={2000}
-                  className="rounded-lg w-[260px] h-[35px] object-contain transition-all duration-300"
+                  className="rounded-lg w-[180px] h-[24px] sm:w-[220px] sm:h-[30px] md:w-[260px] md:h-[35px] object-contain transition-all duration-300"
                 />
                 {/* Stroke effect using box-shadow */}
-                <div className="absolute inset-0 rounded-lg w-[260px] h-[35px] bg-transparent border-2 border-gray-200/30 pointer-events-none"></div>
+                <div className="absolute inset-0 rounded-lg w-[180px] h-[24px] sm:w-[220px] sm:h-[30px] md:w-[260px] md:h-[35px] bg-transparent border-2 border-gray-200/30 pointer-events-none"></div>
               </div>
             </button>
           </div>

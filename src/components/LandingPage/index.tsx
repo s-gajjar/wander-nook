@@ -17,7 +17,7 @@ const LandingPage = () => {
       {/* <ProductShowcase /> */}
       <Pricing />
       {/* <OurMission /> */}
-      <FounderSection />
+      {/* <FounderSection /> */}
       {/* <NewsBlogs /> */}
       <FAQs />
       <ContactUs />
