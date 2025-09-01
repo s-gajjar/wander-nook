@@ -24,9 +24,11 @@ const Footer = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Contact Section */}
             <div className="w-[250px]">
-              <h3 className="text-[20px] leading-6 font-semibold text-black mb-2">Contact</h3>
+              <h3 className="text-[20px] leading-6 font-semibold text-black mb-2">
+                Contact
+              </h3>
               <p className="text-[#707070] text-[16px] leading-[18px] font-normal mb-6">
-                Reach out, Connect, and Start your Path to home
+                Reach out, Connect, and Start your Path to growth
               </p>
 
               <h4 className="text-[20px] leading-6 font-semibold text-black mb-2">
@@ -34,10 +36,10 @@ const Footer = () => {
               </h4>
               <div className="mb-6">
                 <p className="text-[#707070] text-[16px] leading-[18px] font-normal">
-                  email@realestate.ca
+                  contact@wandernook.in
                 </p>
                 <p className="text-[#707070] text-[16px] leading-[18px] font-normal">
-                  +62 986 098 9867
+                  +91 9820067074
                 </p>
               </div>
 
@@ -50,14 +52,29 @@ const Footer = () => {
                 <Link href="#">
                   <Image src={XLogo} alt="X" width={33} height={33} />
                 </Link>
-                <Link href="#">
-                  <Image src={logoInstagram} alt="Instagram" width={33} height={33} />
+                <Link href="https://www.instagram.com/wandernooknewspaper/">
+                  <Image
+                    src={logoInstagram}
+                    alt="Instagram"
+                    width={33}
+                    height={33}
+                  />
                 </Link>
                 <Link href="#">
-                  <Image src={logoYoutube} alt="Youtube" width={33} height={33} />
+                  <Image
+                    src={logoYoutube}
+                    alt="Youtube"
+                    width={33}
+                    height={33}
+                  />
                 </Link>
                 <Link href="#">
-                  <Image src={logoLinkedIn} alt="Instagram" width={33} height={33} />
+                  <Image
+                    src={logoLinkedIn}
+                    alt="Instagram"
+                    width={33}
+                    height={33}
+                  />
                 </Link>
               </div>
             </div>
@@ -66,16 +83,28 @@ const Footer = () => {
             <div className="relative mb-10">
               <h3 className="text-2xl font-bold text-black mb-4">Explore</h3>
               <div className="space-y-3 mb-48">
-                <a href="#" className="block text-gray-600 hover:text-black transition-colors">
+                <a
+                  href="#"
+                  className="block text-gray-600 hover:text-black transition-colors"
+                >
                   Home
                 </a>
-                <a href="#" className="block text-gray-600 hover:text-black transition-colors">
+                <a
+                  href="#"
+                  className="block text-gray-600 hover:text-black transition-colors"
+                >
                   Blogs
                 </a>
-                <a href="#" className="block text-gray-600 hover:text-black transition-colors">
+                <a
+                  href="#"
+                  className="block text-gray-600 hover:text-black transition-colors"
+                >
                   Pricing
                 </a>
-                <a href="#" className="block text-gray-600 hover:text-black transition-colors">
+                <a
+                  href="#"
+                  className="block text-gray-600 hover:text-black transition-colors"
+                >
                   Contact
                 </a>
               </div>
