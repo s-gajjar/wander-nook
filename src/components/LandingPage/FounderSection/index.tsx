@@ -6,7 +6,11 @@ import footballVector from "@/public/svgs/footballVector.svg";
 import founderImage from "@/public/svgs/founderSection.svg";
 import playerVector from "@/public/svgs/playerVector.svg";
 
-const FounderSection = () => {
+type FounderSectionProps = {
+  isIconShow?: boolean;
+};
+
+const FounderSection = ({ isIconShow = true }: FounderSectionProps) => {
   return (
     <section className="bg-white container mx-auto py-16 relative">
       <div className="max-w-6xl mx-auto px-8 relative">
@@ -47,21 +51,25 @@ const FounderSection = () => {
           </div>
         </div>
 
-        <Image
-          src={playerVector}
-          alt="player-icon"
-          width={51}
-          height={51}
-          className="w-[51px] h-[51px] absolute md:top-0 -top-14  md:right-1/2"
-        />
+        {isIconShow && (
+          <>
+            <Image
+              src={playerVector}
+              alt="player-icon"
+              width={51}
+              height={51}
+              className="w-[51px] h-[51px] absolute md:top-0 -top-14  md:right-1/2"
+            />
 
-        <Image
-          src={footballVector}
-          alt="football-vector"
-          width={50}
-          height={50}
-          className="w-[50px] h-[50px] absolute md:-top-10 top-10 right-0 md:-right-20"
-        />
+            <Image
+              src={footballVector}
+              alt="football-vector"
+              width={50}
+              height={50}
+              className="w-[50px] h-[50px] absolute md:-top-10 top-10 right-0 md:-right-20"
+            />
+          </>
+        )}
       </div>
     </section>
   );
