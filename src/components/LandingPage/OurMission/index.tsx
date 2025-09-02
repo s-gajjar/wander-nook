@@ -178,7 +178,7 @@ const OurMission = () => {
           {/* Images Section */}
         </div>
       </div>
-      <div className="mt-12 absolute left-70  bottom-30">
+      <div className="mt-12 absolute left-95 bottom-30">
         <div className="relative w-full">
           <div
             ref={imagesRef}
