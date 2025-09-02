@@ -51,6 +51,9 @@ const Pricing = () => {
   const handlePricingButtonClick = async (type: string) => {
     const variantId = type === "type1" ? VARIANT_ID_1 : VARIANT_ID_2;
 
+    // Open a blank tab synchronously to avoid popup blockers
+    const preOpenedTab = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+
     try {
       const payload = {
         items: [
@@ -69,13 +72,24 @@ const Pricing = () => {
 
         if (response.data.checkout?.checkoutUrl && response.data.checkout?.cartId) {
           toast.success("✅ Checkout successful!");
-          window.open(response.data.checkout?.checkoutUrl, "_blank");
+
+          const checkoutUrl = response.data.checkout.checkoutUrl;
+
+          if (preOpenedTab) {
+            preOpenedTab.location.href = checkoutUrl;
+          } else {
+            // Fallback if the tab could not be opened (blocked): navigate in the same tab
+            window.location.href = checkoutUrl;
+          }
         } else {
           toast.error("❌ Checkout failed. Please try again.");
+          // Close the pre-opened tab if we can't proceed
+          preOpenedTab?.close();
         }
       } else {
         console.error("Checkout failed:", response.data);
         toast.error("❌ Checkout failed. Please try again.");
+        preOpenedTab?.close();
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -83,6 +97,8 @@ const Pricing = () => {
       } else {
         console.error("Checkout API error:", error);
       }
+      // Close the pre-opened tab on error
+      preOpenedTab?.close();
     }
   };
 
