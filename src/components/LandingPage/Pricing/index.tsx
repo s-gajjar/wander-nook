@@ -14,7 +14,12 @@ const Pricing = () => {
       bgColor: "bg-purple-600",
       textColor: "text-white",
       border: false,
-      features: ["1 year", "24 newspapers delivered fortnightly", "Printables", "1 travel journal"],
+      features: [
+        "1 year",
+        "24 newspapers delivered fortnightly",
+        "Printables",
+        "1 travel journal",
+      ],
       price: {
         currency: "INR",
         originalAmount: "2400",
@@ -34,7 +39,12 @@ const Pricing = () => {
       bgColor: "bg-white",
       textColor: "text-black",
       border: true,
-      features: ["1 Year", "24 newspapers emailed fortnightly", "Printables", "1 travel journal"],
+      features: [
+        "1 Year",
+        "24 newspapers emailed fortnightly",
+        "Printables",
+        "1 travel journal",
+      ],
       price: {
         currency: "INR",
         amount: "1500",
@@ -52,7 +62,10 @@ const Pricing = () => {
     const variantId = type === "type1" ? VARIANT_ID_1 : VARIANT_ID_2;
 
     // Open a blank tab synchronously to avoid popup blockers
-    const preOpenedTab = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+    const preOpenedTab =
+      typeof window !== "undefined"
+        ? window.open("about:blank", "_blank")
+        : null;
 
     try {
       const payload = {
@@ -65,12 +78,18 @@ const Pricing = () => {
         ],
       };
 
-      const response = await axios.post<ICheckoutResponse>("/api/shopify?action=checkout", payload);
+      const response = await axios.post<ICheckoutResponse>(
+        "/api/shopify?action=checkout",
+        payload
+      );
 
       if (response?.status === 200) {
         console.log("Checkout response:", response.data);
 
-        if (response.data.checkout?.checkoutUrl && response.data.checkout?.cartId) {
+        if (
+          response.data.checkout?.checkoutUrl &&
+          response.data.checkout?.cartId
+        ) {
           toast.success("✅ Checkout successful!");
 
           const checkoutUrl = response.data.checkout.checkoutUrl;
@@ -123,7 +142,9 @@ const Pricing = () => {
         {pricingData.map((card) => (
           <div
             key={card.id}
-            className={`${card.bgColor} ${card.textColor} rounded-2xl p-8 md:w-[372px] h-[444px] ${
+            className={`${card.bgColor} ${
+              card.textColor
+            } rounded-2xl p-8 md:w-[372px] h-[444px] ${
               card.border ? "border border-[#2C2C2C]" : ""
             }`}
           >
@@ -145,14 +166,20 @@ const Pricing = () => {
               {card.price.originalAmount ? (
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm">{card.price.currency}</span>
-                  <span className="text-4xl font-bold">{card.price.amount}</span>
+                  <span className="text-4xl font-bold">
+                    {card.price.amount}
+                  </span>
                   <span className="text-sm">{card.price.period}</span>
-                  <span className="text-lg line-through ml-2">{card.price.originalAmount}</span>
+                  <span className="text-lg line-through ml-2">
+                    {card.price.originalAmount}
+                  </span>
                 </div>
               ) : (
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm">{card.price.currency}</span>
-                  <span className="text-4xl font-bold">{card.price.amount}</span>
+                  <span className="text-4xl font-bold">
+                    {card.price.amount}
+                  </span>
                   <span className="text-sm">{card.price.period}</span>
                 </div>
               )}
@@ -167,10 +194,10 @@ const Pricing = () => {
         ))}
       </div>
 
-      <p className="mt-10 text-center text-[13px] md:text-[16px] leading-4 md:leading-5 font-normal">
+      {/* <p className="mt-10 text-center text-[13px] md:text-[16px] leading-4 md:leading-5 font-normal">
         To view a sample PRINT edition,{" "}
         <button className="text-[#6A43D7] underline cursor-pointer">click here</button>
-      </p>
+      </p> */}
     </div>
   );
 };

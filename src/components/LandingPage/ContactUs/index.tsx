@@ -49,13 +49,17 @@ const ContactUs = () => {
   });
 
   return (
-    <div className="mt-8 w-full h-full overflow-hidden px-4 py-12 bg-[#FEC106] relative">
+    <div
+      id="contact"
+      className="mt-8 w-full h-full overflow-hidden px-4 py-12 bg-[#FEC106] relative"
+    >
       <div className="md:w-[950px] w-full bg-[#FDFBF3] rounded-[16px] max-w-full h-full mx-auto px-4 md:px-20 py-14">
         <h2 className="mb-2 text-[#403A02] md:text-[42px] text-[28px] md:leading-[50px] leading-[34px] font-semibold text-center">
           Ready to Start the Adventure?
         </h2>
         <p className="mb-8 text-[#403A02] md:text-[20px] text-[16px] md:leading-[24px] leading-[18px] font-normal text-center">
-          Join thousands of families who make learning about the world a daily adventure!
+          Join thousands of families who make learning about the world a daily
+          adventure!
         </p>
         <div className="md:w-[600px] w-full mx-auto md:bg-white rounded-[20px] md:border md:border-[#D9D9D9] md:p-10 p-3">
           <form onSubmit={formik.handleSubmit}>
@@ -95,7 +99,9 @@ const ContactUs = () => {
                 className="w-full border border-[#D9D9D9] rounded-full px-4 py-2"
               />
               {formik.touched.email && formik.errors.email && (
-                <div className="text-red-500 text-sm">{formik.errors.email}</div>
+                <div className="text-red-500 text-sm">
+                  {formik.errors.email}
+                </div>
               )}
             </div>
 
@@ -115,7 +121,9 @@ const ContactUs = () => {
                 className="w-full border border-[#D9D9D9] rounded-full px-4 py-2"
               />
               {formik.touched.contactNo && formik.errors.contactNo && (
-                <div className="text-red-500 text-sm">{formik.errors.contactNo}</div>
+                <div className="text-red-500 text-sm">
+                  {formik.errors.contactNo}
+                </div>
               )}
             </div>
 
@@ -141,7 +149,10 @@ const ContactUs = () => {
 
             {/* School Name */}
             <div className="mb-4 flex flex-col gap-[5px]">
-              <label htmlFor="schoolName" className="text-[#022C40] text-[16px]">
+              <label
+                htmlFor="schoolName"
+                className="text-[#022C40] text-[16px]"
+              >
                 School Name
               </label>
               <input
@@ -155,7 +166,9 @@ const ContactUs = () => {
                 className="w-full border border-[#D9D9D9] rounded-full px-4 py-2"
               />
               {formik.touched.schoolName && formik.errors.schoolName && (
-                <div className="text-red-500 text-sm">{formik.errors.schoolName}</div>
+                <div className="text-red-500 text-sm">
+                  {formik.errors.schoolName}
+                </div>
               )}
             </div>
 

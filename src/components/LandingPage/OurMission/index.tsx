@@ -21,6 +21,16 @@ const OurMission = () => {
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isScrolling, setIsScrolling] = useState(false);
 
+  const scrollToContact = () => {
+    const contactSection = document.getElementById("contact");
+    if (contactSection) {
+      contactSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -142,21 +152,25 @@ const OurMission = () => {
 
             {/* Headline */}
             <h2 className="text-[28px] md:text-4xl font-semibold leading-[32px] md:leading-11 text-[#022C40] mb-6">
-              Welcome to Wander Nook, a newspaper made just for kids! We believe that curiosity is
-              the spark that leads to learning.
+              Welcome to Wander Nook, a newspaper made just for kids! We believe
+              that curiosity is the spark that leads to learning.
             </h2>
 
             {/* Body Text */}
             <p className="text-lg text-[#635D71] font-normal mb-8 leading-7">
-              At Wander Nook, we reimagine news and learning to be positive, engaging, and
-              age-appropriate for children aged 8 to 15. We carefully craft every issue to spark
-              curiosity, encourage reading, and inspire young minds to think big. Our vision is
-              simple: to raise a generation of readers, thinkers, and dreamers who look at the world
-              with wonder and confidence.
+              At Wander Nook, we reimagine news and learning to be positive,
+              engaging, and age-appropriate for children aged 7 to 15. We
+              carefully craft every issue to spark curiosity, encourage reading,
+              and inspire young minds to think big. Our vision is simple: to
+              raise a generation of readers, thinkers, and dreamers who look at
+              the world with wonder and confidence.
             </p>
 
             {/* Contact Button */}
-            <button className="bg-[#3EFBE4] text-[#022C40] text-base px-6 py-2 rounded-[50px] font-semibold leading-6 transition-colors duration-200 md:absolute bottom-15 right-5">
+            <button
+              onClick={scrollToContact}
+              className="bg-[#3EFBE4] text-[#022C40] text-base px-6 py-2 rounded-[50px] font-semibold leading-6 transition-colors duration-200 md:absolute bottom-15 right-5"
+            >
               Contact us
             </button>
           </div>

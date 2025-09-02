@@ -22,17 +22,17 @@ const NewsBlogs = () => {
   const articles = [
     {
       id: 1,
-      image: "/svgs/newsBlog1.svg", // Using existing SVG as placeholder
+      image: "/svgs/newsBlog1.jpg", // Using existing SVG as placeholder
       title: "India News",
     },
     {
       id: 2,
-      image: "/svgs/newsBlog2.svg", // Using existing SVG as placeholder
+      image: "/svgs/newsBlog2.jpg", // Using existing SVG as placeholder
       title: "Discover India",
     },
     {
       id: 3,
-      image: "/svgs/newsBlog3.svg", // Using existing SVG as placeholder
+      image: "/svgs/newsBlog3.jpg", // Using existing SVG as placeholder
       title: "Culture",
     },
   ];

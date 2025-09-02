@@ -1,14 +1,14 @@
 "use client";
 
 // Next imports
+import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 
 // Images
-import logo from "@/public/wander-logo.png";
+import logo from "@/public/svgs/logo.svg";
 
 const Navbar = () => {
   const router = useRouter();
@@ -53,10 +53,8 @@ const Navbar = () => {
                   alt="Wander Nook Logo"
                   width={2000}
                   height={2000}
-                  className="rounded-lg w-[160px] h-[22px] sm:w-[200px] sm:h-[28px] md:w-[240px] md:h-[32px] object-contain transition-all duration-300"
+                  className="w-[160px] h-[40px] sm:w-[200px] sm:h-[28px] md:w-[300px] md:h-[60px] object-contain"
                 />
-                {/* Stroke effect using box-shadow */}
-                <div className="absolute inset-0 rounded-lg w-[160px] h-[22px] sm:w-[200px] sm:h-[28px] md:w-[240px] md:h-[32px] bg-transparent border-2 border-gray-200/30 pointer-events-none"></div>
               </div>
             </button>
           </div>
@@ -80,12 +78,14 @@ const Navbar = () => {
               About Us
             </Link>
             <Link
-              href="/pricing"
+              href="/subscription"
               className={`${
-                pathname === "/pricing" ? "text-[#F0624F]" : "text-[#555555]"
+                pathname === "/subscription"
+                  ? "text-[#F0624F]"
+                  : "text-[#555555]"
               } font-medium hover:text-[#d54a3a] transition-colors duration-200 text-sm lg:text-base`}
             >
-              Pricing
+              Subscription
             </Link>
           </div>
 
@@ -100,13 +100,35 @@ const Navbar = () => {
             >
               {isMenuOpen ? (
                 // Close (X) icon
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               ) : (
                 // Hamburger icon
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
                 </svg>
               )}
             </button>
@@ -151,18 +173,22 @@ const Navbar = () => {
                   <button
                     onClick={() => closeMenuAndNavigate("/about-us")}
                     className={`w-full text-left px-4 py-3 ${
-                      pathname === "/about-us" ? "text-[#F0624F]" : "text-[#555555]"
+                      pathname === "/about-us"
+                        ? "text-[#F0624F]"
+                        : "text-[#555555]"
                     } hover:bg-gray-50`}
                   >
                     About Us
                   </button>
                   <button
-                    onClick={() => closeMenuAndNavigate("/pricing")}
+                    onClick={() => closeMenuAndNavigate("/subscription")}
                     className={`w-full text-left px-4 py-3 ${
-                      pathname === "/pricing" ? "text-[#F0624F]" : "text-[#555555]"
+                      pathname === "/subscription"
+                        ? "text-[#F0624F]"
+                        : "text-[#555555]"
                     } hover:bg-gray-50`}
                   >
-                    Pricing
+                    Subscription
                   </button>
                 </div>
               </motion.div>
