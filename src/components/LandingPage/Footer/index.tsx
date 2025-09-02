@@ -31,7 +31,7 @@ const Footer = () => {
       <div className="mx-auto md:pl-40 pl-4 md:pr-0 pr-4">
         <div className="flex md:flex-row flex-col w-full justify-between mt-12">
           {/* Right Side - Content */}
-          <div className="flex items-start justify-start md:flex-row flex-col-reverse pt-52">
+          <div className="flex items-start justify-start md:flex-row flex-col-reverse md:pt-52">
             {/* Contact Section */}
             <div className="">
               <h3 className="text-[20px] leading-6 font-semibold text-black mb-4">
@@ -98,7 +98,7 @@ const Footer = () => {
                   onClick={() => router?.push("/about-us")}
                   className="block text-gray-600 hover:text-black transition-colors text-left w-full"
                 >
-                  Contact
+                  About us
                 </button>
               </div>
             </div>
