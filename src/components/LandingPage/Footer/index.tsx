@@ -5,6 +5,7 @@ import Image from "next/image";
 
 // Images
 import footerImage from "@/public/svgs/footerImage.svg";
+import footerImageMobile from "@/public/svgs/footerImageMobile.svg";
 import logoInstagram from "@/public/svgs/logoInstagram.svg";
 import logo from "@/public/svgs/logoPng.png";
 
@@ -27,10 +28,10 @@ const Footer = () => {
 
   return (
     <footer className="bg-white">
-      <div className="mx-auto pl-40">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+      <div className="mx-auto md:pl-40 pl-4 md:pr-0 pr-4">
+        <div className="flex md:flex-row flex-col w-full justify-between mt-12">
           {/* Right Side - Content */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="flex items-start justify-start md:flex-row flex-col-reverse pt-52">
             {/* Contact Section */}
             <div className="">
               <h3 className="text-[20px] leading-6 font-semibold text-black mb-4">
@@ -73,14 +74,14 @@ const Footer = () => {
                 alt="Wander Nook"
                 width={2000}
                 height={2000}
-                className="w-[450px] mt-10 mb-10 h-[45px] object-cover"
+                className="sm:w-[400px] w-[300px] mt-10 mb-10 sm:h-[52px] h-[35px] object-cover"
               />
             </div>
 
             {/* Explore Section */}
-            <div className="relative mb-10">
+            <div className="flex flex-col">
               <h3 className="text-2xl font-bold text-black mb-4">Explore</h3>
-              <div className="space-y-3 mb-48">
+              <div className="space-y-3 mb-12">
                 <button
                   onClick={() => scrollToSection("home")}
                   className="block text-gray-600 hover:text-black transition-colors text-left w-full"
@@ -105,7 +106,20 @@ const Footer = () => {
 
           {/* Left Side - Playful Octopus Character */}
           <div className="flex justify-center lg:justify-end">
-            <Image src={footerImage} alt="Octopus" width={754} height={754} />
+            <Image
+              src={footerImage}
+              alt="Footer Image"
+              width={754}
+              height={754}
+              className="md:block hidden"
+            />
+            <Image
+              src={footerImageMobile}
+              alt="Footer Image"
+              width={754}
+              height={754}
+              className="md:hidden block"
+            />
           </div>
         </div>
       </div>

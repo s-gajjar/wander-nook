@@ -4,7 +4,7 @@
 import Image from "next/image";
 
 // Images
-import heroSection from "@/public/svgs/heroSection.svg";
+import heroSection from "@/public/svgs/heroSection.png";
 
 const HomePage = () => {
   const scrollToPricing = () => {
