@@ -45,10 +45,7 @@ const KeyBenefits = () => {
   ];
 
   return (
-    <div
-      id="home"
-      className="container mx-auto py-12 px-6 sm:px-4 bg-white flex flex-col items-center justify-center relative overflow-hidden"
-    >
+    <div className="container mx-auto py-12 md:pt-22 px-6 sm:px-4 bg-white flex flex-col items-center justify-center relative overflow-hidden">
       {/* <div className="w-[110px] h-[33px] flex items-center justify-center rounded-[50px] bg-[#6A43D733] ">
         <p className="text-sm font-normal text-[var(--font-purple-shade-1)] leading-4">
           Key Benefits
@@ -84,13 +81,17 @@ const KeyBenefits = () => {
             <div className="flex flex-col relative z-20 justify-between h-full">
               <div>
                 {/* Heading */}
-                <h3 className={`${benefit.textColor} text-[24px] font-semibold mb-4 leading-7`}>
+                <h3
+                  className={`${benefit.textColor} text-[24px] font-semibold mb-4 leading-7`}
+                >
                   {benefit.heading}
                 </h3>
               </div>
 
               {/* Body text */}
-              <p className={`${benefit.textColor} font-normal text-base leading-[18px]`}>
+              <p
+                className={`${benefit.textColor} font-normal text-base leading-[18px]`}
+              >
                 {benefit.bodyText}
               </p>
             </div>

@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div>
       <Navbar />
-      <div className="pt-20 lg:pt-24">
+      <div className="pt-16 lg:pt-24">
         <LandingPage />
       </div>
     </div>

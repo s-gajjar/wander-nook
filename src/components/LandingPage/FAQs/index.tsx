@@ -29,7 +29,7 @@ const faqData = [
     answer: (
       <p>
         Wander Nook is a newspaper specifically designed for children aged{" "}
-        <b>8 to 15 years</b>. We simplify world and India news in kid-friendly
+        <b>7 to 15 years</b>. We simplify world and India news in kid-friendly
         language, and include learning activities like puzzles, quizzes,
         interactive games, creative corners for young voices and art, plus life
         skills and values lessons. Our mission is to create a positive,
@@ -157,7 +157,7 @@ const FAQs = ({ isIconShow = true }: FaqProps) => {
   };
 
   return (
-    <div className="bg-white py-16 px-4 relative overflow-hidden">
+    <div className="bg-white container mx-auto py-16 px-4 relative overflow-hidden">
       {isIconShow && (
         <>
           <Image
@@ -165,21 +165,21 @@ const FAQs = ({ isIconShow = true }: FaqProps) => {
             alt=""
             width={60}
             height={60}
-            className="absolute top-15 md:left-88 left-0"
+            className="absolute top-15 md:left-58 left-0"
           />
           <Image
             src={remoteVector}
             alt=""
             width={61}
             height={43}
-            className="absolute top-0 md:right-90 right-0"
+            className="absolute top-10 md:right-90 right-0"
           />
           <Image
             src={arrowVector2}
             alt=""
             width={45}
             height={40}
-            className="absolute top-105 left-60"
+            className="absolute top-105 left-40"
           />
           <Image
             src={footballVector}

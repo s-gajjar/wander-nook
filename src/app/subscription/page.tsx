@@ -13,7 +13,7 @@ export default function AboutUs() {
     <div>
       <Navbar />
       <div className="pt-20 lg:pt-24">
-        <Banner text="Subscribe to wander nook" imageSrc={pricingBannerBg} />
+        <Banner text="Subscribe to Wander Nook" imageSrc={pricingBannerBg} />
         <Pricing />
         <FAQs isIconShow={false} />
         <ContactUs />
