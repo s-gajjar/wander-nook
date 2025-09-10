@@ -24,10 +24,10 @@ export default function NewBlogAdminPage() {
   const [sectionProgressByIndex, setSectionProgressByIndex] = useState<Record<number, number>>({});
 
   const coverUploader = useUploadThing("blogImage", {
-    onUploadProgress: ({ progress }) => setCoverProgress(Math.round(progress || 0)),
+    onUploadProgress: (p: number | { progress: number }) => setCoverProgress(Math.round((typeof p === 'number' ? p : p?.progress) || 0)),
   });
   const sectionUploader = useUploadThing("blogImage", {
-    onUploadProgress: ({ progress }) => {
+    onUploadProgress: (p: number | { progress: number }) => { const progress = typeof p === 'number' ? p : p?.progress;
       // handled inline per index when called
     },
   });
