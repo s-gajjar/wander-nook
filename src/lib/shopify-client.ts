@@ -8,24 +8,25 @@ import {
 } from "../types/storefront.generated";
 import { createCartMutation } from "../queries/cart";
 
-const client = createStorefrontApiClient({
-  storeDomain: process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN ?? "",
-  apiVersion: process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-07",
-  publicAccessToken: process.env.NEXT_PUBLIC_SHOPIFY_STORE_FRONT_ACCESS_TOKEN,
-});
+function getClient() {
+  const storeDomain = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN ?? "";
+  const apiVersion = process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-07";
+  const publicAccessToken = process.env.NEXT_PUBLIC_SHOPIFY_STORE_FRONT_ACCESS_TOKEN;
+  return createStorefrontApiClient({ storeDomain, apiVersion, publicAccessToken });
+}
 
-// Admin client for subscription management
-const adminClient = createStorefrontApiClient({
-  storeDomain: process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN ?? "",
-  apiVersion: "2025-07",
-  publicAccessToken: process.env.SHOPIFY_ADMIN_ACCESS_TOKEN,
-});
+function getAdminClient() {
+  const storeDomain = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN ?? "";
+  const apiVersion = "2025-07";
+  const publicAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN;
+  return createStorefrontApiClient({ storeDomain, apiVersion, publicAccessToken });
+}
 
 export async function getAllProducts(): Promise<
   GetAllProductsQuery | undefined
 > {
   try {
-    const { data, errors } = await client.request(getProductsQuery);
+    const { data, errors } = await getClient().request(getProductsQuery);
 
     if (errors) {
       throw new Error(
@@ -44,7 +45,7 @@ export async function getProductByHandle(
   handle: string
 ): Promise<GetProductByHandleQuery | undefined> {
   try {
-    const { data, errors } = await client.request(getProductByHandleQuery, {
+    const { data, errors } = await getClient().request(getProductByHandleQuery, {
       variables: {
         handle,
       },
@@ -68,7 +69,7 @@ export async function createCheckout(
   input: CartCreateMutationVariables["input"]
 ): Promise<CartCreateMutation | undefined> {
   try {
-    const { data, errors } = await client.request(createCartMutation, {
+    const { data, errors } = await getClient().request(createCartMutation, {
       variables: {
         input,
       },
@@ -86,7 +87,6 @@ export async function createCheckout(
   }
 }
 
-// New function for creating subscription contracts (autopay)
 export async function createSubscriptionContract(
   customerId: string,
   sellingPlanId: string,
@@ -103,7 +103,7 @@ export async function createSubscriptionContract(
       }
     `;
 
-    const { data, errors } = await adminClient.request(subscriptionContractMutation, {
+    const { data, errors } = await getAdminClient().request(subscriptionContractMutation, {
       variables: {
         input: {
           customerId,
@@ -130,7 +130,6 @@ export async function createSubscriptionContract(
   }
 }
 
-// Function to get selling plans for subscription products (safe default)
 export async function getSellingPlans(): Promise<Array<{ id: string; name?: string }>> {
   try {
     const query = `#graphql
@@ -141,7 +140,7 @@ export async function getSellingPlans(): Promise<Array<{ id: string; name?: stri
       }
     `;
 
-    const { data, errors } = await client.request(query as any, {
+    const { data, errors } = await getClient().request(query as any, {
       variables: { first: 10 },
     });
 
