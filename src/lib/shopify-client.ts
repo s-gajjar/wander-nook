@@ -7,7 +7,6 @@ import {
   GetProductByHandleQuery,
 } from "../types/storefront.generated";
 import { createCartMutation } from "../queries/cart";
-import { createSubscriptionContractMutation, getSellingPlansQuery } from "../queries/subscription";
 
 const client = createStorefrontApiClient({
   storeDomain: process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN ?? "",
@@ -95,7 +94,16 @@ export async function createSubscriptionContract(
   quantity: number = 1
 ) {
   try {
-    const { data, errors } = await adminClient.request(createSubscriptionContractMutation, {
+    const subscriptionContractMutation = `
+      mutation subscriptionContractCreate($input: SubscriptionContractCreateInput!) {
+        subscriptionContractCreate(input: $input) {
+          contract { id status nextBillingDate }
+          userErrors { field message }
+        }
+      }
+    `;
+
+    const { data, errors } = await adminClient.request(subscriptionContractMutation, {
       variables: {
         input: {
           customerId,
@@ -122,23 +130,31 @@ export async function createSubscriptionContract(
   }
 }
 
-// Function to get selling plans for subscription products
-export async function getSellingPlans() {
+// Function to get selling plans for subscription products (safe default)
+export async function getSellingPlans(): Promise<Array<{ id: string; name?: string }>> {
   try {
-    const { data, errors } = await client.request(getSellingPlansQuery, {
-      variables: {
-        first: 10,
-      },
+    const query = `#graphql
+      query GetSellingPlans($first: Int!) {
+        sellingPlanGroups(first: $first) {
+          edges { node { id name sellingPlans(first: 10) { edges { node { id name } } } } }
+        }
+      }
+    `;
+
+    const { data, errors } = await client.request(query as any, {
+      variables: { first: 10 },
     });
 
     if (errors) {
       console.error("Shopify selling plans errors:", errors);
-      throw new Error(`Failed to fetch selling plans: ${errors.message}`);
+      return [];
     }
 
-    return data?.sellingPlanGroups?.edges?.map(edge => edge.node) || [];
+    const groups = (data as any)?.sellingPlanGroups?.edges ?? [];
+    const plans = groups.flatMap((g: any) => g?.node?.sellingPlans?.edges ?? []);
+    return plans.map((e: any) => e?.node).filter(Boolean);
   } catch (error) {
     console.error("Failed to fetch selling plans", error);
-    throw error;
+    return [];
   }
 }
