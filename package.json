@@ -10,15 +10,19 @@
     "codegen": "graphql-codegen"
   },
   "dependencies": {
+    "@prisma/client": "^6.15.0",
     "@shopify/storefront-api-client": "^1.0.9",
+    "@uploadthing/react": "^7.3.3",
     "axios": "^1.11.0",
     "formik": "^2.4.6",
     "framer-motion": "^12.23.12",
     "next": "15.5.0",
+    "node-fetch": "^3.3.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",
     "sonner": "^2.0.7",
+    "uploadthing": "^7.7.4",
     "yup": "^1.7.0"
   },
   "devDependencies": {
@@ -34,6 +38,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
     "graphql": "^16.11.0",
+    "prisma": "^6.15.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

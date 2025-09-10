@@ -1,7 +1,9 @@
 import {
   createCheckout,
+  // createSubscriptionContract,
   getAllProducts,
   getProductByHandle,
+  // getSellingPlans,
 } from "@/src/lib/shopify-client";
 import { CartCreateMutationVariables } from "@/src/types/storefront.generated";
 import { NextRequest, NextResponse } from "next/server";
@@ -38,6 +40,11 @@ export async function GET(request: NextRequest) {
         vendor: product?.productByHandle?.vendor,
       };
       return NextResponse.json({ product: mappedProduct });
+    }
+
+    if (action === "getSellingPlans") {
+      // Return an empty list to avoid server errors; client uses env-configured plan IDs
+      return NextResponse.json({ sellingPlans: [] });
     }
 
     return NextResponse.json(

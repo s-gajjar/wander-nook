@@ -78,6 +78,16 @@ const Navbar = () => {
               About Us
             </Link>
             <Link
+              href="/blog"
+              className={`${
+                pathname === "/blog" || pathname.startsWith("/blog/")
+                  ? "text-[#F0624F]"
+                  : "text-[#555555]"
+              } font-medium hover:text-[#d54a3a] transition-colors duration-200 text-sm lg:text-base`}
+            >
+              Blog
+            </Link>
+            <Link
               href="/subscription"
               className={`${
                 pathname === "/subscription"
@@ -179,6 +189,16 @@ const Navbar = () => {
                     } hover:bg-gray-50`}
                   >
                     About Us
+                  </button>
+                  <button
+                    onClick={() => closeMenuAndNavigate("/blog")}
+                    className={`w-full text-left px-4 py-3 ${
+                      pathname === "/blog" || pathname.startsWith("/blog/")
+                        ? "text-[#F0624F]"
+                        : "text-[#555555]"
+                    } hover:bg-gray-50`}
+                  >
+                    Blog
                   </button>
                   <button
                     onClick={() => closeMenuAndNavigate("/subscription")}
