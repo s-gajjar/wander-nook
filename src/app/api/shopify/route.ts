@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
         variants: product?.productByHandle?.variants?.edges?.map(
           (edge: any) => edge.node
         ),
-        priceRange: product?.productByHandle?.priceRange,
         vendor: product?.productByHandle?.vendor,
       };
       return NextResponse.json({ product: mappedProduct });
