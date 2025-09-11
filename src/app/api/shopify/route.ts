@@ -1,42 +1,45 @@
+import { NextRequest, NextResponse } from "next/server";
 import {
   createCheckout,
-  // createSubscriptionContract,
   getAllProducts,
   getProductByHandle,
-  // getSellingPlans,
 } from "@/src/lib/shopify-client";
 import { CartCreateMutationVariables } from "@/src/types/storefront.generated";
-import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");
-    const handle = searchParams.get("handle");
 
-    if (action === "getProducts") {
-      const allProducts = await getAllProducts();
-      return NextResponse.json({ products: allProducts?.products ?? {} });
+    if (action === "products") {
+      const products = await getAllProducts();
+      return NextResponse.json({ products });
     }
 
-    if (action === "getProductByHandle" && handle) {
+    if (action === "product") {
+      const handle = searchParams.get("handle");
+      if (!handle) {
+        return NextResponse.json(
+          {
+            message: "Handle is required",
+          },
+          { status: 400 }
+        );
+      }
+
       const product = await getProductByHandle(handle);
-      const produtctImages = product?.productByHandle?.images?.edges;
       const mappedProduct = {
         id: product?.productByHandle?.id,
         title: product?.productByHandle?.title,
-        handle: product?.productByHandle?.handle,
         description: product?.productByHandle?.description,
-        images: produtctImages
-          ? produtctImages?.map(({ node }) => ({
-              id: node?.id,
-              src: node?.src,
-              altText: node?.altText,
-              width: node?.width,
-              height: node?.height,
-            }))
-          : [],
-        productType: product?.productByHandle?.productType,
+        handle: product?.productByHandle?.handle,
+        images: product?.productByHandle?.images?.edges?.map(
+          (edge: any) => edge.node
+        ),
+        variants: product?.productByHandle?.variants?.edges?.map(
+          (edge: any) => edge.node
+        ),
+        priceRange: product?.productByHandle?.priceRange,
         vendor: product?.productByHandle?.vendor,
       };
       return NextResponse.json({ product: mappedProduct });
@@ -76,6 +79,9 @@ export async function POST(request: NextRequest) {
     if (action === "checkout") {
       const body = await request.json();
       const { items } = body;
+      
+      console.log("Checkout request body:", JSON.stringify(body, null, 2));
+      
       if (!items || !Array.isArray(items) || items?.length === 0) {
         return NextResponse.json(
           {
@@ -85,17 +91,34 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Log each item to debug selling plan issues
+      items.forEach((item: any, index: number) => {
+        console.log(`Item ${index}:`, {
+          merchandiseId: item.merchandiseId,
+          sellingPlanId: item.sellingPlanId,
+          quantity: item.quantity,
+          attributes: item.attributes
+        });
+      });
+
       const cartInput: CartCreateMutationVariables["input"] = {
         lines: items,
       };
 
+      console.log("Cart input:", JSON.stringify(cartInput, null, 2));
+
       const cart = await createCheckout(cartInput);
+      
+      console.log("Cart creation response:", JSON.stringify(cart, null, 2));
+      
       const checkout = {
         cartId: cart?.cartCreate?.cart?.id,
         checkoutUrl: cart?.cartCreate?.cart?.checkoutUrl,
         totalQuantity: cart?.cartCreate?.cart?.totalQuantity,
         cost: cart?.cartCreate?.cart?.cost,
       };
+
+      console.log("Final checkout object:", JSON.stringify(checkout, null, 2));
 
       return NextResponse.json({
         checkout,
