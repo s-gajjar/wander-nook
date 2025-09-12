@@ -75,11 +75,10 @@ const faqData = [
         </p>
         <p className="mt-2">
           For print subscriptions, copies are dispatched on the{" "}
-          <b>1st and 16th of every month</b>
+          <b>1st and 16th of every month</b>{" "}
           via courier/registered post. Delivery usually takes{" "}
-          <b>up to 7 working days</b> from the dispatch date. Digital
-          subscriptions are emailed on the same schedule. Both subscriptions are
-          set to auto-renew monthly for your convenience.
+          <b>up to 7 working days</b>{" "}
+          from the dispatch date. Digital subscriptions are emailed on the same schedule. Both subscriptions are set to auto-renew monthly for your convenience.
         </p>
       </div>
     ),
@@ -102,16 +101,17 @@ const faqData = [
     answer: (
       <div>
         <p>
-          <b>Print Subscriptions:</b> Once payment has been processed,
-          subscriptions <b>cannot be cancelled or refunded</b>.
+          <b>Print Subscriptions:</b>{" "}
+          Once payment has been processed, subscriptions{" "}
+          <b>cannot be cancelled or refunded</b>.
         </p>
         <p className="mt-2">
-          <b>Digital Subscriptions:</b> To change or cancel your digital
-          subscription, email us at <b>contact@wandernook.in</b>.
+          <b>Digital Subscriptions:</b>{" "}
+          To change or cancel your digital subscription, email us at{" "}
+          <b>contact@wandernook.in</b>.
         </p>
         <p className="mt-2">
-          Both subscription types are set to auto-renew every month for
-          convenience.
+          Both subscription types are set to auto-renew every month for convenience.
         </p>
       </div>
     ),
@@ -124,8 +124,9 @@ const faqData = [
         <p>For subscription-related queries and tracking details:</p>
         <ul className="list-disc ml-6 mt-2">
           <li>
-            WhatsApp us at <b>9820067074</b> (Monday–Friday, 10:00 AM to 6:00
-            PM)
+            WhatsApp us at{" "}
+            <b>9820067074</b>{" "}
+            (Monday–Friday, 10:00 AM to 6:00 PM)
           </li>
           <li>
             Email:{" "}
