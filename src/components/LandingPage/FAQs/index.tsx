@@ -76,9 +76,9 @@ const faqData = [
         <p className="mt-2">
           For print subscriptions, copies are dispatched on the{" "}
           <b>1st and 16th of every month</b>{" "}
-          via courier/registered post. Delivery usually takes{" "}
-          <b>up to 7 working days</b>{" "}
-          from the dispatch date. Digital subscriptions are emailed on the same schedule. Both subscriptions are set to auto-renew monthly for your convenience.
+          via courier/post. Delivery usually takes{" "}
+          <b>between 3-4 working days</b>{" "}
+          from the dispatch date. Digital subscriptions are emailed on the same schedule. Both subscriptions are set to auto-renew annually for your convenience.
         </p>
       </div>
     ),
