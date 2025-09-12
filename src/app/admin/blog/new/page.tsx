@@ -9,27 +9,17 @@ export default function NewBlogAdminPage() {
   const [excerpt, setExcerpt] = useState("");
   const [coverImage, setCoverImage] = useState<string | undefined>();
   const [sections, setSections] = useState<Array<{
-    type: "image-left" | "image-right";
     heading?: string;
     subheading?: string;
     content?: string;
-    imageUrl?: string;
-    imageAlt?: string;
   }>>([]);
   const [categories, setCategories] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
-  const [sectionUploadingIndex, setSectionUploadingIndex] = useState<number | null>(null);
   const [coverProgress, setCoverProgress] = useState<number>(0);
-  const [sectionProgressByIndex, setSectionProgressByIndex] = useState<Record<number, number>>({});
 
   const coverUploader = useUploadThing("blogImage", {
     onUploadProgress: (p: number | { progress: number }) => setCoverProgress(Math.round((typeof p === 'number' ? p : p?.progress) || 0)),
-  });
-  const sectionUploader = useUploadThing("blogImage", {
-    onUploadProgress: (p: number | { progress: number }) => { const progress = typeof p === 'number' ? p : p?.progress;
-      // handled inline per index when called
-    },
   });
 
   // Client-side admin check (fallback if middleware not applied yet)
@@ -106,8 +96,8 @@ export default function NewBlogAdminPage() {
     }
   }
 
-  function addSection(type: "image-left" | "image-right") {
-    setSections([...sections, { type }]);
+  function addSection() {
+    setSections([...sections, {}]);
   }
 
   function updateSection(index: number, field: string, value: string) {
@@ -205,6 +195,7 @@ export default function NewBlogAdminPage() {
             onChange={(e) => setExcerpt(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={3}
+            placeholder="A brief description of your blog post..."
           />
         </div>
 
@@ -217,10 +208,9 @@ export default function NewBlogAdminPage() {
               const file = e.target.files?.[0];
               if (file) {
                 setCoverUploading(true);
-                setCoverProgress(0);
                 try {
                   const url = await uploadWithProgress(file, setCoverProgress);
-                  if (url) setCoverImage(url);
+                  setCoverImage(url);
                 } finally {
                   setCoverUploading(false);
                 }
@@ -228,12 +218,8 @@ export default function NewBlogAdminPage() {
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          {coverUploading && (
-            <div className="text-sm text-gray-500 mt-1">Uploading cover… {coverProgress}%</div>
-          )}
-          {coverImage && (
-            <img src={coverImage} alt="cover" className="mt-2 w-full h-32 object-cover rounded" />
-          )}
+          {coverUploading && <div className="text-sm text-gray-500 mt-1">Uploading… {coverProgress}%</div>}
+          {coverImage && <img src={coverImage} alt="cover" className="mt-2 w-full h-48 object-cover rounded" />}
         </div>
 
         <div>
@@ -242,9 +228,7 @@ export default function NewBlogAdminPage() {
             {sections.map((section, index) => (
               <div key={index} className="border p-4 rounded bg-gray-50">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-medium text-lg">
-                    Section {index + 1} - {section.type === "image-left" ? "Image Left" : "Image Right"}
-                  </h3>
+                  <h3 className="font-medium text-lg">Section {index + 1}</h3>
                   <button
                     type="button"
                     onClick={() => removeSection(index)}
@@ -284,58 +268,16 @@ export default function NewBlogAdminPage() {
                     rows={4}
                   />
                 </div>
-
-                <div className="mt-4">
-                  <label className="block text-sm font-medium mb-1">Section Image</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setSectionUploadingIndex(index);
-                        setSectionProgressByIndex((p) => ({ ...p, [index]: 0 }));
-                        try {
-                          const compressed = await compressImage(file);
-                          const res = await sectionUploader.startUpload([compressed]);
-                          const first = res?.[0] as any;
-                          const url = first?.serverData?.url || first?.url;
-                          if (!url) throw new Error("No URL returned from upload endpoint");
-                          updateSection(index, "imageUrl", url);
-                          setSectionProgressByIndex((p) => ({ ...p, [index]: 100 }));
-                        } finally {
-                          setSectionUploadingIndex(null);
-                        }
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {sectionUploadingIndex === index && (
-                    <div className="text-sm text-gray-500 mt-1">Uploading… {sectionProgressByIndex[index] || 0}%</div>
-                  )}
-                  {section.imageUrl && (
-                    <img src={section.imageUrl} alt="section" className="mt-2 w-full h-32 object-cover rounded" />
-                  )}
-                </div>
               </div>
             ))}
 
-            <div className="flex gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => addSection("image-left")}
-                className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
-              >
-                + Add Image Left Section
-              </button>
-              <button
-                type="button"
-                onClick={() => addSection("image-right")}
-                className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700"
-              >
-                + Add Image Right Section
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={addSection}
+              className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700"
+            >
+              + Add Content Section
+            </button>
           </div>
         </div>
 
@@ -351,10 +293,10 @@ export default function NewBlogAdminPage() {
         </div>
 
         <button
-          disabled={loading || coverUploading || sectionUploadingIndex !== null}
+          disabled={loading || coverUploading}
           className="bg-purple-600 text-white px-6 py-3 rounded disabled:opacity-50 hover:bg-purple-700"
         >
-          {loading ? "Publishing..." : coverUploading || sectionUploadingIndex !== null ? "Wait for uploads..." : "Publish Blog"}
+          {loading ? "Publishing..." : coverUploading ? "Wait for uploads..." : "Publish Blog"}
         </button>
       </form>
     </main>
