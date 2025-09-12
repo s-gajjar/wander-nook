@@ -1,29 +1,34 @@
 import { notFound } from "next/navigation";
+import { prisma } from "@/src/lib/prisma";
 
 async function getPost(slug: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-  const res = await fetch(`${baseUrl}/api/blog/${slug}`, {
-    next: { revalidate: 60 },
-  });
-  if (res.status === 404) return null;
-  const data = await res.json();
-  return data.post as {
-    title: string;
-    excerpt?: string;
-    coverImage?: string;
-    images: Array<{ id: string; url: string; alt?: string }>;
-    sections: Array<{
-      id: string;
-      order: number;
-      type: "image-left" | "image-right";
-      heading?: string;
-      subheading?: string;
-      content?: string;
-      imageUrl?: string;
-      imageAlt?: string;
-    }>;
-    publishedAt?: string;
-  };
+  try {
+    const post = await prisma.post.findUnique({
+      where: { slug },
+      include: { 
+        images: true, 
+        categories: { include: { category: true } },
+        sections: { orderBy: { order: "asc" } }
+      },
+    });
+
+    if (!post) return null;
+
+    return {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      coverImage: post.coverImage,
+      publishedAt: post.publishedAt,
+      images: post.images,
+      sections: post.sections,
+      categories: post.categories.map((pc) => pc.category.name),
+    };
+  } catch (error) {
+    console.error("Failed to fetch blog post:", error);
+    return null;
+  }
 }
 
 export default async function BlogDetailPage({ params }: { params: Promise<{ slug: string }> }) {
