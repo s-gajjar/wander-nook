@@ -34,3 +34,78 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-plus-jakarta);
 }
+
+/* Better text handling for blog content */
+.blog-text {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -moz-hyphens: auto;
+  word-break: normal;
+  max-width: 75ch; /* Optimal reading width */
+}
+
+/* Prevent orphaned words and improve readability */
+.blog-heading {
+  orphans: 2;
+  widows: 2;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -moz-hyphens: auto;
+  max-width: 30ch; /* Prevent overly long heading lines */
+}
+
+/* Smooth text rendering */
+.blog-content {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Better paragraph spacing and readability */
+.blog-paragraph {
+  margin-bottom: 1em;
+  line-height: 1.7;
+}
+
+.blog-paragraph:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive improvements for small screens */
+@media (max-width: 768px) {
+  .blog-heading {
+    max-width: none;
+    line-height: 1.2;
+  }
+  
+  .blog-text {
+    max-width: none;
+    line-height: 1.6;
+  }
+}
+
+/* Custom dropdown styling for country code selector */
+select.country-code-dropdown {
+  background-color: #FAF7E9 !important;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOCIgdmlld0JveD0iMCAwIDEyIDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDFMNiA2TDExIDEiIHN0cm9rZT0iIzZCNzI4MCIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K') !important;
+  background-repeat: no-repeat !important;
+  background-position: right 16px center !important;
+  padding-right: 48px !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+select.country-code-dropdown:focus {
+  background-color: #FAF7E9 !important;
+}
+
+select.country-code-dropdown option {
+  background-color: #FAF7E9 !important;
+  color: #1F2937 !important;
+}
+/* Updated at Fri Sep 12 10:13:05 IST 2025 */

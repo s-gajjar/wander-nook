@@ -76,3 +76,19 @@ model SampleRequest {
   schoolName  String?
   createdAt   DateTime @default(now())
 }
+
+model CustomerSubscription {
+  id              String   @id @default(cuid())
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  planId          String
+  deliveryAddress String?
+  city            String?
+  state           String?
+  pincode         String?
+  status          String   @default("pending") // pending, active, cancelled
+  razorpaySubscriptionId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

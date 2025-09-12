@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
       return new Response("Failed to fetch file", { status: 502 });
     }
 
-    const filename = "sample.pdf";
+    const filename = "Wander Nook Launch.pdf";
     const headers = new Headers(upstream.headers);
     headers.set("Content-Type", "application/pdf");
     headers.set("Content-Disposition", `attachment; filename="${filename}"`);

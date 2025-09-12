@@ -34,15 +34,15 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ slu
   const heroImg = post.coverImage || post.sections.find((s) => !!s.imageUrl)?.imageUrl;
 
   return (
-    <main className="min-h-screen overflow-x-hidden">
+    <main className="min-h-screen overflow-x-hidden blog-content">
       <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8 py-10 md:py-14">
         {/* Title + Excerpt */}
         <header className="mb-6 md:mb-8">
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-gray-900 mb-2 md:mb-3 break-words break-all">
+          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-gray-900 mb-2 md:mb-3 blog-heading">
             {post.title}
           </h1>
           {post.excerpt ? (
-            <p className="text-base md:text-lg text-gray-600 leading-relaxed break-words break-all">
+            <p className="text-base md:text-lg text-gray-600 leading-relaxed blog-text">
               {post.excerpt}
             </p>
           ) : null}
@@ -81,21 +81,25 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ slu
 
               {/* Text */}
               <div className="w-full">
-                <div className="space-y-3 md:space-y-4">
+                <div className="space-y-4 md:space-y-5">
                   {section.heading && (
-                    <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 break-words break-all">
+                    <h2 className="text-2xl md:text-3xl font-semibold text-gray-900 leading-tight blog-heading">
                       {section.heading}
                     </h2>
                   )}
                   {section.subheading && (
-                    <h3 className="text-lg md:text-xl font-medium text-gray-700 break-words break-all">
+                    <h3 className="text-lg md:text-xl font-medium text-gray-700 leading-normal blog-heading">
                       {section.subheading}
                     </h3>
                   )}
                   {section.content && (
-                    <p className="text-base md:text-lg leading-relaxed text-gray-700 break-words break-all">
-                      {section.content}
-                    </p>
+                    <div className="text-base md:text-lg leading-relaxed text-gray-700 blog-text">
+                      {section.content.split('\n').map((paragraph, pIndex) => (
+                        <p key={pIndex} className={pIndex > 0 ? 'mt-4' : ''}>
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

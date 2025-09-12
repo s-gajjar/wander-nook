@@ -7,9 +7,6 @@ import Image from "next/image";
 import footerImage from "@/public/svgs/footerImage.svg";
 import footerImageMobile from "@/public/svgs/footerImageMobile.svg";
 import logoInstagram from "@/public/svgs/logoInstagram.svg";
-import logoLinkedIn from "@/public/svgs/logoLinkedIn.svg";
-import logoYouTube from "@/public/svgs/logoYouTube.svg";
-import XLogo from "@/public/svgs/XLogo.svg";
 import logo from "@/public/svgs/logoPng.png";
 
 // Icons
@@ -30,122 +27,99 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-white border-t-2 border-b-2 border-l-2 border-dotted border-blue-300">
-      <div className="mx-auto px-4 py-8">
-        <div className="flex md:flex-row flex-col w-full justify-between items-start">
-          {/* Left Side - Octopus Character */}
-          <div className="flex justify-center md:justify-start mb-8 md:mb-0">
-            <Image
-              src={footerImage}
-              alt="Footer Octopus Character"
-              width={200}
-              height={200}
-              className="w-48 h-48 object-contain"
-            />
-          </div>
+    <footer className="bg-white">
+      <div className="mx-auto md:pl-40 pl-4 md:pr-0 pr-4">
+        <div className="flex md:flex-row flex-col w-full justify-between mt-12">
+          {/* Right Side - Content */}
+          <div className="flex items-start justify-start md:flex-row flex-col-reverse md:pt-52">
+            {/* Contact Section */}
+            <div className="">
+              <h3 className="text-[20px] leading-6 font-semibold text-black mb-4">
+                Contact
+              </h3>
+              <p className="text-[#707070] text-[16px] w-[250px] leading-[18px] font-normal mb-8">
+                Reach out, Connect, and Start your Path to growth
+              </p>
 
-          {/* Center - Contact and Info */}
-          <div className="flex-1 px-8">
-            <div className="space-y-6">
-              {/* Contact Section */}
-              <div>
-                <h3 className="text-xl font-bold text-black mb-2">Contact</h3>
-                <p className="text-gray-600 mb-4">Reach out, Connect, and Start your Path to home</p>
+              <h4 className="text-[20px] leading-6 font-semibold text-black mb-4">
+                Looking for assistance?
+              </h4>
+              <div className="mb-8">
+                <p className="text-[#707070] text-[16px] leading-[18px] font-normal">
+                  contact@wandernook.in
+                </p>
+                <p className="text-[#707070] text-[16px] leading-[18px] font-normal">
+                  +91 9820067074
+                </p>
               </div>
 
-              {/* Looking for assistance */}
-              <div>
-                <h4 className="text-lg font-semibold text-black mb-2">Looking for assistance?</h4>
-                <p className="text-gray-600">email@realestate.ca</p>
-                <p className="text-gray-600">+62 986 098 9867</p>
-              </div>
-
-              {/* Copyright */}
-              <div>
-                <p className="text-gray-500 text-sm">2024, All rights Reserved</p>
-              </div>
+              <p className="text-[20px] leading-6 font-semibold text-black mb-4">
+                2025, All rights Reserved
+              </p>
 
               {/* Social Media Icons */}
-              <div className="flex space-x-4">
-                <Link href="#" className="text-black hover:text-gray-600 transition-colors">
-                  <Image
-                    src={XLogo}
-                    alt="X (Twitter)"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
-                  />
-                </Link>
-                <Link href="#" className="text-black hover:text-gray-600 transition-colors">
+              <div className="flex space-x-4 ">
+                <Link href="https://www.instagram.com/wandernooknewspaper/">
                   <Image
                     src={logoInstagram}
                     alt="Instagram"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
+                    width={33}
+                    height={33}
                   />
                 </Link>
-                <Link href="#" className="text-black hover:text-gray-600 transition-colors">
-                  <Image
-                    src={logoYouTube}
-                    alt="YouTube"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
-                  />
-                </Link>
-                <Link href="#" className="text-black hover:text-gray-600 transition-colors">
-                  <Image
-                    src={logoLinkedIn}
-                    alt="LinkedIn"
-                    width={24}
-                    height={24}
-                    className="w-6 h-6"
-                  />
-                </Link>
+              </div>
+              {/* Logo */}
+              <Image
+                src={logo}
+                alt="Wander Nook"
+                width={2000}
+                height={2000}
+                className="sm:w-[400px] w-[300px] mt-10 mb-10 sm:h-[52px] h-[35px] object-cover"
+              />
+            </div>
+
+            {/* Explore Section */}
+            <div className="flex flex-col">
+              <h3 className="text-2xl font-bold text-black mb-4">Explore</h3>
+              <div className="space-y-3 mb-12">
+                <button
+                  onClick={() => scrollToSection("home")}
+                  className="block text-gray-600 hover:text-black transition-colors text-left w-full"
+                >
+                  Home
+                </button>
+                <button
+                  onClick={() => router?.push("/subscription")}
+                  className="block text-gray-600 hover:text-black transition-colors text-left w-full"
+                >
+                  Subscription
+                </button>
+                <button
+                  onClick={() => router?.push("/about-us")}
+                  className="block text-gray-600 hover:text-black transition-colors text-left w-full"
+                >
+                  About us
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Right Side - Explore Links */}
-          <div className="flex flex-col">
-            <h3 className="text-xl font-bold text-black mb-4">Explore</h3>
-            <div className="space-y-3">
-              <button
-                onClick={() => scrollToSection("home")}
-                className="block text-gray-600 hover:text-black transition-colors text-left w-full"
-              >
-                Home
-              </button>
-              <button
-                onClick={() => router?.push("/blog")}
-                className="block text-gray-600 hover:text-black transition-colors text-left w-full"
-              >
-                Blogs
-              </button>
-              <button
-                onClick={() => router?.push("/pricing")}
-                className="block text-gray-600 hover:text-black transition-colors text-left w-full"
-              >
-                Pricing
-              </button>
-              <button
-                onClick={() => scrollToSection("contact")}
-                className="block text-gray-600 hover:text-black transition-colors text-left w-full"
-              >
-                Contact
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Logo */}
-        <div className="flex justify-end mt-8">
-          <div className="text-right">
-            <div className="text-2xl font-bold">
-              <span className="text-blue-800">WANDER</span>
-              <span className="text-yellow-500 ml-2">NOOK</span>
-            </div>
+          {/* Left Side - Playful Octopus Character */}
+          <div className="flex justify-center lg:justify-end">
+            <Image
+              src={footerImage}
+              alt="Footer Image"
+              width={754}
+              height={754}
+              className="md:block hidden"
+            />
+            <Image
+              src={footerImageMobile}
+              alt="Footer Image"
+              width={754}
+              height={754}
+              className="md:hidden block"
+            />
           </div>
         </div>
       </div>

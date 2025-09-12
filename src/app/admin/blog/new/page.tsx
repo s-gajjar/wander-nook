@@ -83,6 +83,29 @@ export default function NewBlogAdminPage() {
     return url as string;
   }
 
+  // Function to generate slug from title
+  function generateSlug(text: string): string {
+    return text
+      .toLowerCase()
+      .trim()
+      // Replace spaces with hyphens
+      .replace(/\s+/g, '-')
+      // Remove special characters except hyphens
+      .replace(/[^a-z0-9-]/g, '')
+      // Remove multiple consecutive hyphens
+      .replace(/-+/g, '-')
+      // Remove leading/trailing hyphens
+      .replace(/^-|-$/g, '');
+  }
+
+  // Function to auto-generate slug from current title
+  function autoGenerateSlug() {
+    if (title.trim()) {
+      const generatedSlug = generateSlug(title);
+      setSlug(generatedSlug);
+    }
+  }
+
   function addSection(type: "image-left" | "image-right") {
     setSections([...sections, { type }]);
   }
@@ -142,17 +165,37 @@ export default function NewBlogAdminPage() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           />
+          {title && !slug && (
+            <div className="mt-2 text-sm text-gray-600">
+              Suggested slug: <span className="font-mono text-blue-600">{generateSlug(title)}</span>
+            </div>
+          )}
         </div>
 
         <div>
           <label className="block font-medium mb-2">Slug</label>
-          <input
-            type="text"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              placeholder="your-blog-post-slug"
+            />
+            <button
+              type="button"
+              onClick={autoGenerateSlug}
+              disabled={!title.trim()}
+              className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title={!title.trim() ? "Enter a title first" : "Generate slug from title"}
+            >
+              Auto-generate
+            </button>
+          </div>
+          <div className="mt-1 text-xs text-gray-500">
+            This will be used in the URL: /blog/<span className="font-mono">{slug || 'your-slug'}</span>
+          </div>
         </div>
 
         <div>

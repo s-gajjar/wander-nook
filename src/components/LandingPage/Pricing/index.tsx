@@ -1,13 +1,13 @@
 "use client";
 
-import { VARIANT_ID_1, VARIANT_ID_2, PRINT_SELLING_PLAN_ID, DIGITAL_SELLING_PLAN_ID } from "@/src/config";
-import { ICheckoutResponse } from "@/src/utils/types";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "sonner";
-import { useState } from "react";
 
 const Pricing = () => {
   const [openSample, setOpenSample] = useState(false);
+  const [openCustomerForm, setOpenCustomerForm] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
@@ -15,6 +15,25 @@ const Pricing = () => {
   const [school, setSchool] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [countryCode, setCountryCode] = useState("+91");
+
+  // Customer form fields
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [customerCity, setCustomerCity] = useState("");
+  const [customerState, setCustomerState] = useState("");
+  const [customerPincode, setCustomerPincode] = useState("");
+
+  // Check if we're in test mode
+  useEffect(() => {
+    const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    if (razorpayKey?.startsWith('rzp_test_')) {
+      setIsTestMode(true);
+    }
+  }, []);
 
   const pricingData = [
     {
@@ -25,11 +44,10 @@ const Pricing = () => {
       textColor: "text-white",
       border: false,
       features: [
-        "1 year subscription",
-        "24 newspapers delivered monthly",
+        "1 year",
+        "24 newspapers delivered fortnightly",
         "Printables",
         "1 travel journal",
-        "Auto-renewal every year",
       ],
       price: {
         currency: "INR",
@@ -42,8 +60,8 @@ const Pricing = () => {
         bgColor: "bg-white",
         textColor: "text-purple-600",
       },
-      variantId: VARIANT_ID_2,
-      sellingPlanId: PRINT_SELLING_PLAN_ID,
+      razorpayPlanId: process.env.NEXT_PUBLIC_RAZORPAY_PRINT_PLAN_ID || "plan_RGGEByLCIXwHrL",
+      requiresDelivery: true,
     },
     {
       id: 2,
@@ -53,11 +71,10 @@ const Pricing = () => {
       textColor: "text-black",
       border: true,
       features: [
-        "1 year subscription",
-        "24 newspapers emailed monthly",
+        "1 Year",
+        "24 newspapers emailed fortnightly",
         "Printables",
         "1 travel journal",
-        "Auto-renewal every year",
       ],
       price: {
         currency: "INR",
@@ -69,74 +86,101 @@ const Pricing = () => {
         bgColor: "bg-orange-500",
         textColor: "text-white",
       },
-      variantId: VARIANT_ID_1,
-      sellingPlanId: DIGITAL_SELLING_PLAN_ID,
+      razorpayPlanId: process.env.NEXT_PUBLIC_RAZORPAY_DIGITAL_PLAN_ID || "plan_RGGDvOBG7Ey6NK",
+      requiresDelivery: false,
     },
   ];
 
-  const handlePricingButtonClick = async (type: string) => {
-    setLoading(true);
+  const handlePricingButtonClick = (type: string) => {
     const plan = pricingData.find(p => p.type === type);
     if (!plan) {
       toast.error("Plan not found");
-      setLoading(false);
       return;
     }
 
-    // Check if selling plan ID is available
-    if (!plan.sellingPlanId) {
-      toast.error("Subscription plan not configured. Please contact support.");
-      setLoading(false);
+    setSelectedPlan(plan);
+    setOpenCustomerForm(true);
+  };
+
+  const handleCustomerFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedPlan) return;
+
+    // Validation
+    if (!customerName || !customerEmail || !customerPhone) {
+      toast.error("Please fill in all required fields");
       return;
     }
+
+    if (selectedPlan.requiresDelivery && (!customerAddress || !customerCity || !customerPincode)) {
+      toast.error("Please fill in delivery address for print subscription");
+      return;
+    }
+
+    setLoading(true);
+
+    // Show test mode warning
+    if (isTestMode) {
+      toast.info("🧪 Test Mode: No real payment will be charged");
+    }
+
+    // Open a blank tab synchronously to avoid popup blockers
+    const preOpenedTab =
+      typeof window !== "undefined"
+        ? window.open("about:blank", "_blank")
+        : null;
 
     try {
-      const payload = {
-        items: [
-          {
-            attributes: [],
-            quantity: 1,
-            merchandiseId: `gid://shopify/ProductVariant/${plan.variantId}`,
-            sellingPlanId: plan.sellingPlanId, // This enables auto-renewal!
-          },
-        ],
+      console.log("Creating Razorpay subscription with plan:", selectedPlan.razorpayPlanId);
+
+      const subscriptionPayload = {
+        planId: selectedPlan.razorpayPlanId,
+        customerName: customerName,
+        customerEmail: customerEmail,
+        customerPhone: customerPhone,
+        ...(selectedPlan.requiresDelivery && {
+          deliveryAddress: `${customerAddress}, ${customerCity}, ${customerState} - ${customerPincode}`,
+          city: customerCity,
+          state: customerState,
+          pincode: customerPincode,
+        }),
       };
 
-      console.log("Creating auto-renewal checkout with payload:", payload);
+      const response = await axios.post("/api/razorpay?action=create-subscription", subscriptionPayload);
 
-      const response = await axios.post<ICheckoutResponse>(
-        "/api/shopify?action=checkout",
-        payload
-      );
+      if (response?.status === 200 && response.data.success) {
+        console.log("Subscription response:", response.data);
 
-      if (response?.status === 200) {
-        console.log("Checkout response:", response.data);
+        if (response.data.shortUrl) {
+          toast.success("✅ Redirecting to payment...");
+          if (response.data.shopifyCustomer) {
+            toast.success("✅ Customer created in Shopify!");
+          }
+          setOpenCustomerForm(false);
 
-        if (
-          response.data.checkout?.checkoutUrl &&
-          response.data.checkout?.cartId
-        ) {
-          toast.success("✅ Redirecting to subscription checkout...");
-          // Use window.open to prevent redirect issues
-          const checkoutWindow = window.open(response.data.checkout.checkoutUrl, '_blank');
-          if (!checkoutWindow) {
-            // Fallback to direct redirect if popup blocked
-            window.location.href = response.data.checkout.checkoutUrl;
+          if (preOpenedTab) {
+            preOpenedTab.location.href = response.data.shortUrl;
+          } else {
+            window.location.href = response.data.shortUrl;
           }
         } else {
-          toast.error("❌ Checkout failed. Please try again.");
+          toast.error("❌ Failed to create subscription. Please try again.");
+          preOpenedTab?.close();
         }
       } else {
-        console.error("Checkout failed:", response.data);
-        toast.error("❌ Checkout failed. Please try again.");
+        console.error("Subscription failed:", response.data);
+        toast.error("❌ Subscription failed. Please try again.");
+        preOpenedTab?.close();
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
-        console.error("Checkout API error:", error.message);
+        console.error("Subscription API error:", error.message);
       } else {
-        console.error("Checkout API error:", error);
+        console.error("Subscription API error:", error);
       }
-      toast.error("❌ Checkout failed. Please try again.");
+      toast.error("❌ Subscription failed. Please try again.");
+      preOpenedTab?.close();
     } finally {
       setLoading(false);
     }
@@ -149,7 +193,13 @@ const Pricing = () => {
       const res = await fetch("/api/sample", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, contactNo: contact, city, schoolName: school }),
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          contactNo: `${countryCode}${contact}`, 
+          city, 
+          schoolName: school 
+        }),
       });
       const data = await res.json();
       if (!res.ok && !data?.downloadPath) throw new Error(data?.error || "Request failed");
@@ -160,11 +210,12 @@ const Pricing = () => {
       setContact("");
       setCity("");
       setSchool("");
+      setCountryCode("+91"); // Reset to default
       const downloadUrl = data?.downloadPath || data?.pdfUrl;
       if (downloadUrl) {
         const a = document.createElement("a");
         a.href = downloadUrl;
-        a.download = "sample.pdf";
+        a.download = "Wander Nook Launch.pdf";
         a.rel = "noopener noreferrer";
         a.style.display = "none";
         document.body.appendChild(a);
@@ -179,79 +230,263 @@ const Pricing = () => {
   };
 
   return (
-    <div id="pricing" className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full z-0">
-        <img
-          src="/svgs/pricingBannerBg.svg"
-          alt="pricing banner background"
-          className="w-full h-full object-cover"
-        />
+    <div
+      id="pricing"
+      className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden"
+    >
+      <div className="md:w-[750px] w-full px-4 mt-4">
+        <h2 className="md:text-[42px] text-[28px] text-center leading-[34px] md:leading-[50px] text-[var(--font-black-shade-1)] font-semibold ">
+          Choose your Subscription package
+        </h2>
+        <p className="mt-3 text-[var(--font-black-shade-1)] w-full text-[16px] md:text-[20px] font-normal leading-5 md:leading-6 text-center ">
+          Find your perfect plan and embark on an exciting journey of discovery.
+        </p>
       </div>
-      <div className="relative z-10 flex flex-col items-center justify-center w-full">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-black mb-4">
-            Choose your Subscription package
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Get access to our premium travel content and exclusive features
-          </p>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-8 items-center justify-center w-full max-w-6xl">
-          {pricingData.map((card) => (
-            <div
-              key={card.id}
-              className={`${card.bgColor} ${card.textColor} rounded-2xl p-8 md:w-[372px] h-[444px] ${
-                card.border ? "border border-[#2C2C2C]" : ""
-              }`}
-            >
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold mb-2">{card.title}</h3>
-                <div className="flex items-center justify-center mb-4">
+      {/* Pricing Cards */}
+      <div className="flex flex-wrap items-center justify-center px-5 gap-16 mt-12">
+        {pricingData.map((card) => (
+          <div
+            key={card.id}
+            className={`${card.bgColor} ${
+              card.textColor
+            } rounded-2xl p-8 md:w-[372px] h-[444px] ${
+              card.border ? "border border-[#2C2C2C]" : ""
+            }`}
+          >
+            <h3 className="md:text-[28px] leading-7 text-[24px] md:leading-[33px] font-semibold mb-6">
+              {card.title}
+            </h3>
+            <ul className="space-y-3 ml-4 mb-8">
+              {card.features.map((feature, index) => (
+                <li
+                  key={index + 1}
+                  className="flex text-[16px] md:text-[20px] leading-[18px] md:leading-[24px] font-normal items-center"
+                >
+                  <span className="w-2 h-2 bg-current rounded-full mr-3"></span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+            <div className="mb-8">
+              {card.price.originalAmount ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm">{card.price.currency}</span>
                   <span className="text-4xl font-bold">
-                    {card.price.currency} {card.price.amount}
+                    {card.price.amount}
                   </span>
-                  <span className="text-lg ml-1">{card.price.period}</span>
+                  <span className="text-sm">{card.price.period}</span>
+                  <span className="text-lg line-through ml-2">
+                    {card.price.originalAmount}
+                  </span>
                 </div>
-                {card.price.originalAmount && (
-                  <div className="text-sm opacity-75 line-through">
-                    {card.price.currency} {card.price.originalAmount}
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm">{card.price.currency}</span>
+                  <span className="text-4xl font-bold">
+                    {card.price.amount}
+                  </span>
+                  <span className="text-sm">{card.price.period}</span>
+                </div>
+              )}
+            </div>
+            <button
+              className={`${card.button.bgColor} ${card.button.textColor} cursor-pointer w-full py-3 px-6 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity`}
+              onClick={() => handlePricingButtonClick(card.type)}
+            >
+              {card.button.text}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-8 text-center">
+        <p className="text-lg text-gray-700">
+          To view a sample PRINT edition,{" "}
+          <button
+            onClick={() => setOpenSample(true)}
+            className="text-blue-600 underline hover:text-blue-800 font-medium cursor-pointer transition-colors"
+          >
+            click here
+          </button>
+        </p>
+      </div>
+
+      {/* Customer Details Form Modal */}
+      {openCustomerForm && selectedPlan && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-6"
+          onClick={() => setOpenCustomerForm(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl rounded-2xl bg-[#FAF7E9] p-6 md:p-10 shadow-2xl border border-[#E7E3D2] max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setOpenCustomerForm(false)}
+              className="absolute top-3 right-3 md:top-4 md:right-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/80 border border-[#E5E7EB] text-[#111827] hover:bg-white cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <div className="text-center mb-6">
+              <h3 className="text-2xl md:text-3xl font-bold text-[#1F2937] mb-2">
+                Subscribe to {selectedPlan.title}
+              </h3>
+              <p className="text-[#6B7280] text-sm md:text-base">
+                {selectedPlan.requiresDelivery 
+                  ? "Please provide your details for subscription and delivery"
+                  : "Please provide your details for subscription"
+                }
+              </p>
+            </div>
+
+            <form onSubmit={handleCustomerFormSubmit} className="space-y-5 md:space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-[#374151] mb-2">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#374151] mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                    placeholder="Enter your email address"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#374151] mb-2">
+                    Contact No *
+                  </label>
+                  <div className="flex">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="country-code-dropdown px-3 py-3 rounded-l-lg border border-r-0 border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none text-sm"
+                    >
+                      <option value="+91" style={{ backgroundColor: "#FAF7E9" }}>🇮🇳 +91</option>
+                      <option value="+1" style={{ backgroundColor: "#FAF7E9" }}>🇺🇸 +1</option>
+                      <option value="+44" style={{ backgroundColor: "#FAF7E9" }}>🇬🇧 +44</option>
+                      <option value="+971" style={{ backgroundColor: "#FAF7E9" }}>🇦🇪 +971</option>
+                      <option value="+65" style={{ backgroundColor: "#FAF7E9" }}>🇸🇬 +65</option>
+                    </select>
+                    <input
+                      type="tel"
+                      required
+                      value={contact}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+                        if (value.length <= 10) {
+                          setContact(value);
+                        }
+                      }}
+                      pattern="[0-9]{10}"
+                      title="Please enter a valid 10-digit phone number"
+                      className="flex-1 px-4 py-3 rounded-r-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                      placeholder="Enter 10-digit number"
+                      maxLength={10}
+                    />
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {countryCode === "+91" ? "Enter your 10-digit Indian mobile number" : "Enter your phone number"}
+                  </p>
+                </div>
+
+                {selectedPlan.requiresDelivery && (
+                  <>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-[#374151] mb-2">
+                        Delivery Address *
+                      </label>
+                      <textarea
+                        required
+                        value={customerAddress}
+                        onChange={(e) => setCustomerAddress(e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                        placeholder="Enter your complete delivery address"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#374151] mb-2">
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={customerCity}
+                        onChange={(e) => setCustomerCity(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                        placeholder="Enter your city"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#374151] mb-2">
+                        State
+                      </label>
+                      <input
+                        type="text"
+                        value={customerState}
+                        onChange={(e) => setCustomerState(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                        placeholder="Enter your state"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-[#374151] mb-2">
+                        Pincode *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={customerPincode}
+                        onChange={(e) => setCustomerPincode(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                        placeholder="Enter your pincode"
+                      />
+                    </div>
+                  </>
                 )}
               </div>
 
-              <ul className="space-y-3 mb-8">
-                {card.features.map((feature, index) => (
-                  <li key={index} className="flex items-center">
-                    <span className="w-2 h-2 bg-current rounded-full mr-3"></span>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                className={`${card.button.bgColor} ${card.button.textColor} cursor-pointer w-full py-3 px-6 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity ${
-                  loading ? 'opacity-70 cursor-not-allowed' : ''
-                }`}
-                onClick={() => handlePricingButtonClick(card.type)}
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : card.button.text}
-              </button>
-            </div>
-          ))}
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full md:w-auto inline-flex items-center justify-center rounded-full bg-[#FFC21A] text-[#1F2937] font-semibold px-6 md:px-7 py-3 hover:brightness-95 cursor-pointer ${
+                    loading ? 'opacity-70 cursor-not-allowed' : ''
+                  }`}
+                >
+                  {loading ? 'Processing...' : `Subscribe to ${selectedPlan.title}`}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
+      )}
 
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setOpenSample(true)}
-            className="bg-[#FFC21A] text-[#1F2937] font-semibold px-8 py-3 rounded-full hover:brightness-95 transition-all cursor-pointer"
-          >
-            Free Sample Print Edition
-          </button>
-        </div>
-      </div>
-
+      {/* Sample Form Modal */}
       {openSample && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3 sm:px-6"
@@ -311,23 +546,49 @@ const Pricing = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-[#374151] mb-2">
-                    Contact No
+                    Contact No *
                   </label>
-                  <input
-                    type="tel"
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
-                    placeholder="Enter your phone number"
-                  />
+                  <div className="flex">
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      className="country-code-dropdown px-3 py-3 rounded-l-lg border border-r-0 border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none text-sm"
+                    >
+                      <option value="+91" style={{ backgroundColor: "#FAF7E9" }}>🇮🇳 +91</option>
+                      <option value="+1" style={{ backgroundColor: "#FAF7E9" }}>🇺🇸 +1</option>
+                      <option value="+44" style={{ backgroundColor: "#FAF7E9" }}>🇬🇧 +44</option>
+                      <option value="+971" style={{ backgroundColor: "#FAF7E9" }}>🇦🇪 +971</option>
+                      <option value="+65" style={{ backgroundColor: "#FAF7E9" }}>🇸🇬 +65</option>
+                    </select>
+                    <input
+                      type="tel"
+                      required
+                      value={contact}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, ''); // Only allow digits
+                        if (value.length <= 10) {
+                          setContact(value);
+                        }
+                      }}
+                      pattern="[0-9]{10}"
+                      title="Please enter a valid 10-digit phone number"
+                      className="flex-1 px-4 py-3 rounded-r-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
+                      placeholder="Enter 10-digit number"
+                      maxLength={10}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {countryCode === "+91" ? "Enter your 10-digit Indian mobile number" : "Enter your phone number"}
+                  </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#374151] mb-2">
-                    City
+                    City *
                   </label>
                   <input
                     type="text"
+                    required
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
@@ -337,10 +598,11 @@ const Pricing = () => {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-[#374151] mb-2">
-                    School Name
+                    School Name *
                   </label>
                   <input
                     type="text"
+                    required
                     value={school}
                     onChange={(e) => setSchool(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
