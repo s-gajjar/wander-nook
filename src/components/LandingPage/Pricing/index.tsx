@@ -107,8 +107,8 @@ const Pricing = () => {
     
     if (!selectedPlan) return;
 
-    // Validation
-    if (!customerName || !customerEmail || !customerPhone) {
+    // Validation - check contact instead of customerPhone
+    if (!customerName || !customerEmail || !contact) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -134,11 +134,14 @@ const Pricing = () => {
     try {
       console.log("Creating Razorpay subscription with plan:", selectedPlan.razorpayPlanId);
 
+      // Combine country code and contact number
+      const fullPhoneNumber = `${countryCode}${contact}`;
+
       const subscriptionPayload = {
         planId: selectedPlan.razorpayPlanId,
         customerName: customerName,
         customerEmail: customerEmail,
-        customerPhone: customerPhone,
+        customerPhone: fullPhoneNumber, // Use the combined phone number
         ...(selectedPlan.requiresDelivery && {
           deliveryAddress: `${customerAddress}, ${customerCity}, ${customerState} - ${customerPincode}`,
           city: customerCity,
@@ -146,6 +149,8 @@ const Pricing = () => {
           pincode: customerPincode,
         }),
       };
+
+      console.log("📞 DEBUG: Full phone number being sent:", fullPhoneNumber);
 
       const response = await axios.post("/api/razorpay?action=create-subscription", subscriptionPayload);
 
