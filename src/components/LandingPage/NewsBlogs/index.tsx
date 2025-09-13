@@ -72,7 +72,7 @@ const NewsBlogs = () => {
               className="absolute top-5 -left-25"
             />
             <h2 className="md:text-4xl text-[28px] font-bold text-gray-800 text-left">
-              Latest Articles & Sample Content
+              Latest Articles
             </h2>
             <Image
               src={teddyBearVector}
