@@ -144,10 +144,10 @@ export default function AdminCustomers() {
         <div className="mb-6">
           <nav className="flex space-x-4">
             <a
-              href="/admin/blog/new"
+              href="/admin/article/new"
               className="text-blue-600 hover:text-blue-800 font-medium"
             >
-              ← Back to Blog Admin
+              ← Back to Article Admin
             </a>
             <span className="text-gray-300">|</span>
             <span className="text-gray-900 font-medium">Customer Management</span>

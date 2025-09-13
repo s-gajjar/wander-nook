@@ -1,4 +1,4 @@
-"user client";
+"use client";
 
 import ContactUs from "@/src/components/LandingPage/ContactUs";
 import FAQs from "@/src/components/LandingPage/FAQs";
