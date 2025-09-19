@@ -197,6 +197,9 @@ async function createShopifyOrder(customerData: {
     if (result.order) {
       console.log('✅ DEBUG: Shopify order created successfully:', result.order.id, 'for amount:', result.order.total_price);
       return result.order;
+    } else if (Array.isArray(result.orders) && result.orders.length > 0) {
+      console.log('✅ DEBUG: Shopify order returned in list shape, using first order:', result.orders[0].id);
+      return result.orders[0];
     } else {
       console.log('⚠️ DEBUG: Unexpected order response format from Shopify:', Object.keys(result));
       return null;
