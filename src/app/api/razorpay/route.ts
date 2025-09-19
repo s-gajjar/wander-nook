@@ -259,9 +259,10 @@ async function createShopifyCustomer(customerData: {
     }
 
     // If not found by email, check if customer exists by phone
-    console.log('🔍 DEBUG: Checking if customer exists by phone:', customerData.phone);
+    const formattedPhone = formatPhoneForShopify(customerData.phone);
+    console.log('🔍 DEBUG: Checking if customer exists by phone:', formattedPhone);
     const phoneSearchResponse = await fetch(
-      `${SHOPIFY_ADMIN_URL}/customers/search.json?query=phone:${encodeURIComponent(customerData.phone)}`,
+      `${SHOPIFY_ADMIN_URL}/customers/search.json?query=phone:${encodeURIComponent(formattedPhone)}`,
       {
         headers: {
           'X-Shopify-Access-Token': process.env.SHOPIFY_ADMIN_ACCESS_TOKEN!,
@@ -349,7 +350,7 @@ async function createShopifyCustomer(customerData: {
         if (fallbackSearchResponse.ok) {
           const allCustomers = await fallbackSearchResponse.json();
           const matchingCustomer = allCustomers.customers?.find((customer: any) => 
-            customer.phone === customerData.phone || customer.email === customerData.email
+            customer.phone === formatPhoneForShopify(customerData.phone) || customer.email === customerData.email
           );
 
           if (matchingCustomer) {
@@ -368,10 +369,10 @@ async function createShopifyCustomer(customerData: {
     if (result.customer) {
       console.log('✅ DEBUG: New Shopify customer created successfully:', result.customer.id);
       return result.customer;
-    } else if (result.customers) {
-      // This suggests the API returned a list instead of creating - shouldn't happen with POST
-      console.log('⚠️ DEBUG: API returned customer list instead of creating new customer');
-      return null;
+    } else if (result.customers && result.customers.length > 0) {
+      // This means customer already exists - use the first one
+      console.log('⚠️ DEBUG: Customer already exists, using existing customer:', result.customers[0].id);
+      return result.customers[0];
     } else {
       console.log('⚠️ DEBUG: Unexpected response format from Shopify:', Object.keys(result));
       return null;
