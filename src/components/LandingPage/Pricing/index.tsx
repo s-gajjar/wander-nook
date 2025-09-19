@@ -27,6 +27,17 @@ const Pricing = () => {
   const [customerState, setCustomerState] = useState("");
   const [customerPincode, setCustomerPincode] = useState("");
 
+  // Valid Indian states for controlled selection
+  const INDIAN_STATES = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+    "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+    "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+    "Uttar Pradesh", "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir",
+    "Ladakh", "Puducherry", "Chandigarh"
+  ];
+
   // Check if we're in test mode
   useEffect(() => {
     const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
@@ -109,20 +120,34 @@ const Pricing = () => {
 
     // Validation - check contact instead of customerPhone
     if (!customerName || !customerEmail || !contact) {
-      toast.error("Please fill in all required fields");
+      toast.error("Please fill in name, email and contact number");
       return;
     }
 
-    if (selectedPlan.requiresDelivery && (!customerAddress || !customerCity || !customerPincode)) {
-      toast.error("Please fill in delivery address for print subscription");
-      return;
+    if (selectedPlan.requiresDelivery) {
+      if (!customerAddress || customerAddress.trim().length < 10) {
+        toast.error("Please enter a complete delivery address (min 10 chars)");
+        return;
+      }
+      if (!customerCity || customerCity.trim().length < 2) {
+        toast.error("Please enter a valid city");
+        return;
+      }
+      if (!customerState || !INDIAN_STATES.includes(customerState)) {
+        toast.error("Please select a valid state");
+        return;
+      }
+      if (!/^[0-9]{6}$/.test(customerPincode)) {
+        toast.error("Please enter a valid 6-digit pincode");
+        return;
+      }
     }
 
     setLoading(true);
 
     // Show test mode warning
     if (isTestMode) {
-      toast.info("🧪 Test Mode: No real payment will be charged");
+      toast.info("�� Test Mode: No real payment will be charged");
     }
 
     // Open a blank tab synchronously to avoid popup blockers
@@ -447,15 +472,19 @@ const Pricing = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-[#374151] mb-2">
-                        State
+                        State *
                       </label>
-                      <input
-                        type="text"
+                      <select
+                        required
                         value={customerState}
                         onChange={(e) => setCustomerState(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
-                        placeholder="Enter your state"
-                      />
+                        className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none bg-white"
+                      >
+                        <option value="" disabled>Select state</option>
+                        {INDIAN_STATES.map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
@@ -466,9 +495,15 @@ const Pricing = () => {
                         type="text"
                         required
                         value={customerPincode}
-                        onChange={(e) => setCustomerPincode(e.target.value)}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, "");
+                          if (v.length <= 6) setCustomerPincode(v);
+                        }}
+                        pattern="[0-9]{6}"
+                        title="Please enter a valid 6-digit pincode"
                         className="w-full px-4 py-3 rounded-lg border border-[#D1D5DB] focus:ring-2 focus:ring-[#FFC21A] focus:border-transparent outline-none"
-                        placeholder="Enter your pincode"
+                        placeholder="Enter 6-digit pincode"
+                        maxLength={6}
                       />
                     </div>
                   </>
