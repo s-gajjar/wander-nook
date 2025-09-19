@@ -31,31 +31,6 @@ function getProvinceCode(state: string): string {
   return stateCodes[state] || state.substring(0, 2).toUpperCase();
 }
 
-
-// Helper function to validate and format phone number for Shopify
-function formatPhoneForShopify(phone: string): string {
-  // Remove all non-digit characters
-  const digits = phone.replace(/\D/g, '');
-  
-  // If it starts with 91 and has 12 digits, it's already formatted
-  if (digits.startsWith('91') && digits.length === 12) {
-    return `+${digits}`;
-  }
-  
-  // If it has 10 digits, assume it's Indian and add +91
-  if (digits.length === 10) {
-    return `+91${digits}`;
-  }
-  
-  // If it already starts with +, return as is
-  if (phone.startsWith('+')) {
-    return phone;
-  }
-  
-  // Default fallback
-  return phone;
-}
-
 // Helper function to create Shopify order for subscription
 async function createShopifyOrder(customerData: {
   name: string;
@@ -68,12 +43,6 @@ async function createShopifyOrder(customerData: {
   pincode?: string;
 }, shopifyCustomer: any, subscriptionId: string, planAmount: number) {
   try {
-    // Handle null customer case
-    if (!shopifyCustomer || !shopifyCustomer.id) {
-      console.error('❌ Cannot create Shopify order: No valid customer provided');
-      return null;
-    }
-
     const SHOPIFY_ADMIN_URL = `https://${process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN}/admin/api/${process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION}`;
     
     console.log('🔍 DEBUG: Creating Shopify order for subscription:', subscriptionId);
@@ -144,7 +113,7 @@ async function createShopifyOrder(customerData: {
             country: 'India',
             country_code: 'IN',
             province_code: getProvinceCode(customerData.state || ''),
-            phone: formatPhoneForShopify(customerData.phone)
+            phone: customerData.phone
           },
           billing_address: {
             first_name: customerData.name.split(' ')[0] || customerData.name,
@@ -156,7 +125,7 @@ async function createShopifyOrder(customerData: {
             country: 'India',
             country_code: 'IN',
             province_code: getProvinceCode(customerData.state || ''),
-            phone: formatPhoneForShopify(customerData.phone),
+            phone: customerData.phone,
             email: customerData.email
           },
           // Ensure Shopify registers shipping by adding a zero-cost shipping line
@@ -288,7 +257,7 @@ async function createShopifyCustomer(customerData: {
         first_name: customerData.name.split(' ')[0] || customerData.name,
         last_name: customerData.name.split(' ').slice(1).join(' ') || '',
         email: customerData.email,
-        phone: formatPhoneForShopify(customerData.phone),
+        phone: customerData.phone,
         tags: `subscription,razorpay,${customerData.planType}`,
         note: `Subscribed to ${customerData.planType} via Razorpay`,
         verified_email: true,
@@ -305,7 +274,7 @@ async function createShopifyCustomer(customerData: {
             province_code: getProvinceCode(customerData.state || ''),
             first_name: customerData.name.split(' ')[0] || customerData.name,
             last_name: customerData.name.split(' ').slice(1).join(' ') || '',
-            phone: formatPhoneForShopify(customerData.phone),
+            phone: customerData.phone,
             company: '',
             default: true,
           }]
@@ -609,27 +578,22 @@ export async function POST(req: NextRequest) {
         const planAmount = await getPlanAmount(planId);
         console.log('🔍 DEBUG: Plan amount for order:', planAmount);
 
-        // Create Shopify order for the subscription (only if customer was created successfully)
-        let shopifyOrder = null;
-        if (shopifyCustomer && shopifyCustomer.id) {
-          shopifyOrder = await createShopifyOrder(
-            {
-              name: customerName,
-              email: customerEmail,
-              phone: customerPhone,
-              planType,
-              address: deliveryAddress,
-              city,
-              state,
-              pincode,
-            },
-            shopifyCustomer,
-            subscription.id,
-            planAmount
-          );
-        } else {
-          console.log('⚠️ DEBUG: Skipping Shopify order creation due to customer creation failure');
-        }
+        // Create Shopify order for the subscription
+        const shopifyOrder = await createShopifyOrder(
+          {
+            name: customerName,
+            email: customerEmail,
+            phone: customerPhone,
+            planType,
+            address: deliveryAddress,
+            city,
+            state,
+            pincode,
+          },
+          shopifyCustomer,
+          subscription.id,
+          planAmount
+        );
 
         console.log('🔍 DEBUG: Shopify order creation result:', shopifyOrder ? 'Success' : 'Failed');
 
