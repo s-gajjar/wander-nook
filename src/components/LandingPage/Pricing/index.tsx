@@ -17,6 +17,7 @@ const Pricing = () => {
   const [loading, setLoading] = useState(false);
   const [isTestMode, setIsTestMode] = useState(false);
   const [countryCode, setCountryCode] = useState("+91");
+  const [redirecting, setRedirecting] = useState(false);
 
   // Customer form fields
   const [customerName, setCustomerName] = useState("");
@@ -156,7 +157,17 @@ const Pricing = () => {
         ? window.open("about:blank", "_blank")
         : null;
 
+    let subscriptionResponse: any = null;
     try {
+      // Show loaders immediately to avoid initial white flash
+      setRedirecting(true);
+      if (preOpenedTab) {
+        try {
+          preOpenedTab.document.open();
+          preOpenedTab.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Redirecting…</title><style>html,body{height:100%;margin:0;background:#0b0b0b;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif} .wrap{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px} .spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#FFC21A;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="wrap"><div class="spinner"></div><div>Taking you to secure payment…</div></div></body></html>`);
+          preOpenedTab.document.close();
+        } catch {}
+      }
       console.log("Creating Razorpay subscription with plan:", selectedPlan.razorpayPlanId);
 
       // Combine country code and contact number
@@ -177,31 +188,39 @@ const Pricing = () => {
 
       console.log("📞 DEBUG: Full phone number being sent:", fullPhoneNumber);
 
-      const response = await axios.post("/api/razorpay?action=create-subscription", subscriptionPayload);
+      subscriptionResponse = await axios.post("/api/razorpay?action=create-subscription", subscriptionPayload);
 
-      if (response?.status === 200 && response.data.success) {
-        console.log("Subscription response:", response.data);
+      if (subscriptionResponse?.status === 200 && subscriptionResponse.data.success) {
+        console.log("Subscription response:", subscriptionResponse.data);
 
-        if (response.data.shortUrl) {
+        if (subscriptionResponse.data.shortUrl) {
           toast.success("✅ Redirecting to payment...");
-          if (response.data.shopifyCustomer) {
+          if (subscriptionResponse.data.shopifyCustomer) {
             toast.success("✅ Customer created in Shopify!");
           }
           setOpenCustomerForm(false);
 
           if (preOpenedTab) {
-            preOpenedTab.location.href = response.data.shortUrl;
+            try {
+              // Show a lightweight loader in the new tab before redirect to avoid white flash
+              preOpenedTab.document.open();
+              preOpenedTab.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Redirecting…</title><style>html,body{height:100%;margin:0;background:#0b0b0b;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif} .wrap{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px} .spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#FFC21A;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}</style></head><body><div class="wrap"><div class="spinner"></div><div>Taking you to secure payment…</div></div></body></html>`);
+              preOpenedTab.document.close();
+            } catch {}
+            preOpenedTab.location.href = subscriptionResponse.data.shortUrl;
           } else {
-            window.location.href = response.data.shortUrl;
+            // Fallback: keep showing overlay on current tab until navigation happens
+            window.location.href = subscriptionResponse.data.shortUrl;
           }
         } else {
           toast.error("❌ Failed to create subscription. Please try again.");
           preOpenedTab?.close();
         }
       } else {
-        console.error("Subscription failed:", response.data);
+        console.error("Subscription failed:", subscriptionResponse?.data);
         toast.error("❌ Subscription failed. Please try again.");
         preOpenedTab?.close();
+        setRedirecting(false);
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -211,8 +230,13 @@ const Pricing = () => {
       }
       toast.error("❌ Subscription failed. Please try again.");
       preOpenedTab?.close();
+      setRedirecting(false);
     } finally {
       setLoading(false);
+      // If redirect began we keep overlay; otherwise ensure it's off
+      setTimeout(() => {
+        if (!subscriptionResponse?.data?.shortUrl) setRedirecting(false);
+      }, 0);
     }
   };
 
@@ -264,6 +288,14 @@ const Pricing = () => {
       id="pricing"
       className="container mx-auto py-12 bg-white flex flex-col items-center justify-center relative overflow-hidden"
     >
+      {redirecting && (
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-white">
+            <div className="w-10 h-10 border-4 border-white/30 border-t-[#FFC21A] rounded-full animate-spin"></div>
+            <div className="text-sm">Redirecting to secure payment…</div>
+          </div>
+        </div>
+      )}
       <div className="md:w-[750px] w-full px-4 mt-4">
         <h2 className="md:text-[42px] text-[28px] text-center leading-[34px] md:leading-[50px] text-[var(--font-black-shade-1)] font-semibold ">
           Choose your Subscription package
