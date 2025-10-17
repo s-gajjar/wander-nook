@@ -26,11 +26,12 @@ const HomePage = () => {
           muted
           loop
           playsInline
-          className="w-full h-full object-cover opacity-30"
+          className="w-full h-full object-cover opacity-20"
           poster="/svgs/heroSection.png"
         >
-          {/* Using your actual video file */}
-          <source src="/video.mp4" type="video/mp4" />
+          {/* Add your video sources here */}
+          <source src="/videos/hero-video.mp4" type="video/mp4" />
+          <source src="/videos/hero-video.webm" type="video/webm" />
           {/* Fallback image if video doesn't load */}
           <Image
             src={heroSection}
@@ -40,7 +41,7 @@ const HomePage = () => {
           />
         </video>
         {/* Overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute inset-0 bg-black/20"></div>
       </div>
 
       <div className="container mx-auto relative overflow-hidden">

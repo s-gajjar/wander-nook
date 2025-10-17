@@ -63,8 +63,7 @@ const Pricing = () => {
       ],
       price: {
         currency: "INR",
-        originalAmount: "2400",
-        amount: "2200",
+        amount: "2400",
         period: "/yr",
       },
       button: {
@@ -330,7 +329,7 @@ const Pricing = () => {
               ))}
             </ul>
             <div className="mb-8">
-              {card.price.originalAmount ? (
+              {'originalAmount' in card.price ? (
                 <div className="flex items-baseline gap-2">
                   <span className="text-sm">{card.price.currency}</span>
                   <span className="text-4xl font-bold">
@@ -338,7 +337,7 @@ const Pricing = () => {
                   </span>
                   <span className="text-sm">{card.price.period}</span>
                   <span className="text-lg line-through ml-2">
-                    {card.price.originalAmount}
+                    {(card.price as any).originalAmount}
                   </span>
                 </div>
               ) : (

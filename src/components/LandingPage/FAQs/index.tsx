@@ -46,7 +46,7 @@ const faqData = [
         <p>We offer two subscription options:</p>
         <ul className="list-disc ml-6 mt-2">
           <li>
-            <b>Print Edition:</b> INR 2,200 per year (originally INR 2,400)
+            <b>Print Edition:</b> INR 2,400 per year
             <ul className="list-disc ml-6">
               <li>24 newspapers delivered fortnightly</li>
               <li>Printables included</li>

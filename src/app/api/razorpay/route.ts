@@ -220,7 +220,7 @@ async function getPlanAmount(planId: string): Promise<number> {
   } catch (error) {
     console.error('❌ Failed to fetch plan amount:', error);
     // Fallback amounts based on plan type
-    return planId.includes('print') ? 220000 : 150000; // Default amounts in paise
+    return planId.includes('print') ? 240000 : 150000; // Default amounts in paise
   }
 }
 
