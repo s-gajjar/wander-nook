@@ -48,14 +48,16 @@ const faqData = [
           <li>
             <b>Print Edition:</b> INR 2,400 per year
             <ul className="list-disc ml-6">
-              <li>24 newspapers delivered fortnightly</li>
+              <li>24 newspapers in a year</li>
+              <li>Delivered fortnightly</li>
               <li>Printables included</li>
             </ul>
           </li>
           <li className="mt-2">
             <b>Digital Edition:</b> INR 1,500 per year
             <ul className="list-disc ml-6">
-              <li>24 newspapers emailed fortnightly</li>
+              <li>24 newspapers in a year</li>
+              <li>Emailed fortnightly</li>
               <li>Printables included</li>
             </ul>
           </li>

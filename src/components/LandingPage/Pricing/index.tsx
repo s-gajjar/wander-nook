@@ -57,7 +57,8 @@ const Pricing = () => {
       border: false,
       features: [
         "1 year",
-        "24 newspapers delivered fortnightly",
+        "24 newspapers in a year",
+        "Delivered fortnightly",
         "Printables",
       ],
       price: {
@@ -82,7 +83,8 @@ const Pricing = () => {
       border: true,
       features: [
         "1 Year",
-        "24 newspapers emailed fortnightly",
+        "24 newspapers in a year",
+        "Emailed fortnightly",
         "Printables",
       ],
       price: {
