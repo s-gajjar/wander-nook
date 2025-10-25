@@ -59,7 +59,6 @@ const Pricing = () => {
         "1 year",
         "24 newspapers delivered fortnightly",
         "Printables",
-        "1 travel journal",
       ],
       price: {
         currency: "INR",
@@ -85,7 +84,6 @@ const Pricing = () => {
         "1 Year",
         "24 newspapers emailed fortnightly",
         "Printables",
-        "1 travel journal",
       ],
       price: {
         currency: "INR",

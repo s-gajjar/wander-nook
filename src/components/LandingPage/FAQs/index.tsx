@@ -50,7 +50,6 @@ const faqData = [
             <ul className="list-disc ml-6">
               <li>24 newspapers delivered fortnightly</li>
               <li>Printables included</li>
-              <li>1 travel journal</li>
             </ul>
           </li>
           <li className="mt-2">
@@ -58,7 +57,6 @@ const faqData = [
             <ul className="list-disc ml-6">
               <li>24 newspapers emailed fortnightly</li>
               <li>Printables included</li>
-              <li>1 travel journal</li>
             </ul>
           </li>
         </ul>
