@@ -74,7 +74,10 @@ export async function POST(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get("action");
 
-    if (action === "checkout") {
+    const isAutopayCheckout = action === "checkout";
+    const isOneTimeCheckout = action === "checkoutOneTime";
+
+    if (isAutopayCheckout || isOneTimeCheckout) {
       const body = await request.json();
       const { items, checkoutMeta } = body as {
         items?: Array<{
@@ -114,35 +117,44 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const hasMissingSellingPlan = items.some(
-        (item) =>
-          !item?.sellingPlanId ||
-          typeof item.sellingPlanId !== "string" ||
-          item.sellingPlanId.trim().length === 0
-      );
-
-      if (hasMissingSellingPlan) {
-        return NextResponse.json(
-          {
-            message: "Autopay selling plan is required for checkout",
-          },
-          { status: 400 }
+      if (isAutopayCheckout) {
+        const hasMissingSellingPlan = items.some(
+          (item) =>
+            !item?.sellingPlanId ||
+            typeof item.sellingPlanId !== "string" ||
+            item.sellingPlanId.trim().length === 0
         );
+
+        if (hasMissingSellingPlan) {
+          return NextResponse.json(
+            {
+              message: "Autopay selling plan is required for checkout",
+            },
+            { status: 400 }
+          );
+        }
       }
 
-      const safeLines: CartLineInput[] = items.map((item) => ({
-        merchandiseId: item.merchandiseId!,
-        quantity: item.quantity!,
-        sellingPlanId: item.sellingPlanId!,
-        ...(item.attributes?.length
-          ? {
-              attributes: item.attributes.map((attribute) => ({
-                key: attribute.key,
-                value: attribute.value,
-              })),
-            }
-          : {}),
-      }));
+      const safeLines: CartLineInput[] = items.map((item) => {
+        const line: CartLineInput = {
+          merchandiseId: item.merchandiseId!,
+          quantity: item.quantity!,
+          ...(item.attributes?.length
+            ? {
+                attributes: item.attributes.map((attribute) => ({
+                  key: attribute.key,
+                  value: attribute.value,
+                })),
+              }
+            : {}),
+        };
+
+        if (isAutopayCheckout) {
+          line.sellingPlanId = item.sellingPlanId!;
+        }
+
+        return line;
+      });
 
       const safeCheckoutAttributes = Object.entries(checkoutMeta ?? {})
         .filter(
@@ -159,7 +171,14 @@ export async function POST(request: NextRequest) {
       const cartInput: CartCreateMutationVariables["input"] = {
         lines: safeLines,
         attributes: [
-          { key: "checkout_source", value: "wanderstamps-autopay" },
+          {
+            key: "checkout_source",
+            value: isAutopayCheckout ? "wanderstamps-autopay" : "wanderstamps-one-time",
+          },
+          {
+            key: "purchase_mode",
+            value: isAutopayCheckout ? "autopay" : "one-time",
+          },
           ...safeCheckoutAttributes,
         ],
       };

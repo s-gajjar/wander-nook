@@ -3,25 +3,30 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
+type PurchaseMode = "autopay" | "one-time";
+
 type PlanOption = {
   id: "monthly-autopay" | "annual-autopay";
   title: string;
   bgColor: string;
   textColor: string;
   border: boolean;
-  features: string[];
+  autopayFeatures: string[];
+  oneTimeFeatures: string[];
   price: {
     currency: "INR";
     amount: string;
     period: string;
   };
   button: {
-    text: string;
+    autopayText: string;
+    oneTimeText: string;
     bgColor: string;
     textColor: string;
   };
   durationLabel: string;
   durationMonths: number;
+  variantId: string;
 };
 
 type AutopayCustomerForm = {
@@ -63,6 +68,15 @@ type RazorpayCheckoutSuccessPayload = {
   razorpay_signature: string;
 };
 
+type ShopifyCheckoutResponse = {
+  checkout?: {
+    cartId?: string;
+    checkoutUrl?: string;
+  };
+  message?: string;
+  error?: string;
+};
+
 type RazorpayCheckoutOptions = {
   key: string;
   subscription_id: string;
@@ -94,18 +108,33 @@ declare global {
   }
 }
 
+const MONTHLY_VARIANT_ID =
+  process.env.NEXT_PUBLIC_MONTHLY_VARIANT_ID ||
+  process.env.NEXT_PUBLIC_SHOPIFY_VARIANT_ID2 ||
+  "";
+const ANNUAL_VARIANT_ID =
+  process.env.NEXT_PUBLIC_ANNUAL_VARIANT_ID ||
+  process.env.NEXT_PUBLIC_SHOPIFY_VARIANT_ID2 ||
+  "";
+
 const pricingData: PlanOption[] = [
   {
     id: "monthly-autopay",
-    title: "Monthly Autopay",
+    title: "Monthly",
     bgColor: "bg-purple-600",
     textColor: "text-white",
     border: false,
-    features: [
+    autopayFeatures: [
       "INR 200 billed every month",
       "Recurring for 36 months",
       "Same subscription benefits included",
       "Cancel as per policy",
+    ],
+    oneTimeFeatures: [
+      "INR 200 billed once",
+      "No recurring debit",
+      "Same subscription benefits included",
+      "Renew manually next month",
     ],
     price: {
       currency: "INR",
@@ -113,24 +142,32 @@ const pricingData: PlanOption[] = [
       period: "/month",
     },
     button: {
-      text: "Start Monthly Plan",
+      autopayText: "Start Monthly Plan",
+      oneTimeText: "Buy Monthly Once",
       bgColor: "bg-white",
       textColor: "text-purple-600",
     },
     durationLabel: "36 months",
     durationMonths: 36,
+    variantId: MONTHLY_VARIANT_ID,
   },
   {
     id: "annual-autopay",
-    title: "Annual Autopay",
+    title: "Annual",
     bgColor: "bg-white",
     textColor: "text-black",
     border: true,
-    features: [
+    autopayFeatures: [
       "INR 2400 billed every year",
       "Recurring for 5 years (60 months)",
       "Same subscription benefits included",
       "Cancel as per policy",
+    ],
+    oneTimeFeatures: [
+      "INR 2400 billed once",
+      "No recurring debit",
+      "Same subscription benefits included",
+      "Renew manually next year",
     ],
     price: {
       currency: "INR",
@@ -138,12 +175,14 @@ const pricingData: PlanOption[] = [
       period: "/year",
     },
     button: {
-      text: "Start Annual Plan",
+      autopayText: "Start Annual Plan",
+      oneTimeText: "Buy Annual Once",
       bgColor: "bg-orange-500",
       textColor: "text-white",
     },
     durationLabel: "5 years",
     durationMonths: 60,
+    variantId: ANNUAL_VARIANT_ID,
   },
 ];
 
@@ -159,6 +198,18 @@ const defaultAutopayForm: AutopayCustomerForm = {
   country: "India",
 };
 
+function toMerchandiseId(variantId: string) {
+  const trimmed = variantId.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("gid://shopify/ProductVariant/")) {
+    return trimmed;
+  }
+  if (/^\d+$/.test(trimmed)) {
+    return `gid://shopify/ProductVariant/${trimmed}`;
+  }
+  return null;
+}
+
 const Pricing = () => {
   const [openSample, setOpenSample] = useState(false);
   const [email, setEmail] = useState("");
@@ -173,7 +224,7 @@ const Pricing = () => {
   const [autopayForm, setAutopayForm] = useState<AutopayCustomerForm>(defaultAutopayForm);
   const [autopayLoading, setAutopayLoading] = useState(false);
   const [cardLoadingPlanId, setCardLoadingPlanId] = useState<PlanOption["id"] | null>(null);
-  const [autopayEnabled, setAutopayEnabled] = useState(true);
+  const [purchaseMode, setPurchaseMode] = useState<PurchaseMode>("autopay");
 
   const loadRazorpayScript = async () => {
     if (window.Razorpay) {
@@ -190,22 +241,66 @@ const Pricing = () => {
     });
   };
 
-  const handlePricingButtonClick = (id: PlanOption["id"]) => {
-    if (!autopayEnabled) {
-      toast.message("Autopay is currently turned off.");
+  const startOneTimeCheckout = async (plan: PlanOption) => {
+    const merchandiseId = toMerchandiseId(plan.variantId);
+    if (!merchandiseId) {
+      toast.error("One-time checkout is not configured for this plan yet.");
       return;
     }
+
+    try {
+      setCardLoadingPlanId(plan.id);
+
+      const response = await fetch("/api/shopify?action=checkoutOneTime", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: [
+            {
+              attributes: [],
+              quantity: 1,
+              merchandiseId,
+            },
+          ],
+          checkoutMeta: {
+            checkoutSource: "wanderstamps-one-time",
+            purchaseMode: "one-time",
+            selectedPlan: plan.id,
+          },
+        }),
+      });
+
+      const data = (await response.json().catch(() => null)) as ShopifyCheckoutResponse | null;
+      if (!response.ok || !data?.checkout?.checkoutUrl) {
+        throw new Error(data?.message || data?.error || "One-time checkout failed.");
+      }
+
+      toast.success("Redirecting to checkout...");
+      window.location.href = data.checkout.checkoutUrl;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "One-time checkout failed.");
+    } finally {
+      setCardLoadingPlanId(null);
+    }
+  };
+
+  const handlePricingButtonClick = async (id: PlanOption["id"]) => {
     const plan = pricingData.find((item) => item.id === id);
     if (!plan) {
       toast.error("Plan not found");
       return;
     }
 
-    setCardLoadingPlanId(id);
+    if (purchaseMode === "one-time") {
+      await startOneTimeCheckout(plan);
+      return;
+    }
+
     setSelectedPlan(plan);
     setOpenAutopayModal(true);
     setAutopayForm(defaultAutopayForm);
-    setCardLoadingPlanId(null);
   };
 
   const handleAutopayFieldChange = <K extends keyof AutopayCustomerForm>(
@@ -390,33 +485,36 @@ const Pricing = () => {
         <p className="mt-3 text-[var(--font-black-shade-1)] w-full text-[16px] md:text-[20px] font-normal leading-5 md:leading-6 text-center ">
           Find your perfect plan and embark on an exciting journey of discovery.
         </p>
-        <div className="mt-6 flex flex-col md:flex-row items-center justify-center gap-3">
-          <div className="inline-flex items-center gap-3 rounded-full border border-[#E7E3D2] bg-white px-4 py-2 shadow-sm">
-            <span className="text-sm font-medium text-[#2C2C2C]">Autopay</span>
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <div className="inline-flex items-center rounded-full border border-[#E7E3D2] bg-white p-1 shadow-sm">
             <button
               type="button"
-              onClick={() => setAutopayEnabled((prev) => !prev)}
-              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                autopayEnabled ? "bg-[#6A43D7]" : "bg-[#E5E7EB]"
+              onClick={() => setPurchaseMode("autopay")}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+                purchaseMode === "autopay"
+                  ? "bg-[#6A43D7] text-white"
+                  : "text-[#4B5563] hover:bg-[#F5F3FF]"
               }`}
-              aria-pressed={autopayEnabled}
-              aria-label="Toggle autopay"
             >
-              <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                  autopayEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
+              Autopay
             </button>
-            <span className="text-xs text-[#5F6368]">
-              {autopayEnabled ? "On" : "Off"}
-            </span>
+            <button
+              type="button"
+              onClick={() => setPurchaseMode("one-time")}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+                purchaseMode === "one-time"
+                  ? "bg-[#2C2C2C] text-white"
+                  : "text-[#4B5563] hover:bg-[#F3F4F6]"
+              }`}
+            >
+              One-time
+            </button>
           </div>
-          {!autopayEnabled && (
-            <span className="text-xs text-[#6B7280]">
-              Autopay is turned off. Turn it on to start a subscription.
-            </span>
-          )}
+          <span className="text-xs text-[#6B7280] text-center">
+            {purchaseMode === "autopay"
+              ? "Recurring billing is enabled by default."
+              : "One-time billing selected. No automatic renewal."}
+          </span>
         </div>
         <p className="mt-6 text-center text-[15px] md:text-[16px] leading-5 md:leading-6">
           To view a sample PRINT edition,{" "}
@@ -435,52 +533,58 @@ const Pricing = () => {
             key={card.id}
             className={`${card.bgColor} ${
               card.textColor
-            } rounded-2xl p-8 md:w-[372px] h-[444px] ${
+            } rounded-2xl p-8 md:w-[372px] w-full max-w-[372px] min-h-[520px] flex flex-col ${
               card.border ? "border border-[#2C2C2C]" : ""
             }`}
           >
             <h3 className="md:text-[28px] leading-7 text-[24px] md:leading-[33px] font-semibold mb-2">
-              {card.title.replace(" Autopay", "")}
+              {card.title}
             </h3>
-            <p className="text-xs uppercase tracking-[0.2em] opacity-70 mb-4">Recurring</p>
-            <ul className="space-y-3 ml-4 mb-8">
-              {card.features.map((feature, index) => (
+            <p className="text-xs uppercase tracking-[0.2em] opacity-70 mb-4">
+              {purchaseMode === "autopay" ? "Recurring" : "One-time"}
+            </p>
+            <ul className="space-y-3 mb-8 flex-1">
+              {(purchaseMode === "autopay" ? card.autopayFeatures : card.oneTimeFeatures).map(
+                (feature, index) => (
                 <li
                   key={index + 1}
-                  className="flex text-[16px] md:text-[20px] leading-[18px] md:leading-[24px] font-normal items-center"
+                  className="flex text-[16px] md:text-[20px] leading-[22px] md:leading-[28px] font-normal items-start"
                 >
-                  <span className="w-2 h-2 bg-current rounded-full mr-3"></span>
-                  {feature}
+                  <span className="mt-2 w-2 h-2 bg-current rounded-full mr-3 shrink-0"></span>
+                  <span>{feature}</span>
                 </li>
-              ))}
+                )
+              )}
             </ul>
-            <div className="mb-8">
+            <div className="mt-auto">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm">{card.price.currency}</span>
                 <span className="text-4xl font-bold">{card.price.amount}</span>
-                <span className="text-sm">{card.price.period}</span>
+                <span className="text-sm">
+                  {purchaseMode === "autopay" ? card.price.period : "/one-time"}
+                </span>
               </div>
+              <button
+                className={`${card.button.bgColor} ${card.button.textColor} cursor-pointer w-full py-3 px-6 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity mt-8 ${
+                  cardLoadingPlanId === card.id ? "opacity-70 cursor-not-allowed" : ""
+                }`}
+                onClick={() => void handlePricingButtonClick(card.id)}
+                disabled={cardLoadingPlanId === card.id}
+              >
+                {cardLoadingPlanId === card.id
+                  ? purchaseMode === "autopay"
+                    ? "Opening..."
+                    : "Redirecting..."
+                  : purchaseMode === "autopay"
+                  ? card.button.autopayText
+                  : card.button.oneTimeText}
+              </button>
+              <p className="text-xs mt-2 text-center opacity-75 min-h-[16px]">
+                {purchaseMode === "autopay"
+                  ? `Recurring for ${card.durationLabel}`
+                  : "One-time payment. No automatic renewal."}
+              </p>
             </div>
-            <button
-              className={`${card.button.bgColor} ${card.button.textColor} cursor-pointer w-full py-3 px-6 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity ${
-                cardLoadingPlanId === card.id || !autopayEnabled
-                  ? "opacity-70 cursor-not-allowed"
-                  : ""
-              }`}
-              onClick={() => handlePricingButtonClick(card.id)}
-              disabled={cardLoadingPlanId === card.id || !autopayEnabled}
-            >
-              {cardLoadingPlanId === card.id
-                ? "Opening..."
-                : autopayEnabled
-                ? card.button.text.replace("Autopay", "").replace("Plan", "Plan")
-                : "Autopay Off"}
-            </button>
-            <p className="text-xs mt-2 text-center opacity-75">
-              {autopayEnabled
-                ? `Autopay enabled for ${card.durationLabel}`
-                : "Autopay is turned off"}
-            </p>
           </div>
         ))}
       </div>
