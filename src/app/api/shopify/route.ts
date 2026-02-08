@@ -6,6 +6,7 @@ import {
   // getSellingPlans,
 } from "@/src/lib/shopify-client";
 import { CartCreateMutationVariables } from "@/src/types/storefront.generated";
+import type { CartLineInput } from "@/src/types/storefront.types";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -129,6 +130,20 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const safeLines: CartLineInput[] = items.map((item) => ({
+        merchandiseId: item.merchandiseId!,
+        quantity: item.quantity!,
+        sellingPlanId: item.sellingPlanId!,
+        ...(item.attributes?.length
+          ? {
+              attributes: item.attributes.map((attribute) => ({
+                key: attribute.key,
+                value: attribute.value,
+              })),
+            }
+          : {}),
+      }));
+
       const safeCheckoutAttributes = Object.entries(checkoutMeta ?? {})
         .filter(
           ([key, value]) =>
@@ -142,7 +157,7 @@ export async function POST(request: NextRequest) {
         }));
 
       const cartInput: CartCreateMutationVariables["input"] = {
-        lines: items,
+        lines: safeLines,
         attributes: [
           { key: "checkout_source", value: "wanderstamps-autopay" },
           ...safeCheckoutAttributes,
