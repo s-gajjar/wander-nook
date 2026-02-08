@@ -140,7 +140,8 @@ export async function getSellingPlans() {
       throw new Error(`Failed to fetch selling plans: ${errors.message}`);
     }
 
-    return data?.sellingPlanGroups?.edges?.map(edge => edge.node) || [];
+    const edges = (data?.sellingPlanGroups?.edges ?? []) as Array<{ node: unknown }>;
+    return edges.map((edge) => edge.node);
   } catch (error) {
     console.error("Failed to fetch selling plans", error);
     throw error;

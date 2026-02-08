@@ -12,6 +12,13 @@ type PlanInput = {
   discountPercent?: number;
 };
 
+type SellingPlanEdge = {
+  node: {
+    id: string;
+    name: string;
+  };
+};
+
 function toGid(id: string) {
   if (id.startsWith("gid://")) return id;
   return `gid://shopify/ProductVariant/${id}`;
@@ -130,7 +137,10 @@ export async function POST(req: NextRequest) {
     }
 
     const group = data?.data?.sellingPlanGroupCreate?.sellingPlanGroup;
-    const ids = (group?.sellingPlans?.edges || []).map((e: any) => ({ id: e.node.id, name: e.node.name }));
+    const ids = ((group?.sellingPlans?.edges || []) as SellingPlanEdge[]).map((e) => ({
+      id: e.node.id,
+      name: e.node.name,
+    }));
 
     return NextResponse.json({ groupId: group?.id, plans: ids });
   } catch (e) {

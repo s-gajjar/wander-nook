@@ -3,6 +3,13 @@
 import { useEffect, useState } from "react";
 import { useUploadThing } from "@/src/utils/uploadthing";
 
+type UploadResultItem = {
+  url?: string;
+  serverData?: {
+    url?: string;
+  };
+};
+
 export default function NewBlogAdminPage() {
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -24,11 +31,19 @@ export default function NewBlogAdminPage() {
   const [sectionProgressByIndex, setSectionProgressByIndex] = useState<Record<number, number>>({});
 
   const coverUploader = useUploadThing("blogImage", {
-    onUploadProgress: ({ progress }) => setCoverProgress(Math.round(progress || 0)),
+    onUploadProgress: (progress) => setCoverProgress(Math.round(Number(progress) || 0)),
   });
   const sectionUploader = useUploadThing("blogImage", {
-    onUploadProgress: ({ progress }) => {
-      // handled inline per index when called
+    onUploadProgress: (progress) => {
+      setSectionProgressByIndex((prev) => {
+        if (sectionUploadingIndex === null) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [sectionUploadingIndex]: Math.round(Number(progress) || 0),
+        };
+      });
     },
   });
 
@@ -76,7 +91,7 @@ export default function NewBlogAdminPage() {
   async function uploadWithProgress(file: File, setPct: (v: number) => void) {
     const compressed = await compressImage(file);
     const res = await coverUploader.startUpload([compressed]).catch(() => null);
-    const first = res?.[0] as any;
+    const first = res?.[0] as UploadResultItem | undefined;
     const url = first?.serverData?.url || first?.url;
     if (!url) throw new Error("No URL returned from upload endpoint");
     setPct(100);
@@ -251,11 +266,11 @@ export default function NewBlogAdminPage() {
                       const file = e.target.files?.[0];
                       if (file) {
                         setSectionUploadingIndex(index);
-                        setSectionProgressByIndex((p) => ({ ...p, [index]: 0 }));
+                          setSectionProgressByIndex((p) => ({ ...p, [index]: 0 }));
                         try {
                           const compressed = await compressImage(file);
                           const res = await sectionUploader.startUpload([compressed]);
-                          const first = res?.[0] as any;
+                          const first = res?.[0] as UploadResultItem | undefined;
                           const url = first?.serverData?.url || first?.url;
                           if (!url) throw new Error("No URL returned from upload endpoint");
                           updateSection(index, "imageUrl", url);
