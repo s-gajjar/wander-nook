@@ -75,7 +75,16 @@ export async function POST(request: NextRequest) {
 
     if (action === "checkout") {
       const body = await request.json();
-      const { items } = body;
+      const { items, checkoutMeta } = body as {
+        items?: Array<{
+          attributes?: Array<{ key: string; value: string }>;
+          quantity?: number;
+          merchandiseId?: string;
+          sellingPlanId?: string;
+        }>;
+        checkoutMeta?: Record<string, unknown>;
+      };
+
       if (!items || !Array.isArray(items) || items?.length === 0) {
         return NextResponse.json(
           {
@@ -85,17 +94,88 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const hasInvalidLines = items.some(
+        (item) =>
+          !item?.merchandiseId ||
+          typeof item.merchandiseId !== "string" ||
+          !item.merchandiseId.startsWith("gid://shopify/ProductVariant/") ||
+          !item?.quantity ||
+          typeof item.quantity !== "number" ||
+          item.quantity < 1
+      );
+
+      if (hasInvalidLines) {
+        return NextResponse.json(
+          {
+            message: "Invalid line items provided for checkout",
+          },
+          { status: 400 }
+        );
+      }
+
+      const hasMissingSellingPlan = items.some(
+        (item) =>
+          !item?.sellingPlanId ||
+          typeof item.sellingPlanId !== "string" ||
+          item.sellingPlanId.trim().length === 0
+      );
+
+      if (hasMissingSellingPlan) {
+        return NextResponse.json(
+          {
+            message: "Autopay selling plan is required for checkout",
+          },
+          { status: 400 }
+        );
+      }
+
+      const safeCheckoutAttributes = Object.entries(checkoutMeta ?? {})
+        .filter(
+          ([key, value]) =>
+            key.trim().length > 0 &&
+            ["string", "number", "boolean"].includes(typeof value)
+        )
+        .slice(0, 20)
+        .map(([key, value]) => ({
+          key: key.slice(0, 255),
+          value: String(value).slice(0, 255),
+        }));
+
       const cartInput: CartCreateMutationVariables["input"] = {
         lines: items,
+        attributes: [
+          { key: "checkout_source", value: "wanderstamps-autopay" },
+          ...safeCheckoutAttributes,
+        ],
       };
 
       const cart = await createCheckout(cartInput);
+
+      if ((cart?.cartCreate?.userErrors?.length ?? 0) > 0) {
+        return NextResponse.json(
+          {
+            message: cart?.cartCreate?.userErrors?.[0]?.message ?? "Checkout failed",
+            errors: cart?.cartCreate?.userErrors ?? [],
+          },
+          { status: 400 }
+        );
+      }
+
       const checkout = {
         cartId: cart?.cartCreate?.cart?.id,
         checkoutUrl: cart?.cartCreate?.cart?.checkoutUrl,
         totalQuantity: cart?.cartCreate?.cart?.totalQuantity,
         cost: cart?.cartCreate?.cart?.cost,
       };
+
+      if (!checkout.cartId || !checkout.checkoutUrl) {
+        return NextResponse.json(
+          {
+            message: "Checkout session could not be created",
+          },
+          { status: 500 }
+        );
+      }
 
       return NextResponse.json({
         checkout,

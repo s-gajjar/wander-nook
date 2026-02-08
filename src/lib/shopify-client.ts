@@ -80,6 +80,10 @@ export async function createCheckout(
       throw new Error(`"Failed to create cart to Shopify: ${errors.message}`);
     }
 
+    if ((data?.cartCreate?.userErrors?.length ?? 0) > 0) {
+      throw new Error(data?.cartCreate?.userErrors?.[0]?.message ?? "Failed to create cart");
+    }
+
     return data;
   } catch (error) {
     console.error("Failed to create cart to Shopify", error);
