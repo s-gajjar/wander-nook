@@ -46,19 +46,17 @@ const faqData = [
         <p>We offer two subscription options:</p>
         <ul className="list-disc ml-6 mt-2">
           <li>
-            <b>Print Edition:</b> INR 2,200 per year (originally INR 2,400)
+            <b>Monthly Autopay:</b> INR 200 every month
             <ul className="list-disc ml-6">
-              <li>24 newspapers delivered fortnightly</li>
-              <li>Printables included</li>
-              <li>1 travel journal</li>
+              <li>Recurring for 36 months</li>
+              <li>Auto-debited each month</li>
             </ul>
           </li>
           <li className="mt-2">
-            <b>Digital Edition:</b> INR 1,500 per year
+            <b>Annual Autopay:</b> INR 2,400 every year
             <ul className="list-disc ml-6">
-              <li>24 newspapers emailed fortnightly</li>
-              <li>Printables included</li>
-              <li>1 travel journal</li>
+              <li>Recurring for 5 years (60 months total)</li>
+              <li>Auto-debited each year</li>
             </ul>
           </li>
         </ul>
@@ -78,8 +76,8 @@ const faqData = [
           <b>1st and 16th of every month</b>
           via courier/registered post. Delivery usually takes{" "}
           <b>up to 7 working days</b> from the dispatch date. Digital
-          subscriptions are emailed on the same schedule. Both subscriptions are
-          set to auto-renew monthly for your convenience.
+          subscriptions are emailed on the same schedule. Billing follows the
+          selected autopay option: monthly (36 months) or annual (5 years).
         </p>
       </div>
     ),
@@ -110,8 +108,8 @@ const faqData = [
           subscription, email us at <b>contact@wandernook.in</b>.
         </p>
         <p className="mt-2">
-          Both subscription types are set to auto-renew every month for
-          convenience.
+          Monthly plans auto-renew monthly for 36 months and annual plans
+          auto-renew yearly for 5 years unless cancelled per policy.
         </p>
       </div>
     ),

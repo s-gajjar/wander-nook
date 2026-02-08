@@ -3,6 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 const SHOPIFY_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN || "";
 const ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || "";
 
+type PlanInput = {
+  name: string;
+  interval: "DAY" | "WEEK" | "MONTH" | "YEAR";
+  intervalCount: number;
+  maxCycles?: number;
+  minCycles?: number;
+  discountPercent?: number;
+};
+
 function toGid(id: string) {
   if (id.startsWith("gid://")) return id;
   return `gid://shopify/ProductVariant/${id}`;
@@ -19,8 +28,20 @@ export async function POST(req: NextRequest) {
       groupName = "Wander Nook Subscriptions",
       variantIds = [],
       plans = [
-        { name: "Print Edition Annual", interval: "YEAR", intervalCount: 1, discountPercent: 0 },
-        { name: "Digital Edition Annual", interval: "YEAR", intervalCount: 1, discountPercent: 0 },
+        {
+          name: "Monthly Autopay - INR 200",
+          interval: "MONTH",
+          intervalCount: 1,
+          maxCycles: 36,
+          discountPercent: 0,
+        },
+        {
+          name: "Annual Autopay - INR 2400",
+          interval: "YEAR",
+          intervalCount: 1,
+          maxCycles: 5,
+          discountPercent: 0,
+        },
       ],
       description = "Auto-created by API",
     } = body || {};
@@ -32,45 +53,64 @@ export async function POST(req: NextRequest) {
     const gidVariants = variantIds.map((v: string) => toGid(v));
 
     const mutation = `#graphql
-      mutation sellingPlanGroupCreate($input: SellingPlanGroupInput!) {
-        sellingPlanGroupCreate(input: $input) {
+      mutation sellingPlanGroupCreate(
+        $input: SellingPlanGroupInput!,
+        $resources: SellingPlanGroupResourceInput
+      ) {
+        sellingPlanGroupCreate(input: $input, resources: $resources) {
           sellingPlanGroup { id name sellingPlans(first: 10) { edges { node { id name } } } }
           userErrors { field message }
         }
       }
     `;
 
-    const sellingPlans = plans.map((p: any) => ({
-      name: p.name,
-      options: ["Delivery every"],
-      billingPolicy: {
-        recurring: {
-          interval: p.interval,
-          intervalCount: p.intervalCount,
+    const sellingPlansToCreate = (plans as PlanInput[]).map((p) => {
+      const billingRecurringPolicy = {
+        interval: p.interval,
+        intervalCount: p.intervalCount,
+        ...(typeof p.maxCycles === "number" ? { maxCycles: p.maxCycles } : {}),
+        ...(typeof p.minCycles === "number" ? { minCycles: p.minCycles } : {}),
+      };
+
+      const deliveryRecurringPolicy = {
+        interval: p.interval,
+        intervalCount: p.intervalCount,
+      };
+
+      return {
+        name: p.name,
+        options: [p.name],
+        category: "SUBSCRIPTION",
+        billingPolicy: {
+          recurring: billingRecurringPolicy,
         },
-      },
-      deliveryPolicy: { recurring: { interval: p.interval, intervalCount: p.intervalCount } },
-      pricingPolicies: p.discountPercent && p.discountPercent > 0 ? [
-        {
-          fixed: null,
-          recurring: {
-            adjustmentType: "PERCENTAGE",
-            adjustmentValue: { percentage: p.discountPercent },
-          },
-        },
-      ] : [],
-    }));
+        deliveryPolicy: { recurring: deliveryRecurringPolicy },
+        pricingPolicies:
+          p.discountPercent && p.discountPercent > 0
+            ? [
+                {
+                  fixed: null,
+                  recurring: {
+                    adjustmentType: "PERCENTAGE",
+                    adjustmentValue: { percentage: p.discountPercent },
+                  },
+                },
+              ]
+            : [],
+      };
+    });
 
     const input = {
       name: groupName,
       description,
-      merchantCode: "wander-nook",
+      merchantCode: "wander-nook-autopay",
       position: 1,
-      sellingPlans,
-      resourceSelection: {
-        resources: gidVariants.map((id: string) => ({ id })),
-        selectionType: "INCLUDE",
-      },
+      options: ["Billing frequency"],
+      sellingPlansToCreate,
+    };
+
+    const resources = {
+      productVariantIds: gidVariants,
     };
 
     const res = await fetch(`https://${SHOPIFY_DOMAIN}/admin/api/2025-07/graphql.json`, {
@@ -79,7 +119,7 @@ export async function POST(req: NextRequest) {
         "X-Shopify-Access-Token": ADMIN_TOKEN,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query: mutation, variables: { input } }),
+      body: JSON.stringify({ query: mutation, variables: { input, resources } }),
     });
 
     const data = await res.json();

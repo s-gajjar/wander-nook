@@ -1,7 +1,9 @@
 # Shopify Autopay/Subscription Setup Guide
 
 ## Overview
-This implementation uses Shopify's native Subscriptions API to enable automatic recurring payments (autopay) for your subscription plans.
+This implementation uses Shopify selling plans to support two autopay options:
+- Monthly recurring payment: INR 200 for 36 months
+- Annual recurring payment: INR 2400 for 5 years (60 months total)
 
 ## Prerequisites
 1. Shopify Plus or Shopify Advanced plan (required for native subscriptions)
@@ -14,41 +16,47 @@ This implementation uses Shopify's native Subscriptions API to enable automatic 
 Add these to your `.env` file:
 
 ```bash
-# Existing variables
+# Required Shopify variables
 NEXT_PUBLIC_SHOPIFY_DOMAIN=your-store.myshopify.com
 NEXT_PUBLIC_SHOPIFY_STORE_FRONT_ACCESS_TOKEN=your_storefront_token
-NEXT_PUBLIC_SHOPIFY_VARIANT_ID1=your_digital_variant_id
-NEXT_PUBLIC_SHOPIFY_VARIANT_ID2=your_print_variant_id
-
-# New variables for autopay
 SHOPIFY_ADMIN_ACCESS_TOKEN=your_admin_access_token
-NEXT_PUBLIC_PRINT_SELLING_PLAN_ID=your_print_selling_plan_id
-NEXT_PUBLIC_DIGITAL_SELLING_PLAN_ID=your_digital_selling_plan_id
+SHOPIFY_WEBHOOK_SECRET=your_webhook_signing_secret
+
+# New autopay selling plans (recommended)
+NEXT_PUBLIC_MONTHLY_SELLING_PLAN_ID=gid://shopify/SellingPlan/...
+NEXT_PUBLIC_ANNUAL_SELLING_PLAN_ID=gid://shopify/SellingPlan/...
+
+# Optional dedicated variants for each billing mode
+NEXT_PUBLIC_MONTHLY_VARIANT_ID=your_variant_id
+NEXT_PUBLIC_ANNUAL_VARIANT_ID=your_variant_id
+
+# Optional backward-compat fallback (variant only)
+NEXT_PUBLIC_SHOPIFY_VARIANT_ID2=...
 ```
 
 ### 2. Create Selling Plans in Shopify Admin
 
-#### For Print Edition (Annual):
+#### Plan 1: Monthly Autopay (INR 200)
 1. Go to Shopify Admin → Products → Selling plans
 2. Create a new selling plan:
-   - Name: "Print Edition Annual"
-   - Description: "Annual subscription for print edition"
-   - Billing: Every 12 months
-   - Price adjustment: Set your discount (e.g., 8.33% off for annual)
-3. Copy the selling plan ID and add to `NEXT_PUBLIC_PRINT_SELLING_PLAN_ID`
+   - Name: "Monthly Autopay - INR 200"
+   - Billing: Every 1 month
+   - Max billing cycles: 36
+   - Price: INR 200 each cycle
+3. Copy the selling plan ID to `NEXT_PUBLIC_MONTHLY_SELLING_PLAN_ID`
 
-#### For Digital Edition (Annual):
+#### Plan 2: Annual Autopay (INR 2400)
 1. Create another selling plan:
-   - Name: "Digital Edition Annual" 
-   - Description: "Annual subscription for digital edition"
-   - Billing: Every 12 months
-   - Price adjustment: Set your discount
-2. Copy the selling plan ID and add to `NEXT_PUBLIC_DIGITAL_SELLING_PLAN_ID`
+   - Name: "Annual Autopay - INR 2400"
+   - Billing: Every 1 year
+   - Max billing cycles: 5
+   - Price: INR 2400 each cycle
+2. Copy the selling plan ID to `NEXT_PUBLIC_ANNUAL_SELLING_PLAN_ID`
 
 ### 3. Link Products to Selling Plans
-1. Go to your product variants in Shopify Admin
-2. For each variant, add the corresponding selling plan
-3. Set the selling plan pricing and discounts
+1. Open the product variant used for subscription checkout
+2. Attach both selling plans to that variant
+3. Confirm billing interval and cycle limits are correct
 
 ### 4. Get Admin Access Token
 1. Go to Shopify Admin → Apps → App and sales channel settings
@@ -60,56 +68,72 @@ NEXT_PUBLIC_DIGITAL_SELLING_PLAN_ID=your_digital_selling_plan_id
    - `write_orders`
    - `read_customers`
    - `write_customers`
-   - `read_subscriptions`
-   - `write_subscriptions`
-4. Copy the Admin API access token to `SHOPIFY_ADMIN_ACCESS_TOKEN`
+   - `write_purchase_options` (required to create/update selling plans via API)
+   - `write_own_subscription_contracts` (alternative required scope depending app type)
+   - Merchant user permission: `manage_orders_information`
+4. Copy values:
+   - Admin token to `SHOPIFY_ADMIN_ACCESS_TOKEN`
+   - Webhook secret to `SHOPIFY_WEBHOOK_SECRET`
+
+### 5. Configure Webhooks for Payment Guard
+1. In Shopify Admin webhook settings, create two webhooks:
+   - `orders/create`
+   - `orders/updated`
+2. Set destination URL to:
+   - `https://<your-domain>/api/shopify/webhooks/orders`
+3. Use the same signing secret value in `SHOPIFY_WEBHOOK_SECRET`
 
 ## How It Works
 
 ### Current Implementation
-- The pricing component now includes `sellingPlanId` in the checkout payload
-- When customers click "Get Everything!" or "Go Digital!", they're redirected to Shopify checkout
-- Shopify automatically handles the subscription creation and recurring billing
-- Customers will be charged automatically based on the selling plan frequency
+- Checkout only allows lines that include a `sellingPlanId` (autopay enforced)
+- The checkout request stores cart attributes to mark source as `wanderstamps-autopay`
+- Webhook verifies payment state on order events for autopay-tagged orders
+- If order is `pending`, `unpaid`, or `voided`, it is auto-cancelled via Admin API
+
+### Why this helps with unpaid confirmations
+- It prevents unpaid autopay orders from staying active in your order queue
+- It reduces seller-side false positives for unpaid orders
+- Shopify may still send default "order placed" notifications before cancellation depending on payment gateway behavior
 
 ### Features Enabled
 - ✅ Automatic recurring payments
-- ✅ Customer subscription management
-- ✅ Billing cycle management
-- ✅ Failed payment retry logic (handled by Shopify)
-- ✅ Customer portal for subscription management
+- ✅ Two billing choices (monthly and annual)
+- ✅ Enforced selling plan checkout
+- ✅ Unpaid autopay order auto-cancellation guard
 
 ### Customer Experience
-1. Customer clicks subscription button
+1. Customer chooses monthly or annual autopay option
 2. Redirected to Shopify checkout with subscription enabled
 3. Completes payment and subscription is created
-4. Shopify automatically charges them on the next billing cycle
+4. Shopify automatically charges them on the configured cycle
 5. Customer can manage subscription in their Shopify account
 
 ## Testing
 1. Use Shopify's test mode to test subscription creation
-2. Verify that selling plans are properly linked to products
-3. Test the checkout flow with test payment methods
-4. Confirm subscription appears in Shopify Admin
+2. Verify both plans appear and map correctly in checkout
+3. Simulate failed/incomplete payment and confirm order is auto-cancelled
+4. Complete successful payment and confirm order remains active
 
 ## Troubleshooting
 
 ### Common Issues:
 1. **"Selling plan not found"** - Verify selling plan IDs are correct
 2. **"Insufficient permissions"** - Check admin token permissions
-3. **"Subscription creation failed"** - Ensure products are linked to selling plans
+3. **Webhook 401** - Verify `SHOPIFY_WEBHOOK_SECRET` matches Shopify webhook secret
+4. **Order still appears confirmed without payment email-wise** - Review Shopify notification templates/payment gateway flow
 
 ### Debug Steps:
 1. Check browser console for API errors
 2. Verify environment variables are loaded
 3. Test API endpoints directly
-4. Check Shopify Admin for subscription creation
+4. Check webhook delivery logs in Shopify Admin
+5. Check server logs for `/api/shopify/webhooks/orders`
 
 ## Next Steps
-1. Set up webhooks for subscription events (optional)
-2. Add customer portal customization
-3. Implement subscription analytics
-4. Add email notifications for subscription events
+1. Configure custom email notifications on paid events only
+2. Add analytics for plan selection and retention
+3. Add internal alerting for repeated payment failures
 
 ## Support
 - Shopify Subscriptions API docs: https://shopify.dev/docs/api/admin-rest/2024-01/resources/subscriptioncontract

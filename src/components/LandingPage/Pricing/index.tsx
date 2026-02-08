@@ -1,10 +1,43 @@
 "use client";
 
-import { VARIANT_ID_1, VARIANT_ID_2 } from "@/src/config";
 import { ICheckoutResponse } from "@/src/utils/types";
 import axios from "axios";
 import { toast } from "sonner";
 import { useState } from "react";
+
+type PlanOption = {
+  id: "monthly-autopay" | "annual-autopay";
+  title: string;
+  bgColor: string;
+  textColor: string;
+  border: boolean;
+  features: string[];
+  price: {
+    currency: "INR";
+    amount: string;
+    period: string;
+  };
+  button: {
+    text: string;
+    bgColor: string;
+    textColor: string;
+  };
+  variantId: string;
+  sellingPlanId: string;
+  durationLabel: string;
+  durationMonths: number;
+};
+
+const MONTHLY_SELLING_PLAN_ID = process.env.NEXT_PUBLIC_MONTHLY_SELLING_PLAN_ID || "";
+const ANNUAL_SELLING_PLAN_ID = process.env.NEXT_PUBLIC_ANNUAL_SELLING_PLAN_ID || "";
+const MONTHLY_VARIANT_ID =
+  process.env.NEXT_PUBLIC_MONTHLY_VARIANT_ID ||
+  process.env.NEXT_PUBLIC_SHOPIFY_VARIANT_ID2 ||
+  "";
+const ANNUAL_VARIANT_ID =
+  process.env.NEXT_PUBLIC_ANNUAL_VARIANT_ID ||
+  process.env.NEXT_PUBLIC_SHOPIFY_VARIANT_ID2 ||
+  "";
 
 const Pricing = () => {
   const [openSample, setOpenSample] = useState(false);
@@ -16,86 +49,94 @@ const Pricing = () => {
   const [downloading, setDownloading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const pricingData = [
+  const pricingData: PlanOption[] = [
     {
-      id: 1,
-      type: "type2",
-      title: "Print Edition",
+      id: "monthly-autopay",
+      title: "Monthly Autopay",
       bgColor: "bg-purple-600",
       textColor: "text-white",
       border: false,
       features: [
-        "1 year",
-        "24 newspapers delivered fortnightly",
-        "Printables",
-        "1 travel journal",
+        "INR 200 billed every month",
+        "Auto-recurring for 36 months",
+        "Same subscription benefits included",
+        "Cancel as per policy",
       ],
       price: {
         currency: "INR",
-        originalAmount: "2400",
-        amount: "2200",
-        period: "/yr",
+        amount: "200",
+        period: "/month",
       },
       button: {
-        text: "Get Everything!",
+        text: "Start Monthly Plan",
         bgColor: "bg-white",
         textColor: "text-purple-600",
       },
-      variantId: VARIANT_ID_2,
-      sellingPlanId: process.env.NEXT_PUBLIC_PRINT_SELLING_PLAN_ID || "", // You'll need to add this to .env
+      variantId: MONTHLY_VARIANT_ID,
+      sellingPlanId: MONTHLY_SELLING_PLAN_ID,
+      durationLabel: "36 months",
+      durationMonths: 36,
     },
     {
-      id: 2,
-      type: "type1",
-      title: "Digital Explorer",
+      id: "annual-autopay",
+      title: "Annual Autopay",
       bgColor: "bg-white",
       textColor: "text-black",
       border: true,
       features: [
-        "1 Year",
-        "24 newspapers emailed fortnightly",
-        "Printables",
-        "1 travel journal",
+        "INR 2400 billed every year",
+        "Auto-recurring for 5 years (60 months)",
+        "Same subscription benefits included",
+        "Cancel as per policy",
       ],
       price: {
         currency: "INR",
-        amount: "1500",
-        period: "/yr",
+        amount: "2400",
+        period: "/year",
       },
       button: {
-        text: "Go Digital!",
+        text: "Start Annual Plan",
         bgColor: "bg-orange-500",
         textColor: "text-white",
       },
-      variantId: VARIANT_ID_1,
-      sellingPlanId: process.env.NEXT_PUBLIC_DIGITAL_SELLING_PLAN_ID || "", // You'll need to add this to .env
+      variantId: ANNUAL_VARIANT_ID,
+      sellingPlanId: ANNUAL_SELLING_PLAN_ID,
+      durationLabel: "5 years",
+      durationMonths: 60,
     },
   ];
 
-  const handlePricingButtonClick = async (type: string) => {
+  const handlePricingButtonClick = async (id: PlanOption["id"]) => {
     setLoading(true);
-    const plan = pricingData.find(p => p.type === type);
+    const plan = pricingData.find((p) => p.id === id);
     if (!plan) {
       toast.error("Plan not found");
       setLoading(false);
       return;
     }
 
+    if (!plan.sellingPlanId || !plan.variantId) {
+      toast.error("Plan is not configured. Please contact support.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      // For now, we'll use the existing checkout flow
-      // In a real implementation, you'd need to:
-      // 1. Create a customer account first
-      // 2. Then create a subscription contract
-      
       const payload = {
         items: [
           {
             attributes: [],
             quantity: 1,
             merchandiseId: `gid://shopify/ProductVariant/${plan.variantId}`,
-            sellingPlanId: plan.sellingPlanId, // This enables autopay
+            sellingPlanId: plan.sellingPlanId,
           },
         ],
+        checkoutMeta: {
+          checkoutSource: "wanderstamps-autopay",
+          recurringPlan: plan.id,
+          recurringAmountInr: plan.price.amount,
+          recurringDurationMonths: String(plan.durationMonths),
+        },
       };
 
       const response = await axios.post<ICheckoutResponse>(
@@ -175,7 +216,7 @@ const Pricing = () => {
     >
       <div className="md:w-[750px] w-full px-4 mt-4">
         <h2 className="md:text-[42px] text-[28px] text-center leading-[34px] md:leading-[50px] text-[var(--font-black-shade-1)] font-semibold ">
-          Choose your Subscription package
+          Choose your Autopay plan
         </h2>
         <p className="mt-3 text-[var(--font-black-shade-1)] w-full text-[16px] md:text-[20px] font-normal leading-5 md:leading-6 text-center ">
           Find your perfect plan and embark on an exciting journey of discovery.
@@ -217,36 +258,21 @@ const Pricing = () => {
               ))}
             </ul>
             <div className="mb-8">
-              {card.price.originalAmount ? (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm">{card.price.currency}</span>
-                  <span className="text-4xl font-bold">
-                    {card.price.amount}
-                  </span>
-                  <span className="text-sm">{card.price.period}</span>
-                  <span className="text-lg line-through ml-2">
-                    {card.price.originalAmount}
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm">{card.price.currency}</span>
-                  <span className="text-4xl font-bold">
-                    {card.price.amount}
-                  </span>
-                  <span className="text-sm">{card.price.period}</span>
-                </div>
-              )}
+              <div className="flex items-baseline gap-2">
+                <span className="text-sm">{card.price.currency}</span>
+                <span className="text-4xl font-bold">{card.price.amount}</span>
+                <span className="text-sm">{card.price.period}</span>
+              </div>
             </div>
             <button
               className={`${card.button.bgColor} ${card.button.textColor} cursor-pointer w-full py-3 px-6 rounded-lg font-semibold text-lg hover:opacity-90 transition-opacity ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-              onClick={() => handlePricingButtonClick(card.type)}
+              onClick={() => handlePricingButtonClick(card.id)}
               disabled={loading}
             >
               {loading ? 'Processing...' : card.button.text}
             </button>
             <p className="text-xs mt-2 text-center opacity-75">
-              🔄 Auto-renewal enabled
+              Autopay enabled for {card.durationLabel}
             </p>
           </div>
         ))}
