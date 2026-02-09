@@ -377,15 +377,6 @@ const Pricing = () => {
         <p className="mt-3 text-[var(--font-black-shade-1)] w-full text-[16px] md:text-[20px] font-normal leading-5 md:leading-6 text-center ">
           Find your perfect plan and embark on an exciting journey of discovery.
         </p>
-        <p className="mt-6 text-center text-[15px] md:text-[16px] leading-5 md:leading-6">
-          To view a sample PRINT edition,{" "}
-          <button
-            onClick={() => setOpenSample(true)}
-            className="text-[#6A43D7] underline cursor-pointer"
-          >
-            click here
-          </button>
-        </p>
       </div>
 
       <div className="flex flex-wrap items-center justify-center px-5 gap-16 mt-12">
