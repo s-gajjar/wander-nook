@@ -394,7 +394,7 @@ const Pricing = () => {
             key={card.id}
             className={`${card.bgColor} ${
               card.textColor
-            } rounded-2xl p-8 md:w-[372px] w-full max-w-[372px] min-h-[520px] flex flex-col ${
+            } rounded-2xl p-6 md:p-8 md:w-[372px] w-full max-w-[372px] min-h-[470px] md:min-h-[520px] flex flex-col ${
               card.border ? "border border-[#2C2C2C]" : ""
             }`}
           >
@@ -406,7 +406,7 @@ const Pricing = () => {
               {card.features.map((feature, index) => (
                 <li
                   key={index + 1}
-                  className="flex text-[16px] md:text-[20px] leading-[22px] md:leading-[28px] font-normal items-start"
+                  className="flex text-[15px] md:text-[20px] leading-[22px] md:leading-[28px] font-normal items-start"
                 >
                   <span className="mt-2 w-2 h-2 bg-current rounded-full mr-3 shrink-0"></span>
                   <span>{feature}</span>
@@ -435,11 +435,11 @@ const Pricing = () => {
 
       {openAutopayModal && selectedPlan && (
         <div
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto overscroll-contain"
           onClick={resetAutopayModal}
         >
           <div
-            className="relative my-auto w-full max-w-3xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white p-6 md:p-8 shadow-2xl border border-[#E7E3D2]"
+            className="relative my-auto w-full max-w-3xl max-h-[92dvh] overflow-y-auto overscroll-contain rounded-2xl bg-white p-6 md:p-8 shadow-2xl border border-[#E7E3D2]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -598,11 +598,11 @@ const Pricing = () => {
 
       {openSample && (
         <div
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto overscroll-contain"
           onClick={() => setOpenSample(false)}
         >
           <div
-            className="relative my-auto w-full max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-[#FAF7E9] p-6 md:p-10 shadow-2xl border border-[#E7E3D2]"
+            className="relative my-auto w-full max-w-4xl max-h-[92dvh] overflow-y-auto overscroll-contain rounded-2xl bg-[#FAF7E9] p-6 md:p-10 shadow-2xl border border-[#E7E3D2]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
