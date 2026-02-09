@@ -167,7 +167,7 @@ const pricingData: PlanOption[] = [
     ],
     price: {
       currency: "INR",
-      amount: "2300",
+      amount: "2400",
       period: "/year",
     },
     button: {
