@@ -20,7 +20,6 @@ type PlanOption = {
     bgColor: string;
     textColor: string;
   };
-  durationLabel: string;
   durationMonths: number;
 };
 
@@ -116,7 +115,6 @@ const pricingData: PlanOption[] = [
       bgColor: "bg-white",
       textColor: "text-purple-600",
     },
-    durationLabel: "36 months",
     durationMonths: 36,
   },
   {
@@ -140,7 +138,6 @@ const pricingData: PlanOption[] = [
       bgColor: "bg-orange-500",
       textColor: "text-white",
     },
-    durationLabel: "5 years",
     durationMonths: 60,
   },
 ];
@@ -429,7 +426,7 @@ const Pricing = () => {
                 {card.button.text}
               </button>
               <p className="text-xs mt-2 text-center opacity-75 min-h-[16px]">
-                {`Recurring for ${card.durationLabel}`}
+                Recurring billing enabled
               </p>
             </div>
           </div>
@@ -460,7 +457,7 @@ const Pricing = () => {
               </h4>
               <p className="mt-2 text-[#5F6368] text-[15px] md:text-[17px]">
                 {selectedPlan.price.currency} {selectedPlan.price.amount}
-                {selectedPlan.price.period} for {selectedPlan.durationLabel}
+                {selectedPlan.price.period}
               </p>
             </div>
 
