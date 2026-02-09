@@ -125,16 +125,14 @@ const pricingData: PlanOption[] = [
     textColor: "text-white",
     border: false,
     autopayFeatures: [
-      "INR 200 billed every month",
-      "Recurring for 36 months",
+      "Billed every month",
+      "Autopay mode so you don't have to worry",
       "Same subscription benefits included",
-      "Cancel as per policy",
     ],
     oneTimeFeatures: [
-      "INR 200 billed once",
-      "No recurring debit",
+      "Billed every month",
+      "Autopay mode so you don't have to worry",
       "Same subscription benefits included",
-      "Renew manually next month",
     ],
     price: {
       currency: "INR",
@@ -158,20 +156,18 @@ const pricingData: PlanOption[] = [
     textColor: "text-black",
     border: true,
     autopayFeatures: [
-      "INR 2400 billed every year",
-      "Recurring for 5 years (60 months)",
+      "Billed once",
+      "Autopay mode for next year which you can cancel easily",
       "Same subscription benefits included",
-      "Cancel as per policy",
     ],
     oneTimeFeatures: [
-      "INR 2400 billed once",
-      "No recurring debit",
+      "Billed once",
+      "Autopay mode for next year which you can cancel easily",
       "Same subscription benefits included",
-      "Renew manually next year",
     ],
     price: {
       currency: "INR",
-      amount: "2400",
+      amount: "2300",
       period: "/year",
     },
     button: {
