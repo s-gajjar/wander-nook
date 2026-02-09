@@ -28,8 +28,8 @@ const PLAN_DEFINITIONS: Record<
   "annual-autopay": {
     id: "annual-autopay",
     displayName: "Annual Autopay",
-    amountInr: 2400,
-    amountPaise: 240000,
+    amountInr: 2300,
+    amountPaise: 230000,
     totalCount: 5,
     cycle: "yearly",
   },
