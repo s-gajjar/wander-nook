@@ -20,7 +20,6 @@ type PlanOption = {
     bgColor: string;
     textColor: string;
   };
-  durationLabel: string;
   durationMonths: number;
 };
 
@@ -116,7 +115,6 @@ const pricingData: PlanOption[] = [
       bgColor: "bg-white",
       textColor: "text-purple-600",
     },
-    durationLabel: "36 months",
     durationMonths: 36,
   },
   {
@@ -140,7 +138,6 @@ const pricingData: PlanOption[] = [
       bgColor: "bg-orange-500",
       textColor: "text-white",
     },
-    durationLabel: "5 years",
     durationMonths: 60,
   },
 ];
@@ -380,15 +377,6 @@ const Pricing = () => {
         <p className="mt-3 text-[var(--font-black-shade-1)] w-full text-[16px] md:text-[20px] font-normal leading-5 md:leading-6 text-center ">
           Find your perfect plan and embark on an exciting journey of discovery.
         </p>
-        <p className="mt-6 text-center text-[15px] md:text-[16px] leading-5 md:leading-6">
-          To view a sample PRINT edition,{" "}
-          <button
-            onClick={() => setOpenSample(true)}
-            className="text-[#6A43D7] underline cursor-pointer"
-          >
-            click here
-          </button>
-        </p>
       </div>
 
       <div className="flex flex-wrap items-center justify-center px-5 gap-16 mt-12">
@@ -397,7 +385,7 @@ const Pricing = () => {
             key={card.id}
             className={`${card.bgColor} ${
               card.textColor
-            } rounded-2xl p-8 md:w-[372px] w-full max-w-[372px] min-h-[520px] flex flex-col ${
+            } rounded-2xl p-6 md:p-8 md:w-[372px] w-full max-w-[372px] min-h-[470px] md:min-h-[520px] flex flex-col ${
               card.border ? "border border-[#2C2C2C]" : ""
             }`}
           >
@@ -409,7 +397,7 @@ const Pricing = () => {
               {card.features.map((feature, index) => (
                 <li
                   key={index + 1}
-                  className="flex text-[16px] md:text-[20px] leading-[22px] md:leading-[28px] font-normal items-start"
+                  className="flex text-[15px] md:text-[20px] leading-[22px] md:leading-[28px] font-normal items-start"
                 >
                   <span className="mt-2 w-2 h-2 bg-current rounded-full mr-3 shrink-0"></span>
                   <span>{feature}</span>
@@ -429,7 +417,7 @@ const Pricing = () => {
                 {card.button.text}
               </button>
               <p className="text-xs mt-2 text-center opacity-75 min-h-[16px]">
-                {`Recurring for ${card.durationLabel}`}
+                Recurring billing enabled
               </p>
             </div>
           </div>
@@ -438,11 +426,11 @@ const Pricing = () => {
 
       {openAutopayModal && selectedPlan && (
         <div
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto overscroll-contain"
           onClick={resetAutopayModal}
         >
           <div
-            className="relative my-auto w-full max-w-3xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-white p-6 md:p-8 shadow-2xl border border-[#E7E3D2]"
+            className="relative my-auto w-full max-w-3xl max-h-[92dvh] overflow-y-auto overscroll-contain rounded-2xl bg-white p-6 md:p-8 shadow-2xl border border-[#E7E3D2]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -460,7 +448,7 @@ const Pricing = () => {
               </h4>
               <p className="mt-2 text-[#5F6368] text-[15px] md:text-[17px]">
                 {selectedPlan.price.currency} {selectedPlan.price.amount}
-                {selectedPlan.price.period} for {selectedPlan.durationLabel}
+                {selectedPlan.price.period}
               </p>
             </div>
 
@@ -601,11 +589,11 @@ const Pricing = () => {
 
       {openSample && (
         <div
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-3 sm:px-6 py-4 overflow-y-auto overscroll-contain"
           onClick={() => setOpenSample(false)}
         >
           <div
-            className="relative my-auto w-full max-w-4xl max-h-[calc(100vh-2rem)] overflow-y-auto rounded-2xl bg-[#FAF7E9] p-6 md:p-10 shadow-2xl border border-[#E7E3D2]"
+            className="relative my-auto w-full max-w-4xl max-h-[92dvh] overflow-y-auto overscroll-contain rounded-2xl bg-[#FAF7E9] p-6 md:p-10 shadow-2xl border border-[#E7E3D2]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
