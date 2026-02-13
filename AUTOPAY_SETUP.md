@@ -14,6 +14,7 @@ Add these in your deployment environment (Vercel Production):
 # Razorpay
 RAZORPAY_KEY_ID=rzp_live_xxxxx
 RAZORPAY_KEY_SECRET=xxxxxxxx
+RAZORPAY_WEBHOOK_SECRET=xxxxxxxx
 RAZORPAY_MONTHLY_PLAN_ID=plan_xxxxx
 RAZORPAY_ANNUAL_PLAN_ID=plan_xxxxx
 
@@ -51,7 +52,11 @@ New endpoints:
   - Verifies Razorpay signature.
   - Validates captured payment amount/currency.
   - Creates Shopify order after successful verification.
-  - Uses tags/metadata to avoid duplicate order creation.
+  - Uses payment tags/metadata to avoid duplicate order creation.
+- `POST /api/razorpay/autopay/webhook`
+  - Verifies Razorpay webhook signature.
+  - Handles `invoice.paid`, `subscription.charged`, and `payment.captured`.
+  - Creates Shopify order server-side if browser callback was missed.
 
 Existing webhook endpoint:
 - `POST /api/shopify/webhooks/orders`
@@ -65,6 +70,7 @@ Existing webhook endpoint:
    - signature is verified server-side
    - payment capture status is validated
    - Shopify order is created as paid
+5. If callback is missed (for example, UPI app-switch flow), webhook fallback creates the order.
 
 No Shopify order is created before verified payment.
 
@@ -77,6 +83,10 @@ No Shopify order is created before verified payment.
    - `rzp-sub-...`
 4. Retry same verify payload and confirm no duplicate order is created.
 5. Confirm webhook endpoint still receives `orders/create` and `orders/updated` with `200`.
+6. Configure Razorpay webhook URL:
+   - `https://<your-domain>/api/razorpay/autopay/webhook`
+   - Secret = `RAZORPAY_WEBHOOK_SECRET`
+   - Events: `invoice.paid`, `subscription.charged`, `payment.captured`
 
 ## Notes
 - If payment is not yet `captured`, verify endpoint returns `409` and skips order creation.
