@@ -35,6 +35,18 @@ type AutopayCustomerForm = {
   country: string;
 };
 
+type AutopaySuccessState = {
+  alreadyExists: boolean;
+  orderName?: string;
+  paymentId: string;
+  subscriptionId: string;
+  customer: AutopayCustomerForm;
+  plan: {
+    title: string;
+    priceLabel: string;
+  };
+};
+
 type RazorpayCreateResponse = {
   keyId: string;
   subscriptionId: string;
@@ -167,6 +179,7 @@ const Pricing = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanOption | null>(null);
   const [autopayForm, setAutopayForm] = useState<AutopayCustomerForm>(defaultAutopayForm);
   const [autopayLoading, setAutopayLoading] = useState(false);
+  const [autopaySuccess, setAutopaySuccess] = useState<AutopaySuccessState | null>(null);
 
   const loadRazorpayScript = async () => {
     if (window.Razorpay) {
@@ -207,6 +220,10 @@ const Pricing = () => {
     setOpenAutopayModal(false);
     setSelectedPlan(null);
     setAutopayForm(defaultAutopayForm);
+  };
+
+  const closeAutopaySuccess = () => {
+    setAutopaySuccess(null);
   };
 
   const startAutopayCheckout = async (event: React.FormEvent) => {
@@ -302,11 +319,17 @@ const Pricing = () => {
             }
 
             const orderName = verifyData.order?.name;
-            toast.success(
-              verifyData.alreadyExists
-                ? `Autopay already confirmed${orderName ? ` (${orderName})` : ""}.`
-                : `Autopay activated successfully${orderName ? ` (${orderName})` : ""}.`
-            );
+            setAutopaySuccess({
+              alreadyExists: Boolean(verifyData.alreadyExists),
+              orderName,
+              paymentId: payload.razorpay_payment_id,
+              subscriptionId: payload.razorpay_subscription_id,
+              customer: { ...autopayForm },
+              plan: {
+                title: selectedPlan.title,
+                priceLabel: `${selectedPlan.price.currency} ${selectedPlan.price.amount}${selectedPlan.price.period}`,
+              },
+            });
             resetAutopayModal();
           } catch (error) {
             toast.error(error instanceof Error ? error.message : "Failed to verify payment.");
@@ -583,6 +606,101 @@ const Pricing = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {autopaySuccess && (
+        <div
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-[#0F172A]/70 px-3 sm:px-6 py-4 overflow-y-auto overscroll-contain"
+          onClick={closeAutopaySuccess}
+        >
+          <div
+            className="relative my-auto w-full max-w-2xl rounded-2xl border border-[#DDE3F0] bg-white p-6 md:p-8 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={closeAutopaySuccess}
+              className="absolute top-3 right-3 md:top-4 md:right-4 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white border border-[#E5E7EB] text-[#111827] hover:bg-gray-50 cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <div className="mb-6 rounded-2xl bg-gradient-to-r from-[#E8FCE8] via-[#F5FFF6] to-[#EAF7FF] border border-[#D7EEDB] p-4 md:p-5">
+              <p className="text-[12px] font-semibold tracking-[0.18em] text-[#166534] uppercase">
+                Payment Successful
+              </p>
+              <h4 className="mt-2 text-[24px] md:text-[30px] leading-tight font-semibold text-[#111827]">
+                {autopaySuccess.alreadyExists
+                  ? "Subscription already confirmed"
+                  : "Subscription activated"}
+              </h4>
+              <p className="mt-2 text-[14px] md:text-[16px] text-[#334155]">
+                {autopaySuccess.plan.title} Plan · {autopaySuccess.plan.priceLabel}
+              </p>
+              {autopaySuccess.orderName ? (
+                <p className="mt-2 text-[14px] md:text-[15px] text-[#0F172A]">
+                  Shopify Order: <span className="font-semibold">{autopaySuccess.orderName}</span>
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[14px]">
+              <div className="rounded-xl border border-[#E5E7EB] bg-[#FAFBFF] p-4">
+                <p className="text-[#64748B] text-[12px] uppercase tracking-[0.14em]">Full Name</p>
+                <p className="mt-1 font-medium text-[#0F172A]">{autopaySuccess.customer.name}</p>
+              </div>
+              <div className="rounded-xl border border-[#E5E7EB] bg-[#FAFBFF] p-4">
+                <p className="text-[#64748B] text-[12px] uppercase tracking-[0.14em]">Phone</p>
+                <p className="mt-1 font-medium text-[#0F172A]">{autopaySuccess.customer.phone}</p>
+              </div>
+              <div className="rounded-xl border border-[#E5E7EB] bg-[#FAFBFF] p-4 md:col-span-2">
+                <p className="text-[#64748B] text-[12px] uppercase tracking-[0.14em]">Email</p>
+                <p className="mt-1 font-medium text-[#0F172A] break-all">
+                  {autopaySuccess.customer.email}
+                </p>
+              </div>
+              <div className="rounded-xl border border-[#E5E7EB] bg-[#FAFBFF] p-4 md:col-span-2">
+                <p className="text-[#64748B] text-[12px] uppercase tracking-[0.14em]">
+                  Billing Address
+                </p>
+                <p className="mt-1 font-medium text-[#0F172A]">
+                  {autopaySuccess.customer.addressLine1}
+                  {autopaySuccess.customer.addressLine2
+                    ? `, ${autopaySuccess.customer.addressLine2}`
+                    : ""}
+                  , {autopaySuccess.customer.city}, {autopaySuccess.customer.state},{" "}
+                  {autopaySuccess.customer.pincode}, {autopaySuccess.customer.country}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 text-[13px]">
+              <div className="rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] p-3">
+                <p className="text-[#64748B]">Payment ID</p>
+                <p className="mt-1 font-mono text-[#0F172A] break-all">
+                  {autopaySuccess.paymentId}
+                </p>
+              </div>
+              <div className="rounded-lg border border-dashed border-[#CBD5E1] bg-[#F8FAFC] p-3">
+                <p className="text-[#64748B]">Subscription ID</p>
+                <p className="mt-1 font-mono text-[#0F172A] break-all">
+                  {autopaySuccess.subscriptionId}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={closeAutopaySuccess}
+                className="rounded-lg bg-[#111827] text-white px-5 py-2.5 font-semibold hover:opacity-90 cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       )}
