@@ -124,6 +124,29 @@ export function getAutopayPlanConfig(planId: string): RazorpayAutopayPlanConfig 
   };
 }
 
+export function getAutopayPlanConfigByRazorpayPlanId(
+  razorpayPlanId: string
+): RazorpayAutopayPlanConfig | null {
+  const normalizedPlanId = razorpayPlanId.trim();
+  if (!normalizedPlanId) {
+    return null;
+  }
+
+  const planIds: AutopayPlanId[] = ["monthly-autopay", "annual-autopay"];
+  for (const planId of planIds) {
+    try {
+      const plan = getAutopayPlanConfig(planId);
+      if (plan && plan.razorpayPlanId === normalizedPlanId) {
+        return plan;
+      }
+    } catch {
+      // Skip unconfigured plans while checking configured mappings.
+    }
+  }
+
+  return null;
+}
+
 export function parseShopifyVariantId(variant: string) {
   const trimmed = variant.trim();
   const gidMatch = trimmed.match(/^gid:\/\/shopify\/ProductVariant\/(\d+)$/);
