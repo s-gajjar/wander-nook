@@ -75,7 +75,7 @@ export default function RootLayout({
     contactPoint: [
       {
         "@type": "ContactPoint",
-        email: "contact@wandernook.in",
+        email: "support@wondernook.in",
         contactType: "customer support",
       },
     ],

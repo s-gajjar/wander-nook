@@ -105,7 +105,7 @@ const faqData = [
         </p>
         <p className="mt-2">
           <b>Digital Subscriptions:</b> To change or cancel your digital
-          subscription, email us at <b>contact@wandernook.in</b>.
+          subscription, email us at <b>support@wondernook.in</b>.
         </p>
         <p className="mt-2">
           Monthly plans auto-renew monthly for 36 months and annual plans
@@ -127,8 +127,8 @@ const faqData = [
           </li>
           <li>
             Email:{" "}
-            <Link href="mailto:contact@wandernook.in">
-              contact@wandernook.in
+            <Link href="mailto:support@wondernook.in">
+              support@wondernook.in
             </Link>
           </li>
         </ul>
