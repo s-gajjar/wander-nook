@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import {
   type InvoiceTemplateInput,
   formatCurrency,
