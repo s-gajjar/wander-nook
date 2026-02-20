@@ -2,6 +2,8 @@ import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ensureAutopayOrder, type AutopayCustomerDetails } from "@/src/lib/autopay-order";
 import { razorpayRequest } from "@/src/lib/razorpay-server";
+import { ensureInvoiceForAutopayPayment } from "@/src/lib/invoice-service";
+import { trackConversionEvent } from "@/src/lib/conversion-tracking";
 
 export const runtime = "nodejs";
 
@@ -139,14 +141,17 @@ async function extractPaymentAndSubscriptionDetails(body: RazorpayWebhookPayload
     invoiceEntity?.subscription_id || subscriptionEntity?.id,
     80
   );
+  let razorpayInvoiceId = sanitizeText(invoiceEntity?.id || paymentEntity?.invoice_id, 80);
   let customer = toCustomerDetails(invoiceEntity?.customer_details);
 
   if ((!paymentId || !subscriptionId) && paymentEntity?.invoice_id) {
     const invoiceId = sanitizeText(paymentEntity.invoice_id, 80);
     if (invoiceId) {
+      razorpayInvoiceId = razorpayInvoiceId || invoiceId;
       const invoice = await razorpayRequest<RazorpayInvoiceResponse>(`/invoices/${invoiceId}`);
       paymentId = paymentId || sanitizeText(invoice.payment_id || paymentEntity?.id, 80);
       subscriptionId = subscriptionId || sanitizeText(invoice.subscription_id, 80);
+      razorpayInvoiceId = razorpayInvoiceId || sanitizeText(invoice.id, 80);
       customer = customer || toCustomerDetails(invoice.customer_details);
     }
   }
@@ -159,6 +164,7 @@ async function extractPaymentAndSubscriptionDetails(body: RazorpayWebhookPayload
     paymentId,
     subscriptionId,
     customer,
+    razorpayInvoiceId,
   };
 }
 
@@ -209,6 +215,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (ensureResult.status === "payment_not_captured") {
+      await trackConversionEvent({
+        eventName: "autopay_webhook_payment_not_captured",
+        customerEmail: paymentDetails.customer?.email,
+        razorpayPaymentId: paymentDetails.paymentId,
+        razorpaySubscriptionId: paymentDetails.subscriptionId,
+        metadata: {
+          event,
+          paymentStatus: ensureResult.paymentStatus,
+        },
+      });
+
       return NextResponse.json({
         ok: true,
         event,
@@ -217,11 +234,52 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    let invoice:
+      | {
+          invoiceId: string;
+          invoiceNumber: string;
+          publicToken: string;
+          created: boolean;
+          emailSent: boolean;
+          emailSkippedReason?: string;
+        }
+      | undefined;
+    let invoiceError: string | undefined;
+
+    try {
+      invoice = await ensureInvoiceForAutopayPayment({
+        paymentId: paymentDetails.paymentId,
+        subscriptionId: paymentDetails.subscriptionId,
+        sourceEvent: `autopay_webhook:${event}`,
+        customer: paymentDetails.customer,
+        order: ensureResult.order,
+        razorpayInvoiceId: paymentDetails.razorpayInvoiceId,
+      });
+    } catch (error) {
+      invoiceError = error instanceof Error ? error.message : "Failed to generate invoice.";
+      console.error("Autopay webhook invoice generation failed", error);
+    }
+
+    await trackConversionEvent({
+      eventName: "autopay_webhook_payment_processed",
+      customerEmail: paymentDetails.customer?.email,
+      razorpayPaymentId: paymentDetails.paymentId,
+      razorpaySubscriptionId: paymentDetails.subscriptionId,
+      metadata: {
+        event,
+        orderStatus: ensureResult.status,
+        invoiceCreated: invoice?.created ?? false,
+        invoiceEmailSent: invoice?.emailSent ?? false,
+      },
+    });
+
     return NextResponse.json({
       ok: true,
       event,
       alreadyExists: ensureResult.status === "already_exists",
       order: ensureResult.order,
+      invoice,
+      invoiceError,
     });
   } catch (error) {
     console.error("Failed to process Razorpay autopay webhook", error);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { trackClientEvent } from "@/src/lib/analytics-client";
 
 type PlanOption = {
   id: "monthly-autopay" | "annual-autopay";
@@ -40,6 +41,13 @@ type AutopaySuccessState = {
   orderName?: string;
   paymentId: string;
   subscriptionId: string;
+  invoice?: {
+    number: string;
+    url: string;
+    emailSent: boolean;
+    emailSkippedReason?: string;
+  };
+  invoiceError?: string;
   customer: AutopayCustomerForm;
   plan: {
     title: string;
@@ -66,6 +74,15 @@ type RazorpayVerifyResponse = {
     id?: string | number;
     name?: string;
   };
+  invoice?: {
+    invoiceId: string;
+    invoiceNumber: string;
+    publicToken: string;
+    created: boolean;
+    emailSent: boolean;
+    emailSkippedReason?: string;
+  };
+  invoiceError?: string;
 };
 
 type RazorpayCheckoutSuccessPayload = {
@@ -203,6 +220,12 @@ const Pricing = () => {
       return;
     }
 
+    trackClientEvent("funnel_plan_selected", {
+      plan_id: plan.id,
+      plan_title: plan.title,
+      amount_inr: plan.price.amount,
+    });
+
     setSelectedPlan(plan);
     setOpenAutopayModal(true);
     setAutopayForm(defaultAutopayForm);
@@ -258,6 +281,11 @@ const Pricing = () => {
             "Failed to initialize secure payment."
         );
       }
+
+      trackClientEvent("funnel_checkout_initiated", {
+        plan_id: selectedPlan.id,
+        subscription_id: createData.subscriptionId,
+      });
 
       const razorpayLoaded = await loadRazorpayScript();
       if (!razorpayLoaded || !window.Razorpay) {
@@ -318,12 +346,29 @@ const Pricing = () => {
               );
             }
 
+            trackClientEvent("funnel_payment_success", {
+              plan_id: selectedPlan.id,
+              payment_id: payload.razorpay_payment_id,
+              subscription_id: payload.razorpay_subscription_id,
+              order_name: verifyData.order?.name,
+              already_exists: Boolean(verifyData.alreadyExists),
+            });
+
             const orderName = verifyData.order?.name;
             setAutopaySuccess({
               alreadyExists: Boolean(verifyData.alreadyExists),
               orderName,
               paymentId: payload.razorpay_payment_id,
               subscriptionId: payload.razorpay_subscription_id,
+              invoice: verifyData.invoice
+                ? {
+                    number: verifyData.invoice.invoiceNumber,
+                    url: `/invoice/${verifyData.invoice.publicToken}`,
+                    emailSent: verifyData.invoice.emailSent,
+                    emailSkippedReason: verifyData.invoice.emailSkippedReason,
+                  }
+                : undefined,
+              invoiceError: verifyData.invoiceError,
               customer: { ...autopayForm },
               plan: {
                 title: selectedPlan.title,
@@ -340,6 +385,9 @@ const Pricing = () => {
       });
 
       razorpay.on("payment.failed", () => {
+        trackClientEvent("funnel_payment_failed", {
+          plan_id: selectedPlan.id,
+        });
         toast.error("Payment was not completed. Please try again.");
         setAutopayLoading(false);
       });
@@ -363,6 +411,9 @@ const Pricing = () => {
       });
       const data = await res.json();
       if (!res.ok && !data?.downloadPath) throw new Error(data?.error || "Request failed");
+      trackClientEvent("sample_issue_requested", {
+        source: "pricing_section",
+      });
       toast.success("Sample request sent!");
       setOpenSample(false);
       setName("");
@@ -691,6 +742,38 @@ const Pricing = () => {
                 </p>
               </div>
             </div>
+
+            {autopaySuccess.invoice ? (
+              <div className="mt-4 rounded-xl border border-[#D9E3F3] bg-[#F8FBFF] p-4">
+                <p className="text-[#64748B] text-[12px] uppercase tracking-[0.14em]">
+                  Invoice
+                </p>
+                <p className="mt-1 text-[14px] font-semibold text-[#0F172A]">
+                  {autopaySuccess.invoice.number}
+                </p>
+                <p className="mt-1 text-[13px] text-[#334155]">
+                  {autopaySuccess.invoice.emailSent
+                    ? "Invoice email sent to your registered email."
+                    : `Email status: ${
+                        autopaySuccess.invoice.emailSkippedReason || "not sent yet"
+                      }`}
+                </p>
+                <a
+                  href={autopaySuccess.invoice.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex rounded-lg border border-[#CBD5E1] bg-white px-3 py-2 text-[13px] font-semibold text-[#0F172A]"
+                >
+                  View Invoice
+                </a>
+              </div>
+            ) : null}
+
+            {autopaySuccess.invoiceError ? (
+              <p className="mt-3 text-[13px] text-[#9A3412]">
+                Invoice note: {autopaySuccess.invoiceError}
+              </p>
+            ) : null}
 
             <div className="mt-6 flex justify-end">
               <button

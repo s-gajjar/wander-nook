@@ -4,6 +4,7 @@ import {
   getRazorpayKeyId,
   razorpayRequest,
 } from "@/src/lib/razorpay-server";
+import { trackConversionEvent } from "@/src/lib/conversion-tracking";
 
 export const runtime = "nodejs";
 
@@ -121,6 +122,17 @@ export async function POST(request: NextRequest) {
         },
       }
     );
+
+    await trackConversionEvent({
+      eventName: "autopay_subscription_created",
+      planId: plan.id,
+      customerEmail: customerEmail,
+      razorpaySubscriptionId: razorpaySubscription.id,
+      metadata: {
+        billingCycle: plan.cycle,
+        amountPaise: plan.amountPaise,
+      },
+    });
 
     return NextResponse.json({
       keyId: getRazorpayKeyId(),

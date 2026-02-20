@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { isAdminRequest, adminUnauthorizedJson } from "@/src/lib/admin-auth";
 
 export async function GET() {
   const posts = await prisma.post.findMany({
@@ -29,6 +30,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAdminRequest(request)) {
+    return adminUnauthorizedJson();
+  }
+
   try {
     const body = await request.json();
     const {
