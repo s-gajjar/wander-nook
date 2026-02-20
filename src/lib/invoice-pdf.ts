@@ -1,5 +1,5 @@
-import * as fs from "node:fs";
-import path from "node:path";
+import { readFileSync } from "fs";
+import path from "path";
 import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import {
   type InvoiceTemplateInput,
@@ -27,7 +27,7 @@ function toPublicFilePath(publicPath: string) {
 
 function readFileBuffer(filePath: string) {
   try {
-    return fs.readFileSync(filePath);
+    return readFileSync(filePath);
   } catch {
     return null;
   }
