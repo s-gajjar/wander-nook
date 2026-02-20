@@ -28,6 +28,28 @@ SHOPIFY_ANNUAL_VARIANT_ID=12345678901234
 
 # Existing webhook protection route
 SHOPIFY_WEBHOOK_SECRET=xxxxxxxx
+
+# Site URL (used in invoice links and SEO metadata)
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+
+# Email provider for invoice delivery (choose either SMTP OR Resend)
+# Option A: SMTP (Google Workspace compatible)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=support@wandernook.in
+SMTP_PASS=your_google_workspace_app_password
+
+# Option B: Resend
+RESEND_API_KEY=re_xxxxx
+MAIL_FROM=support@wandernook.in
+
+# Optional branding overrides for invoice template
+INVOICE_PRIMARY_LOGO_URL=/wander-stamps-logo.png
+INVOICE_SECONDARY_LOGO_URL=/wander-logo.png
+
+# Optional analytics
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 ## Required Shopify App Scopes
@@ -53,10 +75,14 @@ New endpoints:
   - Validates captured payment amount/currency.
   - Creates Shopify order after successful verification.
   - Uses payment tags/metadata to avoid duplicate order creation.
+  - Creates invoice record (idempotent by Razorpay payment id).
+  - Sends invoice email with PDF attachment to customer.
 - `POST /api/razorpay/autopay/webhook`
   - Verifies Razorpay webhook signature.
   - Handles `invoice.paid`, `subscription.charged`, and `payment.captured`.
   - Creates Shopify order server-side if browser callback was missed.
+  - Creates/syncs invoice record for recurring charges.
+  - Sends monthly/yearly invoice email with PDF attachment only on successful captured charges.
 
 Existing webhook endpoint:
 - `POST /api/shopify/webhooks/orders`
@@ -87,6 +113,10 @@ No Shopify order is created before verified payment.
    - `https://<your-domain>/api/razorpay/autopay/webhook`
    - Secret = `RAZORPAY_WEBHOOK_SECRET`
    - Events: `invoice.paid`, `subscription.charged`, `payment.captured`
+7. Verify invoice email flow:
+   - Open `/admin` and confirm invoice rows are created.
+   - Confirm invoice email timestamp is populated.
+   - Use `Resend Email` in `/admin` to manually resend when needed.
 
 ## Notes
 - If payment is not yet `captured`, verify endpoint returns `409` and skips order creation.

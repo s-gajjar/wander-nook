@@ -4,6 +4,8 @@ import {
   verifyRazorpaySubscriptionSignature,
 } from "@/src/lib/razorpay-server";
 import { ensureAutopayOrder } from "@/src/lib/autopay-order";
+import { ensureInvoiceForAutopayPayment } from "@/src/lib/invoice-service";
+import { trackConversionEvent } from "@/src/lib/conversion-tracking";
 
 export const runtime = "nodejs";
 
@@ -69,6 +71,17 @@ export async function POST(request: NextRequest) {
     });
 
     if (ensureResult.status === "payment_not_captured") {
+      await trackConversionEvent({
+        eventName: "autopay_payment_not_captured",
+        planId,
+        customerEmail: body.customer?.email,
+        razorpayPaymentId: paymentId,
+        razorpaySubscriptionId: subscriptionId,
+        metadata: {
+          paymentStatus: ensureResult.paymentStatus,
+        },
+      });
+
       return NextResponse.json(
         {
           error:
@@ -79,11 +92,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let invoice:
+      | {
+          invoiceId: string;
+          invoiceNumber: string;
+          publicToken: string;
+          created: boolean;
+          emailSent: boolean;
+          emailSkippedReason?: string;
+        }
+      | undefined;
+    let invoiceError: string | undefined;
+
+    try {
+      invoice = await ensureInvoiceForAutopayPayment({
+        paymentId,
+        subscriptionId,
+        sourceEvent: "autopay_verify",
+        customer: body.customer,
+        order: ensureResult.order,
+      });
+    } catch (error) {
+      invoiceError = error instanceof Error ? error.message : "Failed to generate invoice.";
+      console.error("Autopay verify invoice generation failed", error);
+    }
+
+    await trackConversionEvent({
+      eventName: "autopay_payment_verified",
+      planId,
+      customerEmail: body.customer?.email,
+      razorpayPaymentId: paymentId,
+      razorpaySubscriptionId: subscriptionId,
+      metadata: {
+        orderStatus: ensureResult.status,
+        invoiceCreated: invoice?.created ?? false,
+        invoiceEmailSent: invoice?.emailSent ?? false,
+      },
+    });
+
     if (ensureResult.status === "already_exists") {
       return NextResponse.json({
         ok: true,
         alreadyExists: true,
         order: ensureResult.order,
+        invoice,
+        invoiceError,
       });
     }
 
@@ -93,6 +146,8 @@ export async function POST(request: NextRequest) {
         id: ensureResult.order.id,
         name: ensureResult.order.name,
       },
+      invoice,
+      invoiceError,
     });
   } catch (error) {
     console.error("Failed to verify Razorpay autopay payment", error);

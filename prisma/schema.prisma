@@ -68,11 +68,82 @@ model Image {
 }
 
 model SampleRequest {
-  id          String   @id @default(cuid())
-  name        String
-  email       String
-  contactNo   String?
-  city        String?
-  schoolName  String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  email      String
+  contactNo  String?
+  city       String?
+  schoolName String?
+  createdAt  DateTime @default(now())
+}
+
+model Customer {
+  id           String    @id @default(cuid())
+  fullName     String
+  email        String    @unique
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  pincode      String
+  country      String    @default("India")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  invoices     Invoice[]
+}
+
+model Invoice {
+  id                     String    @id @default(cuid())
+  invoiceNumber          String    @unique
+  publicToken            String    @unique @default(cuid())
+  customerId             String
+  planId                 String
+  planLabel              String
+  billingCycle           String
+  amountPaise            Int
+  currency               String    @default("INR")
+  status                 String    @default("paid")
+  periodStart            DateTime?
+  periodEnd              DateTime?
+  issuedAt               DateTime  @default(now())
+  paymentCapturedAt      DateTime?
+  razorpayPaymentId      String    @unique
+  razorpaySubscriptionId String
+  razorpayInvoiceId      String?
+  sourceEvent            String
+  shopifyOrderId         String?
+  shopifyOrderName       String?
+  emailSentAt            DateTime?
+  emailProviderId        String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  customer               Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([customerId, issuedAt(sort: Desc)])
+  @@index([razorpaySubscriptionId, issuedAt(sort: Desc)])
+  @@index([issuedAt(sort: Desc)])
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  source    String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConversionEvent {
+  id                     String   @id @default(cuid())
+  eventName              String
+  planId                 String?
+  customerEmail          String?
+  razorpayPaymentId      String?
+  razorpaySubscriptionId String?
+  metadata               Json?
+  createdAt              DateTime @default(now())
+
+  @@index([eventName, createdAt(sort: Desc)])
 }

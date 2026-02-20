@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Login failed");
       const params = new URLSearchParams(window.location.search);
-      const next = params.get("next") || "/admin/blog/new";
+      const next = params.get("next") || "/admin";
       window.location.href = next;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed");
