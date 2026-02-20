@@ -72,12 +72,6 @@ export default async function AdminDashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <Link
-                href="/admin/blog/new"
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700"
-              >
-                New Blog Post
-              </Link>
               <form action="/api/admin/logout" method="POST">
                 <button
                   type="submit"

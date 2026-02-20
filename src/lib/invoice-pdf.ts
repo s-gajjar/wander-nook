@@ -1,5 +1,5 @@
-import fs from "fs";
-import path from "path";
+import * as fs from "node:fs";
+import path from "node:path";
 import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import {
   type InvoiceTemplateInput,
@@ -25,11 +25,11 @@ function toPublicFilePath(publicPath: string) {
   return path.join(process.cwd(), "public", publicPath.replace(/^\/+/, ""));
 }
 
-function imageExists(filePath: string) {
+function readFileBuffer(filePath: string) {
   try {
-    return fs.existsSync(filePath);
+    return fs.readFileSync(filePath);
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -50,6 +50,8 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     const logos = getInvoiceLogos();
     const primaryLogoPath = toPublicFilePath(logos.primaryPublicPath);
     const secondaryLogoPath = toPublicFilePath(logos.secondaryPublicPath);
+    const primaryLogo = readFileBuffer(primaryLogoPath);
+    const secondaryLogo = readFileBuffer(secondaryLogoPath);
 
     const pageWidth = doc.page.width;
     const marginX = 28;
@@ -60,8 +62,8 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
 
     doc.rect(marginX, issuerY, contentWidth, 96).stroke("#D6DCE5");
 
-    if (imageExists(secondaryLogoPath)) {
-      doc.image(secondaryLogoPath, marginX + 12, issuerY + 18, {
+    if (secondaryLogo) {
+      doc.image(secondaryLogo, marginX + 12, issuerY + 18, {
         width: 48,
         height: 48,
       });
@@ -74,8 +76,8 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     doc.text(`Contact Number: ${safeText(company.phone)}`, issuerInfoX, issuerY + 54);
     doc.text(`GST Number: ${safeText(company.gstNumber)}`, issuerInfoX, issuerY + 70);
 
-    if (imageExists(primaryLogoPath)) {
-      doc.image(primaryLogoPath, pageWidth - marginX - 190, issuerY + 18, {
+    if (primaryLogo) {
+      doc.image(primaryLogo, pageWidth - marginX - 190, issuerY + 18, {
         width: 170,
         fit: [170, 58],
         align: "right",
