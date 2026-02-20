@@ -28,6 +28,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
 
   const printHref = `/invoice/${invoice.publicToken}/print`;
   const pdfHref = `/invoice/${invoice.publicToken}/pdf`;
+  const downloadHref = `/invoice/${invoice.publicToken}/pdf?download=1`;
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8">
@@ -47,6 +48,12 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
                 target="_blank"
               >
                 Open PDF
+              </Link>
+              <Link
+                href={downloadHref}
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800"
+              >
+                Download PDF
               </Link>
               <Link
                 href={printHref}
@@ -81,14 +88,6 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
               </p>
             </div>
           </div>
-        </section>
-
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <iframe
-            title={`Invoice ${invoice.invoiceNumber}`}
-            src={pdfHref}
-            className="h-[1200px] w-full rounded-xl"
-          />
         </section>
       </div>
     </main>
