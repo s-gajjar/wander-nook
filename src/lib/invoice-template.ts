@@ -70,8 +70,16 @@ function normalizePublicPath(path: string) {
 }
 
 export function getInvoiceLogos() {
-  const primary = (process.env.INVOICE_PRIMARY_LOGO_URL || "/wander-stamps-logo.png").trim();
-  const secondary = (process.env.INVOICE_SECONDARY_LOGO_URL || "/wander-logo.png").trim();
+  const primary = (
+    process.env.INVOICE_BRAND_LOGO_URL ||
+    process.env.INVOICE_SECONDARY_LOGO_URL ||
+    "/wander-logo.png"
+  ).trim();
+  const secondary = (
+    process.env.INVOICE_STAMP_LOGO_URL ||
+    process.env.INVOICE_PRIMARY_LOGO_URL ||
+    "/wander-stamps-logo.png"
+  ).trim();
 
   return {
     primaryUrl: resolveUrl(primary),
@@ -87,7 +95,6 @@ function invoiceStyles() {
       --ink: #0f172a;
       --muted: #475569;
       --line: #d4dae2;
-      --panel: #060606;
       --paper: #ffffff;
       --soft: #f7f9fc;
       --brand: #163b7a;
@@ -109,81 +116,60 @@ function invoiceStyles() {
       background: var(--paper);
       border: 1px solid var(--line);
       border-radius: 14px;
-      overflow: hidden;
+      overflow: visible;
       box-shadow: 0 22px 44px rgba(15, 23, 42, 0.1);
+      padding: 20px 24px 22px;
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(250px, 320px) 1fr;
-      min-height: 100%;
+    .issuer-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      background: #ffffff;
     }
 
-    .left {
-      background: var(--panel);
-      color: #f8fafc;
-      padding: 20px 16px;
+    .issuer {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
     }
 
-    .left h1 {
-      margin: 0;
-      text-align: center;
-      letter-spacing: 0.11em;
-      font-size: 26px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .left .stamp {
-      margin: 14px auto;
-      width: 160px;
-      height: 160px;
-      border-radius: 999px;
+    .issuer .stamp {
+      width: 54px;
+      height: 54px;
       object-fit: contain;
-      background: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.26);
-      padding: 4px;
-      display: block;
+      flex: 0 0 auto;
+      margin-top: 2px;
     }
 
-    .left .brand {
-      margin-top: 8px;
-      text-align: center;
-      font-size: 24px;
+    .issuer-name {
+      margin: 0 0 4px;
+      font-size: 18px;
       line-height: 1.1;
       font-weight: 700;
-      color: #fbbf24;
+      color: #0f172a;
     }
 
-    .left .section {
-      margin-top: 14px;
-      border-top: 1px solid rgba(255, 255, 255, 0.18);
-      padding-top: 12px;
+    .issuer-detail {
+      margin: 1px 0;
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.45;
     }
 
-    .left .label {
-      margin: 0 0 3px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.78);
-      font-weight: 600;
-    }
-
-    .left p {
-      margin: 0;
-      font-size: 14px;
-      line-height: 1.5;
-      color: #e5e7eb;
-    }
-
-    .right {
-      padding: 20px 24px;
+    .issuer-detail strong {
+      color: #0f172a;
+      font-weight: 700;
     }
 
     .top {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 12px;
       border-bottom: 1px solid var(--line);
@@ -200,7 +186,7 @@ function invoiceStyles() {
     }
 
     .meta {
-      margin: 2px 0 0;
+      margin: 3px 0 0;
       font-size: 13px;
       color: var(--muted);
     }
@@ -323,10 +309,15 @@ function invoiceStyles() {
     }
 
     @media (max-width: 820px) {
-      .layout { grid-template-columns: 1fr; }
-      .right { padding: 16px; }
+      .shell { padding: 14px; }
+      .issuer-row,
+      .top {
+        flex-direction: column;
+        align-items: flex-start;
+      }
       .summary { width: 100%; }
       .grid { grid-template-columns: 1fr; }
+      .wordmark { width: 180px; }
     }
   `;
 }
@@ -350,113 +341,83 @@ function invoiceContent(input: InvoiceTemplateInput) {
 
   return `
     <div class="shell">
-      <div class="layout">
-        <aside class="left">
-          <h1>Invoice</h1>
+      <header class="issuer-row">
+        <div class="issuer">
           <img class="stamp" src="${escapeHtml(secondaryUrl)}" alt="Wander Stamps" />
-          <p class="brand">${escapeHtml(company.tradeName)}</p>
-
-          <div class="section">
-            <p>${company.addressLines.map((line) => escapeHtml(line)).join("<br />")}</p>
+          <div>
+            <p class="issuer-name">${escapeHtml(company.tradeName)}</p>
+            <p class="issuer-detail"><strong>Email ID:</strong> ${escapeHtml(company.email)}</p>
+            <p class="issuer-detail"><strong>Contact Number:</strong> ${escapeHtml(company.phone)}</p>
+            <p class="issuer-detail"><strong>GST Number:</strong> ${escapeHtml(company.gstNumber)}</p>
           </div>
+        </div>
+        <img class="wordmark" src="${escapeHtml(primaryUrl)}" alt="Wander Nook" />
+      </header>
 
-          <div class="section">
-            <p class="label">Email ID</p>
-            <p>${escapeHtml(company.email)}</p>
-          </div>
+      <header class="top">
+        <div>
+          <h2 class="title">Tax Invoice</h2>
+          <p class="meta">Invoice No: <strong>${escapeHtml(input.invoiceNumber)}</strong></p>
+          <p class="meta">Issue Date: ${escapeHtml(formatDate(input.issuedAt))}</p>
+          <p class="meta">Payment Date: ${escapeHtml(formatDate(input.paymentCapturedAt || input.issuedAt))}</p>
+        </div>
+      </header>
 
-          <div class="section">
-            <p class="label">Contact Number</p>
-            <p>${escapeHtml(company.phone)}</p>
-          </div>
+      <section class="grid">
+        <div class="box">
+          <h3>Billed To</h3>
+          <p><strong>${escapeHtml(input.customer.fullName)}</strong></p>
+          <p>${escapeHtml(input.customer.email)}</p>
+          <p>${escapeHtml(input.customer.phone)}</p>
+          <p>${escapeHtml(customerAddress)}</p>
+        </div>
 
-          <div class="section">
-            <p class="label">Company Name</p>
-            <p>${escapeHtml(company.companyName)}</p>
-            <p class="label" style="margin-top:8px;">Trade Name</p>
-            <p>${escapeHtml(company.tradeName)}</p>
-            <p class="label" style="margin-top:8px;">GST Number</p>
-            <p>${escapeHtml(company.gstNumber)}</p>
-          </div>
+        <div class="box">
+          <h3>Payment Reference</h3>
+          <p><strong>Plan:</strong> ${escapeHtml(input.planLabel)} (${escapeHtml(input.billingCycle)})</p>
+          <p><strong>Period:</strong> ${escapeHtml(`${formatDate(input.periodStart)} - ${formatDate(input.periodEnd)}`)}</p>
+          <p><strong>Razorpay Payment ID:</strong> ${escapeHtml(input.razorpayPaymentId)}</p>
+          <p><strong>Razorpay Subscription ID:</strong> ${escapeHtml(input.razorpaySubscriptionId)}</p>
+          ${input.razorpayInvoiceId ? `<p><strong>Razorpay Invoice ID:</strong> ${escapeHtml(input.razorpayInvoiceId)}</p>` : ""}
+          ${input.shopifyOrderName ? `<p><strong>Shopify Order:</strong> ${escapeHtml(input.shopifyOrderName)}</p>` : ""}
+        </div>
+      </section>
 
-          <div class="section">
-            <p class="label">Bank Details</p>
-            <p>Name of Bank: ${escapeHtml(company.bankName)}</p>
-            <p>Name of Branch: ${escapeHtml(company.bankBranch)}</p>
-            <p>Account No.: ${escapeHtml(company.bankAccountNumber)}</p>
-            <p>Account Type: ${escapeHtml(company.bankAccountType)}</p>
-            <p>IFSC Code: ${escapeHtml(company.bankIfsc)}</p>
-          </div>
-        </aside>
+      <table aria-label="Invoice items">
+        <thead>
+          <tr>
+            <th style="width: 52%;">Description</th>
+            <th style="width: 24%;">Subscription Period</th>
+            <th style="width: 24%;" class="align-right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${escapeHtml(input.planLabel)} subscription charge</td>
+            <td>${escapeHtml(`${formatDate(input.periodStart)} - ${formatDate(input.periodEnd)}`)}</td>
+            <td class="align-right">${escapeHtml(invoiceAmount)}</td>
+          </tr>
+        </tbody>
+      </table>
 
-        <main class="right">
-          <header class="top">
-            <div>
-              <h2 class="title">Tax Invoice</h2>
-              <p class="meta">Invoice No: <strong>${escapeHtml(input.invoiceNumber)}</strong></p>
-              <p class="meta">Issue Date: ${escapeHtml(formatDate(input.issuedAt))}</p>
-              <p class="meta">Payment Date: ${escapeHtml(formatDate(input.paymentCapturedAt || input.issuedAt))}</p>
-            </div>
-            <img class="wordmark" src="${escapeHtml(primaryUrl)}" alt="Wander Nook" />
-          </header>
-
-          <section class="grid">
-            <div class="box">
-              <h3>Billed To</h3>
-              <p><strong>${escapeHtml(input.customer.fullName)}</strong></p>
-              <p>${escapeHtml(input.customer.email)}</p>
-              <p>${escapeHtml(input.customer.phone)}</p>
-              <p>${escapeHtml(customerAddress)}</p>
-            </div>
-
-            <div class="box">
-              <h3>Payment Reference</h3>
-              <p><strong>Plan:</strong> ${escapeHtml(input.planLabel)} (${escapeHtml(input.billingCycle)})</p>
-              <p><strong>Period:</strong> ${escapeHtml(`${formatDate(input.periodStart)} - ${formatDate(input.periodEnd)}`)}</p>
-              <p><strong>Razorpay Payment ID:</strong> ${escapeHtml(input.razorpayPaymentId)}</p>
-              <p><strong>Razorpay Subscription ID:</strong> ${escapeHtml(input.razorpaySubscriptionId)}</p>
-              ${input.razorpayInvoiceId ? `<p><strong>Razorpay Invoice ID:</strong> ${escapeHtml(input.razorpayInvoiceId)}</p>` : ""}
-              ${input.shopifyOrderName ? `<p><strong>Shopify Order:</strong> ${escapeHtml(input.shopifyOrderName)}</p>` : ""}
-            </div>
-          </section>
-
-          <table aria-label="Invoice items">
-            <thead>
-              <tr>
-                <th style="width: 52%;">Description</th>
-                <th style="width: 24%;">Subscription Period</th>
-                <th style="width: 24%;" class="align-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>${escapeHtml(input.planLabel)} subscription charge</td>
-                <td>${escapeHtml(`${formatDate(input.periodStart)} - ${formatDate(input.periodEnd)}`)}</td>
-                <td class="align-right">${escapeHtml(invoiceAmount)}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="summary">
-            <div class="row">
-              <span>Subtotal</span>
-              <span>${escapeHtml(invoiceAmount)}</span>
-            </div>
-            <div class="row">
-              <span>Total Paid</span>
-              <span>${escapeHtml(invoiceAmount)}</span>
-            </div>
-          </div>
-
-          <div class="note">
-            This is a computer-generated invoice for subscription payment. GST Number: <strong>${escapeHtml(
-              company.gstNumber
-            )}</strong>.
-          </div>
-
-          <p class="footer">For support, write to ${escapeHtml(company.email)}.</p>
-        </main>
+      <div class="summary">
+        <div class="row">
+          <span>Subtotal</span>
+          <span>${escapeHtml(invoiceAmount)}</span>
+        </div>
+        <div class="row">
+          <span>Total Paid</span>
+          <span>${escapeHtml(invoiceAmount)}</span>
+        </div>
       </div>
+
+      <div class="note">
+        This is a computer-generated invoice for subscription payment. GST Number: <strong>${escapeHtml(
+          company.gstNumber
+        )}</strong>.
+      </div>
+
+      <p class="footer">For support, write to support@wondernook.in.</p>
     </div>
   `;
 }

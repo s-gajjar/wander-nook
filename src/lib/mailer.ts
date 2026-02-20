@@ -25,7 +25,7 @@ function env(name: string) {
 }
 
 function getFromEmail() {
-  return env("MAIL_FROM") || env("RESEND_FROM_EMAIL") || "support@wandernook.in";
+  return env("MAIL_FROM") || env("RESEND_FROM_EMAIL") || "support@wondernook.in";
 }
 
 function hasSmtpConfig() {

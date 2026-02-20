@@ -33,7 +33,7 @@ export function getInvoiceCompanyProfile(): InvoiceCompanyProfile {
             "Shastri Hall, Nana Chowk",
             "Grant Road (W), Mumbai 400007",
           ],
-    email: (process.env.INVOICE_COMPANY_EMAIL || "contact@wanderstamps.com").trim(),
+    email: (process.env.INVOICE_COMPANY_EMAIL || "support@wondernook.in").trim(),
     phone: (process.env.INVOICE_COMPANY_PHONE || "+91 98200 67074").trim(),
     gstNumber: (process.env.INVOICE_GST_NUMBER || "27FQTPS4280J2ZU").trim(),
     bankName: (process.env.INVOICE_BANK_NAME || "ICICI Bank").trim(),

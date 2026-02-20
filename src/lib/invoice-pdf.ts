@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import {
   type InvoiceTemplateInput,
   formatCurrency,
@@ -52,108 +52,42 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     const secondaryLogoPath = toPublicFilePath(logos.secondaryPublicPath);
 
     const pageWidth = doc.page.width;
-    const pageHeight = doc.page.height;
-    const leftWidth = 215;
-    const rightStart = leftWidth + 24;
+    const marginX = 28;
+    const contentWidth = pageWidth - marginX * 2;
+    const issuerY = 30;
+    const taxHeaderY = 138;
+    const bodyY = 236;
 
-    doc.rect(0, 0, leftWidth, pageHeight).fill("#050505");
-
-    doc.fillColor("#FFFFFF").fontSize(28).font("Helvetica-Bold").text("INVOICE", 28, 34, {
-      width: leftWidth - 56,
-      align: "center",
-    });
+    doc.rect(marginX, issuerY, contentWidth, 96).stroke("#D6DCE5");
 
     if (imageExists(secondaryLogoPath)) {
-      doc.image(secondaryLogoPath, 48, 86, {
-        width: 120,
-        height: 120,
+      doc.image(secondaryLogoPath, marginX + 12, issuerY + 18, {
+        width: 48,
+        height: 48,
       });
     }
 
-    doc
-      .fillColor("#FBBF24")
-      .font("Helvetica-Bold")
-      .fontSize(18)
-      .text(safeText(company.tradeName), 26, 216, {
-        width: leftWidth - 52,
-        align: "center",
-      });
-
-    const leftSection = (
-      label: string,
-      lines: string[],
-      y: number,
-      nextOffset = 62
-    ) => {
-      doc
-        .fillColor("#C7D2FE")
-        .font("Helvetica-Bold")
-        .fontSize(10)
-        .text(label.toUpperCase(), 26, y, {
-          width: leftWidth - 52,
-          align: "left",
-        });
-
-      doc
-        .fillColor("#E5E7EB")
-        .font("Helvetica")
-        .fontSize(10.5)
-        .text(lines.filter(Boolean).join("\n"), 26, y + 13, {
-          width: leftWidth - 52,
-          align: "left",
-          lineGap: 2,
-        });
-
-      return y + nextOffset;
-    };
-
-    let y = 258;
-    y = leftSection("Address", company.addressLines, y, 82);
-    y = leftSection("Email ID", [company.email], y, 48);
-    y = leftSection("Contact Number", [company.phone], y, 48);
-    y = leftSection("Company Name", [company.companyName], y, 46);
-    y = leftSection("Trade Name", [company.tradeName], y, 46);
-    y = leftSection("GST Number", [company.gstNumber], y, 46);
-    leftSection(
-      "Bank Details",
-      [
-        `Name of Bank: ${company.bankName}`,
-        `Name of Branch: ${company.bankBranch}`,
-        `Account No.: ${company.bankAccountNumber}`,
-        `Account Type: ${company.bankAccountType}`,
-        `IFSC Code: ${company.bankIfsc}`,
-      ],
-      y,
-      90
-    );
-
-    doc.rect(rightStart, 30, pageWidth - rightStart - 24, 120).stroke("#D6DCE5");
-
-    doc.fillColor("#163B7A").font("Helvetica-Bold").fontSize(24).text("Tax Invoice", rightStart + 14, 42);
-
-    doc.fillColor("#334155").font("Helvetica").fontSize(11);
-    doc.text(`Invoice No: ${safeText(input.invoiceNumber)}`, rightStart + 14, 76);
-    doc.text(`Issue Date: ${formatDate(input.issuedAt)}`, rightStart + 14, 93);
-    doc.text(`Payment Date: ${formatDate(input.paymentCapturedAt || input.issuedAt)}`, rightStart + 14, 110);
+    const issuerInfoX = marginX + 72;
+    doc.fillColor("#0F172A").font("Helvetica-Bold").fontSize(14).text(safeText(company.tradeName), issuerInfoX, issuerY + 14);
+    doc.fillColor("#334155").font("Helvetica").fontSize(10.5);
+    doc.text(`Email ID: ${safeText(company.email)}`, issuerInfoX, issuerY + 38);
+    doc.text(`Contact Number: ${safeText(company.phone)}`, issuerInfoX, issuerY + 54);
+    doc.text(`GST Number: ${safeText(company.gstNumber)}`, issuerInfoX, issuerY + 70);
 
     if (imageExists(primaryLogoPath)) {
-      doc.image(primaryLogoPath, pageWidth - 220, 44, {
-        width: 180,
-        fit: [180, 80],
+      doc.image(primaryLogoPath, pageWidth - marginX - 190, issuerY + 18, {
+        width: 170,
+        fit: [170, 58],
+        align: "right",
       });
     }
 
-    const rightBox = (title: string, lines: string[], boxY: number) => {
-      const boxWidth = (pageWidth - rightStart - 30 - 14) / 2;
-      const x = title === "Billed To" ? rightStart : rightStart + boxWidth + 14;
-
-      doc.rect(x, boxY, boxWidth, 132).stroke("#D6DCE5");
-      doc.fillColor("#475569").font("Helvetica-Bold").fontSize(10).text(title.toUpperCase(), x + 10, boxY + 9);
-      doc.fillColor("#0F172A").font("Helvetica").fontSize(10.5).text(lines.join("\n"), x + 10, boxY + 24, {
-        width: boxWidth - 18,
-        lineGap: 2,
-      });
-    };
+    doc.rect(marginX, taxHeaderY, contentWidth, 84).stroke("#D6DCE5");
+    doc.fillColor("#163B7A").font("Helvetica-Bold").fontSize(24).text("Tax Invoice", marginX + 14, taxHeaderY + 14);
+    doc.fillColor("#334155").font("Helvetica").fontSize(11);
+    doc.text(`Invoice No: ${safeText(input.invoiceNumber)}`, marginX + 14, taxHeaderY + 48);
+    doc.text(`Issue Date: ${formatDate(input.issuedAt)}`, marginX + 14, taxHeaderY + 63);
+    doc.text(`Payment Date: ${formatDate(input.paymentCapturedAt || input.issuedAt)}`, marginX + 14, taxHeaderY + 78);
 
     const customerAddress = [
       input.customer.addressLine1,
@@ -166,7 +100,22 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
       .filter(Boolean)
       .join(", ");
 
-    rightBox(
+    const infoGap = 14;
+    const infoBoxW = (contentWidth - infoGap) / 2;
+    const infoBoxH = 132;
+    const leftInfoX = marginX;
+    const rightInfoX = marginX + infoBoxW + infoGap;
+
+    const infoBox = (title: string, lines: string[], x: number) => {
+      doc.rect(x, bodyY, infoBoxW, infoBoxH).stroke("#D6DCE5");
+      doc.fillColor("#475569").font("Helvetica-Bold").fontSize(10).text(title.toUpperCase(), x + 10, bodyY + 9);
+      doc.fillColor("#0F172A").font("Helvetica").fontSize(10.5).text(lines.join("\n"), x + 10, bodyY + 24, {
+        width: infoBoxW - 20,
+        lineGap: 2,
+      });
+    };
+
+    infoBox(
       "Billed To",
       [
         safeText(input.customer.fullName),
@@ -174,10 +123,10 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
         safeText(input.customer.phone),
         safeText(customerAddress),
       ],
-      166
+      leftInfoX
     );
 
-    rightBox(
+    infoBox(
       "Payment Reference",
       [
         `${safeText(input.planLabel)} (${safeText(input.billingCycle)})`,
@@ -185,13 +134,14 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
         `Payment ID: ${safeText(input.razorpayPaymentId)}`,
         `Subscription ID: ${safeText(input.razorpaySubscriptionId)}`,
         input.razorpayInvoiceId ? `Invoice ID: ${safeText(input.razorpayInvoiceId)}` : "",
+        input.shopifyOrderName ? `Shopify Order: ${safeText(input.shopifyOrderName)}` : "",
       ].filter(Boolean),
-      166
+      rightInfoX
     );
 
-    const tableX = rightStart;
-    const tableY = 318;
-    const tableWidth = pageWidth - rightStart - 24;
+    const tableX = marginX;
+    const tableY = bodyY + infoBoxH + 16;
+    const tableWidth = contentWidth;
 
     doc.rect(tableX, tableY, tableWidth, 28).fillAndStroke("#F1F5F9", "#D6DCE5");
     doc.fillColor("#334155").font("Helvetica-Bold").fontSize(9.5);
@@ -255,6 +205,15 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
           width: tableWidth,
         }
       );
+
+    doc
+      .fillColor("#64748B")
+      .font("Helvetica")
+      .fontSize(9.5)
+      .text("For support, write to support@wondernook.in.", tableX, summaryY + 82, {
+        width: tableWidth,
+        align: "center",
+      });
 
     doc.end();
   });
