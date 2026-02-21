@@ -1,6 +1,4 @@
-import { readFileSync } from "fs";
-import path from "path";
-import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
 import {
   type InvoiceTemplateInput,
   formatCurrency,
@@ -21,19 +19,27 @@ function formatDate(value: Date | null | undefined) {
   }).format(value);
 }
 
-function toPublicFilePath(publicPath: string) {
-  return path.join(process.cwd(), "public", publicPath.replace(/^\/+/, ""));
-}
-
-function readFileBuffer(filePath: string) {
+async function loadImageBuffer(url: string) {
   try {
-    return readFileSync(filePath);
+    const response = await fetch(url, { cache: "force-cache" });
+    if (!response.ok) {
+      return null;
+    }
+    const bytes = await response.arrayBuffer();
+    return Buffer.from(bytes);
   } catch {
     return null;
   }
 }
 
 export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Promise<Buffer> {
+  const company = getInvoiceCompanyProfile();
+  const logos = getInvoiceLogos();
+  const [primaryLogo, secondaryLogo] = await Promise.all([
+    loadImageBuffer(logos.primaryUrl),
+    loadImageBuffer(logos.secondaryUrl),
+  ]);
+
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({
       size: "A4",
@@ -45,13 +51,6 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     doc.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
-
-    const company = getInvoiceCompanyProfile();
-    const logos = getInvoiceLogos();
-    const primaryLogoPath = toPublicFilePath(logos.primaryPublicPath);
-    const secondaryLogoPath = toPublicFilePath(logos.secondaryPublicPath);
-    const primaryLogo = readFileBuffer(primaryLogoPath);
-    const secondaryLogo = readFileBuffer(secondaryLogoPath);
 
     const pageWidth = doc.page.width;
     const marginX = 28;
