@@ -1,7 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import {
   type InvoiceTemplateInput,
-  formatCurrency,
   getInvoiceLogos,
 } from "@/src/lib/invoice-template";
 import { getInvoiceCompanyProfile } from "@/src/lib/invoice-company-profile";
@@ -18,6 +17,16 @@ const COLOR_TABLE_HEAD = rgb(0xf1 / 255, 0xf5 / 255, 0xf9 / 255);
 
 function safeText(value: string | null | undefined) {
   return (value || "-").trim() || "-";
+}
+
+function formatCurrencyForPdf(amountPaise: number, currency: string) {
+  const amount = amountPaise / 100;
+  const normalizedCurrency = (currency || "INR").toUpperCase();
+  const amountText = new Intl.NumberFormat("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+  return `${normalizedCurrency} ${amountText}`;
 }
 
 function formatDate(value: Date | null | undefined) {
@@ -438,7 +447,7 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   });
   drawRightAlignedText({
     page,
-    text: formatCurrency(input.amountPaise, input.currency),
+    text: formatCurrencyForPdf(input.amountPaise, input.currency),
     rightX: tableX + tableWidth - 18,
     top: tableTop + 44,
     font: regularFont,
@@ -465,7 +474,7 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   });
   drawRightAlignedText({
     page,
-    text: formatCurrency(input.amountPaise, input.currency),
+    text: formatCurrencyForPdf(input.amountPaise, input.currency),
     rightX: summaryX + summaryW - 10,
     top: summaryTop + 8,
     font: regularFont,
@@ -485,7 +494,7 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   });
   drawRightAlignedText({
     page,
-    text: formatCurrency(input.amountPaise, input.currency),
+    text: formatCurrencyForPdf(input.amountPaise, input.currency),
     rightX: summaryX + summaryW - 10,
     top: summaryTop + 32,
     font: boldFont,
