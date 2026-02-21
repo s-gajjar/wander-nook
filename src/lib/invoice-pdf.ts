@@ -77,10 +77,10 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     doc.text(`GST Number: ${safeText(company.gstNumber)}`, issuerInfoX, issuerY + 70);
 
     if (primaryLogo) {
-      doc.image(primaryLogo, pageWidth - marginX - 190, issuerY + 18, {
-        width: 170,
-        fit: [170, 58],
-        align: "right",
+      const brandLogoWidth = 165;
+      const brandLogoX = marginX + contentWidth - brandLogoWidth - 12;
+      doc.image(primaryLogo, brandLogoX, issuerY + 18, {
+        width: brandLogoWidth,
       });
     }
 

@@ -70,14 +70,26 @@ function normalizePublicPath(path: string) {
 }
 
 export function getInvoiceLogos() {
+  const legacyPrimary = (process.env.INVOICE_PRIMARY_LOGO_URL || "").trim();
+  const legacySecondary = (process.env.INVOICE_SECONDARY_LOGO_URL || "").trim();
+
+  const inferBrandFromLegacy = [legacyPrimary, legacySecondary].find((value) =>
+    /wander-logo|nook/i.test(value)
+  );
+  const inferStampFromLegacy = [legacyPrimary, legacySecondary].find((value) =>
+    /stamp/i.test(value)
+  );
+
   const primary = (
     process.env.INVOICE_BRAND_LOGO_URL ||
-    process.env.INVOICE_SECONDARY_LOGO_URL ||
+    inferBrandFromLegacy ||
+    legacySecondary ||
     "/wander-logo.png"
   ).trim();
   const secondary = (
     process.env.INVOICE_STAMP_LOGO_URL ||
-    process.env.INVOICE_PRIMARY_LOGO_URL ||
+    inferStampFromLegacy ||
+    legacyPrimary ||
     "/wander-stamps-logo.png"
   ).trim();
 
@@ -195,6 +207,8 @@ function invoiceStyles() {
       width: 220px;
       max-width: 100%;
       height: auto;
+      margin-left: auto;
+      display: block;
     }
 
     .grid {
