@@ -462,23 +462,63 @@ export function renderInvoiceEmailHtml(params: {
   issuedAt: Date;
 }) {
   const amount = formatCurrency(params.amountPaise, params.currency);
+  const { primaryUrl, secondaryUrl } = getInvoiceLogos();
   return `
-    <div style="font-family: 'Segoe UI', Arial, sans-serif; color:#0f172a; background:#f8fafc; padding:20px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;margin:0 auto;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; color:#0f172a; background:#eef3fb; padding:22px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:660px;margin:0 auto;background:#ffffff;border-radius:14px;border:1px solid #dce5f2;overflow:hidden;">
         <tr>
-          <td style="padding:18px 20px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;">
-            <h2 style="margin:0;font-size:20px;color:#1f3f87;">Your Wander Nook Invoice</h2>
+          <td style="padding:16px 20px;background:linear-gradient(135deg,#f4f7fc,#ecf2ff);border-bottom:1px solid #dce5f2;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td style="vertical-align:top;">
+                  <img src="${escapeHtml(
+                    secondaryUrl
+                  )}" alt="Wander Stamps" width="42" height="42" style="display:block;object-fit:contain;margin-bottom:8px;" />
+                  <h2 style="margin:0;font-size:22px;color:#163b7a;line-height:1.25;">Your Wander Nook Invoice</h2>
+                </td>
+                <td style="text-align:right;vertical-align:top;">
+                  <img src="${escapeHtml(
+                    primaryUrl
+                  )}" alt="Wander Nook" width="170" style="max-width:100%;height:auto;display:inline-block;" />
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
         <tr>
-          <td style="padding:18px 20px; font-size:14px; line-height:1.6;">
+          <td style="padding:20px; font-size:14px; line-height:1.65;">
             <p style="margin:0 0 12px;">Hi ${escapeHtml(params.customerName)},</p>
-            <p style="margin:0 0 12px;">Thanks for your payment. Your invoice PDF is attached and you can also view it online.</p>
-            <p style="margin:0 0 8px;"><strong>Invoice #</strong> ${escapeHtml(params.invoiceNumber)}</p>
-            <p style="margin:0 0 8px;"><strong>Plan</strong> ${escapeHtml(params.planLabel)} (${escapeHtml(params.billingCycle)})</p>
-            <p style="margin:0 0 8px;"><strong>Amount</strong> ${escapeHtml(amount)}</p>
-            <p style="margin:0 0 16px;"><strong>Date</strong> ${escapeHtml(formatDate(params.issuedAt))}</p>
-            <a href="${escapeHtml(params.invoiceUrl)}" style="display:inline-block;padding:10px 16px;background:#1f3f87;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;">View Invoice</a>
+            <p style="margin:0 0 14px;">Thanks for your payment. Your styled invoice PDF is attached. You can also open it online anytime.</p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #dce5f2;border-radius:10px;background:#f8fbff;">
+              <tr>
+                <td style="padding:12px 14px;border-bottom:1px solid #e5edf8;"><strong>Invoice #</strong></td>
+                <td style="padding:12px 14px;border-bottom:1px solid #e5edf8;text-align:right;">${escapeHtml(
+                  params.invoiceNumber
+                )}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 14px;border-bottom:1px solid #e5edf8;"><strong>Plan</strong></td>
+                <td style="padding:12px 14px;border-bottom:1px solid #e5edf8;text-align:right;">${escapeHtml(
+                  params.planLabel
+                )} (${escapeHtml(params.billingCycle)})</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 14px;border-bottom:1px solid #e5edf8;"><strong>Amount</strong></td>
+                <td style="padding:12px 14px;border-bottom:1px solid #e5edf8;text-align:right;">${escapeHtml(
+                  amount
+                )}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 14px;"><strong>Date</strong></td>
+                <td style="padding:12px 14px;text-align:right;">${escapeHtml(formatDate(params.issuedAt))}</td>
+              </tr>
+            </table>
+            <p style="margin:18px 0 0;">
+              <a href="${escapeHtml(
+                params.invoiceUrl
+              )}" style="display:inline-block;padding:11px 16px;background:#163b7a;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">View Invoice</a>
+            </p>
+            <p style="margin:16px 0 0;color:#475569;font-size:13px;">For support, write to support@wondernook.in.</p>
           </td>
         </tr>
       </table>

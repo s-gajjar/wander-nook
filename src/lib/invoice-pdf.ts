@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import path from "path";
-import PDFDocument from "pdfkit/js/pdfkit.standalone.js";
+import PDFDocument from "pdfkit";
 import {
   type InvoiceTemplateInput,
   formatCurrency,
