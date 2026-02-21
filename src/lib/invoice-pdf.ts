@@ -19,6 +19,10 @@ function safeText(value: string | null | undefined) {
   return (value || "-").trim() || "-";
 }
 
+function sanitizePdfText(text: string) {
+  return text.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 function formatCurrencyForPdf(amountPaise: number, currency: string) {
   const amount = amountPaise / 100;
   const normalizedCurrency = (currency || "INR").toUpperCase();
@@ -70,7 +74,7 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number) {
   const paragraphs = text.split("\n");
 
   for (const paragraph of paragraphs) {
-    const words = paragraph.split(/\s+/).filter(Boolean);
+    const words = sanitizePdfText(paragraph).split(/\s+/).filter(Boolean);
     if (words.length === 0) {
       lines.push("");
       continue;
@@ -117,7 +121,8 @@ function drawTextBlock(params: {
 
   const lines = wrapText(text, font, size, maxWidth);
   lines.forEach((line, index) => {
-    page.drawText(line, {
+    const printableLine = sanitizePdfText(line);
+    page.drawText(printableLine, {
       x,
       y: topToBottomY(top + index * lineHeight, size),
       size,
@@ -139,8 +144,9 @@ function drawRightAlignedText(params: {
   color?: typeof COLOR_INK;
 }) {
   const { page, text, rightX, top, font, size, color = COLOR_INK } = params;
-  const width = font.widthOfTextAtSize(text, size);
-  page.drawText(text, {
+  const printableText = sanitizePdfText(text);
+  const width = font.widthOfTextAtSize(printableText, size);
+  page.drawText(printableText, {
     x: rightX - width,
     y: topToBottomY(top, size),
     size,
