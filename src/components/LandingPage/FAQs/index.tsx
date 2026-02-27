@@ -46,17 +46,21 @@ const faqData = [
         <p>We offer two subscription options:</p>
         <ul className="list-disc ml-6 mt-2">
           <li>
-            <b>Monthly Autopay:</b> INR 200 every month
+            <b>Monthly Plan:</b>
             <ul className="list-disc ml-6">
-              <li>Recurring for 36 months</li>
-              <li>Auto-debited each month</li>
+              <li>INR 200 billed every month</li>
+              <li>Recurring auto-debit for 12 months</li>
+              <li>Cancel anytime, no questions asked</li>
+              <li>Full subscription benefits included</li>
             </ul>
           </li>
           <li className="mt-2">
-            <b>Annual Autopay:</b> INR 2,400 every year
+            <b>Annual Plan:</b>
             <ul className="list-disc ml-6">
-              <li>Recurring for 5 years (60 months total)</li>
-              <li>Auto-debited each year</li>
+              <li>One-time payment of INR 2300</li>
+              <li>Valid for 12 months from date of purchase</li>
+              <li>Optional auto-renewal for next year</li>
+              <li>Full subscription benefits included</li>
             </ul>
           </li>
         </ul>
@@ -77,7 +81,8 @@ const faqData = [
           via courier/registered post. Delivery usually takes{" "}
           <b>up to 7 working days</b> from the dispatch date. Digital
           subscriptions are emailed on the same schedule. Billing follows the
-          selected autopay option: monthly (36 months) or annual (5 years).
+          selected plan: monthly recurring (up to 12 months) or annual
+          one-time (12 months validity).
         </p>
       </div>
     ),
@@ -86,12 +91,17 @@ const faqData = [
     id: 4,
     title: "Can I get a sample before subscribing?",
     answer: (
-      <p>
-        Yes! You can request a sample of our <b>print edition</b> by filling out
-        a form that requires your name, email address, contact number, school
-        name, and city. This will give you a preview of what Wander Nook offers
-        before you commit to a subscription.
-      </p>
+      <div>
+        <p>
+          Yes! You can purchase a sample copy of our <b>print edition</b> for{" "}
+          <b>INR 100</b>. Simply fill out the form with your details, and our
+          team will contact you to assist with payment.
+        </p>
+        <p className="mt-2">
+          Once the payment is completed, your sample copy will be dispatched on
+          the nearest dispatch date - <b>1st or 16th of the month</b>.
+        </p>
+      </div>
     ),
   },
   {
@@ -104,12 +114,12 @@ const faqData = [
           subscriptions <b>cannot be cancelled or refunded</b>.
         </p>
         <p className="mt-2">
-          <b>Digital Subscriptions:</b> To change or cancel your digital
-          subscription, email us at <b>support@wondernook.in</b>.
+          <b>Monthly Plan:</b> Monthly auto-debit can be cancelled anytime.
+          Cancellation stops future debits.
         </p>
         <p className="mt-2">
-          Monthly plans auto-renew monthly for 36 months and annual plans
-          auto-renew yearly for 5 years unless cancelled per policy.
+          <b>Annual Plan:</b> One-time payment for 12 months. It does not
+          enforce recurring billing by default, with optional renewal next year.
         </p>
       </div>
     ),

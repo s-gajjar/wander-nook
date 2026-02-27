@@ -4,8 +4,8 @@
 This project now uses a **custom Razorpay checkout flow** for autopay plans, and creates a Shopify order **only after verified payment**.
 
 Supported plans:
-- Monthly autopay: INR 200, recurring for 36 cycles
-- Annual autopay: INR 2400, recurring for 5 cycles
+- Monthly autopay: INR 200, recurring for 12 cycles
+- Annual plan: INR 2300, billed once (1 yearly cycle)
 
 ## Environment Variables
 Add these in your deployment environment (Vercel Production):

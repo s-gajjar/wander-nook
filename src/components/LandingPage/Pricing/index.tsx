@@ -7,6 +7,7 @@ import { trackClientEvent } from "@/src/lib/analytics-client";
 type PlanOption = {
   id: "monthly-autopay" | "annual-autopay";
   title: string;
+  billingLabel: string;
   bgColor: string;
   textColor: string;
   border: boolean;
@@ -21,6 +22,7 @@ type PlanOption = {
     bgColor: string;
     textColor: string;
   };
+  billingFootnote: string;
   durationMonths: number;
 };
 
@@ -126,13 +128,15 @@ const pricingData: PlanOption[] = [
   {
     id: "monthly-autopay",
     title: "Monthly",
+    billingLabel: "Recurring",
     bgColor: "bg-purple-600",
     textColor: "text-white",
     border: false,
     features: [
-      "Billed every month",
-      "Autopay mode so you don't have to worry",
-      "Same subscription benefits included",
+      "INR 200 billed every month",
+      "Recurring auto-debit for 12 months",
+      "Cancel anytime, no questions asked",
+      "Full subscription benefits included",
     ],
     price: {
       currency: "INR",
@@ -144,18 +148,21 @@ const pricingData: PlanOption[] = [
       bgColor: "bg-white",
       textColor: "text-purple-600",
     },
-    durationMonths: 36,
+    billingFootnote: "Recurring billing enabled for 12 months",
+    durationMonths: 12,
   },
   {
     id: "annual-autopay",
     title: "Annual",
+    billingLabel: "One-time",
     bgColor: "bg-white",
     textColor: "text-black",
     border: true,
     features: [
-      "Billed once",
-      "Autopay mode for next year which you can cancel easily",
-      "Same subscription benefits included",
+      "One-time payment of INR 2300",
+      "Valid for 12 months from date of purchase",
+      "Optional auto-renewal for next year",
+      "Full subscription benefits included",
     ],
     price: {
       currency: "INR",
@@ -167,7 +174,8 @@ const pricingData: PlanOption[] = [
       bgColor: "bg-orange-500",
       textColor: "text-white",
     },
-    durationMonths: 60,
+    billingFootnote: "Annual plan is one-time payment (no forced recurrence)",
+    durationMonths: 12,
   },
 ];
 
@@ -190,7 +198,7 @@ const Pricing = () => {
   const [contact, setContact] = useState("");
   const [city, setCity] = useState("");
   const [school, setSchool] = useState("");
-  const [downloading, setDownloading] = useState(false);
+  const [sampleSubmitting, setSampleSubmitting] = useState(false);
 
   const [openAutopayModal, setOpenAutopayModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<PlanOption | null>(null);
@@ -403,39 +411,30 @@ const Pricing = () => {
   const submitSample = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setDownloading(true);
+      setSampleSubmitting(true);
       const res = await fetch("/api/sample", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, contactNo: contact, city, schoolName: school }),
       });
-      const data = await res.json();
-      if (!res.ok && !data?.downloadPath) throw new Error(data?.error || "Request failed");
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) {
+        throw new Error(data?.error || "Request failed");
+      }
       trackClientEvent("sample_issue_requested", {
         source: "pricing_section",
       });
-      toast.success("Sample request sent!");
+      toast.success("Sample request submitted. Our team will contact you for payment.");
       setOpenSample(false);
       setName("");
       setEmail("");
       setContact("");
       setCity("");
       setSchool("");
-      const downloadUrl = data?.downloadPath || data?.pdfUrl;
-      if (downloadUrl) {
-        const a = document.createElement("a");
-        a.href = downloadUrl;
-        a.download = "sample.pdf";
-        a.rel = "noopener noreferrer";
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      }
-    } catch {
-      toast.error("Failed to send request");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send request");
     } finally {
-      setDownloading(false);
+      setSampleSubmitting(false);
     }
   };
 
@@ -466,7 +465,7 @@ const Pricing = () => {
             <h3 className="md:text-[28px] leading-7 text-[24px] md:leading-[33px] font-semibold mb-2">
               {card.title}
             </h3>
-            <p className="text-xs uppercase tracking-[0.2em] opacity-70 mb-4">Recurring</p>
+            <p className="text-xs uppercase tracking-[0.2em] opacity-70 mb-4">{card.billingLabel}</p>
             <ul className="space-y-3 mb-8 flex-1">
               {card.features.map((feature, index) => (
                 <li
@@ -491,7 +490,7 @@ const Pricing = () => {
                 {card.button.text}
               </button>
               <p className="text-xs mt-2 text-center opacity-75 min-h-[16px]">
-                Recurring billing enabled
+                {card.billingFootnote}
               </p>
             </div>
           </div>
@@ -807,10 +806,10 @@ const Pricing = () => {
             </button>
             <div className="text-center mb-6 md:mb-8">
               <h4 className="text-[28px] md:text-[40px] leading-tight font-semibold text-[#2C2C2C]">
-                Get Your Free Sample Print Edition
+                Request a Sample Print Copy (INR 100)
               </h4>
               <p className="mt-3 text-[#5F6368] text-[15px] md:text-[18px]">
-                Fill out the form below to download the sample copy
+                Fill out the form and our team will contact you to assist with payment and dispatch.
               </p>
             </div>
 
@@ -872,12 +871,12 @@ const Pricing = () => {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    disabled={downloading}
+                    disabled={sampleSubmitting}
                     className={`w-full md:w-auto inline-flex items-center justify-center rounded-full bg-[#FFC21A] text-[#1F2937] font-semibold px-6 md:px-7 py-3 hover:brightness-95 cursor-pointer ${
-                      downloading ? "opacity-70 cursor-not-allowed" : ""
+                      sampleSubmitting ? "opacity-70 cursor-not-allowed" : ""
                     }`}
                   >
-                    {downloading ? "Preparing download…" : "Download The Sample Copy"}
+                    {sampleSubmitting ? "Submitting..." : "Request Sample Copy"}
                   </button>
                 </div>
               </form>

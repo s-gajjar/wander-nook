@@ -22,7 +22,7 @@ const PLAN_DEFINITIONS: Record<
     displayName: "Monthly Autopay",
     amountInr: 200,
     amountPaise: 20000,
-    totalCount: 36,
+    totalCount: 12,
     cycle: "monthly",
   },
   "annual-autopay": {
@@ -30,7 +30,7 @@ const PLAN_DEFINITIONS: Record<
     displayName: "Annual Autopay",
     amountInr: 2300,
     amountPaise: 230000,
-    totalCount: 5,
+    totalCount: 1,
     cycle: "yearly",
   },
 };
