@@ -60,6 +60,41 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
+  const invoicesByCustomer = invoices
+    .reduce<
+      Array<{
+        customerId: string;
+        customerName: string;
+        customerEmail: string;
+        totalAmountPaise: number;
+        latestIssuedAt: Date;
+        invoices: typeof invoices;
+      }>
+    >((groups, invoice) => {
+      const existing = groups.find((group) => group.customerId === invoice.customerId);
+
+      if (!existing) {
+        groups.push({
+          customerId: invoice.customerId,
+          customerName: invoice.customer.fullName,
+          customerEmail: invoice.customer.email,
+          totalAmountPaise: invoice.amountPaise,
+          latestIssuedAt: invoice.issuedAt,
+          invoices: [invoice],
+        });
+        return groups;
+      }
+
+      existing.invoices.push(invoice);
+      existing.totalAmountPaise += invoice.amountPaise;
+      if (invoice.issuedAt > existing.latestIssuedAt) {
+        existing.latestIssuedAt = invoice.issuedAt;
+      }
+
+      return groups;
+    }, [])
+    .sort((a, b) => b.latestIssuedAt.getTime() - a.latestIssuedAt.getTime());
+
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8">
       <div className="mx-auto max-w-7xl space-y-6">
@@ -147,54 +182,54 @@ export default async function AdminDashboardPage() {
 
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Invoices</h2>
-            <span className="text-xs text-slate-500">Latest {invoices.length}</span>
+            <h2 className="text-lg font-semibold text-slate-900">Recurring Invoices by Customer</h2>
+            <span className="text-xs text-slate-500">Customers {invoicesByCustomer.length}</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                  <th className="py-2 pr-4">Invoice</th>
                   <th className="py-2 pr-4">Customer</th>
-                  <th className="py-2 pr-4">Plan</th>
-                  <th className="py-2 pr-4">Amount</th>
-                  <th className="py-2 pr-4">Issued</th>
-                  <th className="py-2 pr-4">Email</th>
+                  <th className="py-2 pr-4">Invoices</th>
+                  <th className="py-2 pr-4">Total Paid</th>
+                  <th className="py-2 pr-4">Latest Charged</th>
                   <th className="py-2 pr-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {invoices.map((invoice) => (
-                  <tr key={invoice.id} className="border-b border-slate-100 align-top">
+                {invoicesByCustomer.map((customerGroup) => {
+                  const latestInvoice = customerGroup.invoices[0];
+
+                  return (
+                    <tr key={customerGroup.customerId} className="border-b border-slate-100 align-top">
                     <td className="py-3 pr-4">
-                      <p className="font-medium text-slate-900">{invoice.invoiceNumber}</p>
-                      <p className="text-xs text-slate-500">{invoice.razorpayPaymentId}</p>
+                      <p className="font-medium text-slate-900">{customerGroup.customerName}</p>
+                      <p className="text-xs text-slate-500">{customerGroup.customerEmail}</p>
                     </td>
                     <td className="py-3 pr-4">
-                      <p className="font-medium text-slate-900">{invoice.customer.fullName}</p>
-                      <p className="text-xs text-slate-500">{invoice.customer.email}</p>
+                      <p className="font-medium text-slate-900">{customerGroup.invoices.length}</p>
+                      <p className="text-xs text-slate-500">Latest: {latestInvoice.invoiceNumber}</p>
                     </td>
-                    <td className="py-3 pr-4">{invoice.planLabel}</td>
-                    <td className="py-3 pr-4">{formatCurrency(invoice.amountPaise, invoice.currency)}</td>
-                    <td className="py-3 pr-4">{formatDate(invoice.issuedAt)}</td>
                     <td className="py-3 pr-4">
-                      {invoice.emailSentAt ? formatDate(invoice.emailSentAt) : "Not sent"}
+                      {formatCurrency(customerGroup.totalAmountPaise, latestInvoice.currency)}
                     </td>
+                    <td className="py-3 pr-4">{formatDate(customerGroup.latestIssuedAt)}</td>
                     <td className="py-3 pr-4">
                       <div className="space-y-2">
                         <Link
-                          href={`/invoice/${invoice.publicToken}`}
+                          href={`/invoice/${latestInvoice.publicToken}`}
                           target="_blank"
                           className="inline-flex rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700"
                         >
-                          View
+                          View Latest
                         </Link>
-                        <ResendInvoiceButton invoiceId={invoice.id} />
+                        <ResendInvoiceButton invoiceId={latestInvoice.id} />
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

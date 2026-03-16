@@ -161,6 +161,20 @@ async function getInvoiceByPaymentId(paymentId: string) {
   });
 }
 
+async function getLatestInvoiceBySubscriptionId(subscriptionId: string) {
+  return prisma.invoice.findFirst({
+    where: {
+      razorpaySubscriptionId: subscriptionId,
+    },
+    orderBy: {
+      issuedAt: "desc",
+    },
+    include: {
+      customer: true,
+    },
+  });
+}
+
 function invoicePublicUrl(publicToken: string) {
   return `${getSiteUrl()}/invoice/${publicToken}`;
 }
@@ -347,32 +361,50 @@ export async function ensureInvoiceForAutopayPayment(
     throw new Error("Cannot generate invoice without complete customer billing details.");
   }
 
-  const customer = await prisma.customer.upsert({
-    where: {
-      email: customerData.email,
-    },
-    update: {
-      fullName: customerData.fullName,
-      phone: customerData.phone,
-      addressLine1: customerData.addressLine1,
-      addressLine2: customerData.addressLine2 || null,
-      city: customerData.city,
-      state: customerData.state,
-      pincode: customerData.pincode,
-      country: customerData.country || "India",
-    },
-    create: {
-      fullName: customerData.fullName,
-      email: customerData.email,
-      phone: customerData.phone,
-      addressLine1: customerData.addressLine1,
-      addressLine2: customerData.addressLine2 || null,
-      city: customerData.city,
-      state: customerData.state,
-      pincode: customerData.pincode,
-      country: customerData.country || "India",
-    },
-  });
+  const existingSubscriptionInvoice = await getLatestInvoiceBySubscriptionId(subscription.id);
+
+  const customer = existingSubscriptionInvoice
+    ? await prisma.customer.update({
+        where: {
+          id: existingSubscriptionInvoice.customerId,
+        },
+        data: {
+          fullName: customerData.fullName,
+          phone: customerData.phone,
+          addressLine1: customerData.addressLine1,
+          addressLine2: customerData.addressLine2 || null,
+          city: customerData.city,
+          state: customerData.state,
+          pincode: customerData.pincode,
+          country: customerData.country || "India",
+        },
+      })
+    : await prisma.customer.upsert({
+        where: {
+          email: customerData.email,
+        },
+        update: {
+          fullName: customerData.fullName,
+          phone: customerData.phone,
+          addressLine1: customerData.addressLine1,
+          addressLine2: customerData.addressLine2 || null,
+          city: customerData.city,
+          state: customerData.state,
+          pincode: customerData.pincode,
+          country: customerData.country || "India",
+        },
+        create: {
+          fullName: customerData.fullName,
+          email: customerData.email,
+          phone: customerData.phone,
+          addressLine1: customerData.addressLine1,
+          addressLine2: customerData.addressLine2 || null,
+          city: customerData.city,
+          state: customerData.state,
+          pincode: customerData.pincode,
+          country: customerData.country || "India",
+        },
+      });
 
   const billingWindow = deriveBillingWindow(plan, payment, subscription);
 
