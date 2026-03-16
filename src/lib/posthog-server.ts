@@ -228,3 +228,139 @@ export async function fetchPostHogSessionRecordings(
     viewed: r.viewed,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Session-level stats via HogQL (sessions count, avg duration, bounce rate)
+// ---------------------------------------------------------------------------
+
+export type PostHogSessionSummary = {
+  sessions: number;
+  avgDurationSeconds: number;
+  bounceRate: number;
+};
+
+export async function fetchPostHogSessionSummary(): Promise<PostHogSessionSummary | null> {
+  type HogQLResponse = { results?: unknown[][] };
+
+  const data = await postPostHog<HogQLResponse>(
+    `/api/projects/${POSTHOG_PROJECT_ID}/query/`,
+    {
+      query: {
+        kind: "HogQLQuery",
+        query: `SELECT
+          count() as total_sessions,
+          avg($session_duration) as avg_duration,
+          countIf($pageview_count <= 1) * 100.0 / if(count() > 0, count(), 1) as bounce_rate
+        FROM sessions
+        WHERE $start_timestamp >= now() - interval 30 day`,
+      },
+    }
+  );
+
+  if (!data?.results?.[0]) return null;
+
+  const row = data.results[0];
+  return {
+    sessions: Number(row[0]) || 0,
+    avgDurationSeconds: Math.round(Number(row[1]) || 0),
+    bounceRate: Math.round((Number(row[2]) || 0) * 10) / 10,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Generic breakdown by any $pageview event property
+// ---------------------------------------------------------------------------
+
+export type PostHogBreakdownItem = {
+  value: string;
+  count: number;
+};
+
+export async function fetchPostHogBreakdown(
+  property: string,
+  dateFrom = "-30d",
+  limit = 10
+): Promise<PostHogBreakdownItem[]> {
+  const data = await postPostHog<TrendsQueryResult>(
+    `/api/projects/${POSTHOG_PROJECT_ID}/query/`,
+    {
+      query: {
+        kind: "InsightVizNode",
+        source: {
+          kind: "TrendsQuery",
+          series: [
+            {
+              kind: "EventsNode",
+              event: "$pageview",
+              custom_name: "Views",
+              math: "total",
+            },
+          ],
+          dateRange: { date_from: dateFrom },
+          breakdownFilter: {
+            breakdown: property,
+            breakdown_type: "event",
+            breakdown_limit: limit,
+          },
+        },
+      },
+    }
+  );
+
+  if (!data?.results) return [];
+
+  return data.results
+    .map((s) => ({
+      value: String(s.label || "").replace(/^\$pageview\s*-\s*/, "") || "(unknown)",
+      count: (s.data || []).reduce((a, b) => a + b, 0),
+    }))
+    .filter((p) => p.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
+// ---------------------------------------------------------------------------
+// Core Web Vitals via HogQL
+// ---------------------------------------------------------------------------
+
+export type PostHogWebVitals = {
+  lcpMs: number | null;
+  fcpMs: number | null;
+  cls: number | null;
+  inpMs: number | null;
+};
+
+export async function fetchPostHogWebVitals(): Promise<PostHogWebVitals | null> {
+  type HogQLResponse = { results?: unknown[][] };
+
+  const data = await postPostHog<HogQLResponse>(
+    `/api/projects/${POSTHOG_PROJECT_ID}/query/`,
+    {
+      query: {
+        kind: "HogQLQuery",
+        query: `SELECT
+          avg(properties.$web_vitals_LCP_value) as lcp,
+          avg(properties.$web_vitals_FCP_value) as fcp,
+          avg(properties.$web_vitals_CLS_value) as cls,
+          avg(properties.$web_vitals_INP_value) as inp
+        FROM events
+        WHERE event = '$web_vitals'
+          AND timestamp >= now() - interval 30 day`,
+      },
+    }
+  );
+
+  if (!data?.results?.[0]) return null;
+
+  const row = data.results[0];
+  const lcp = row[0] != null ? Number(row[0]) : null;
+  const fcp = row[1] != null ? Number(row[1]) : null;
+  const clsVal = row[2] != null ? Number(row[2]) : null;
+  const inp = row[3] != null ? Number(row[3]) : null;
+
+  return {
+    lcpMs: lcp != null && !isNaN(lcp) ? Math.round(lcp) : null,
+    fcpMs: fcp != null && !isNaN(fcp) ? Math.round(fcp) : null,
+    cls: clsVal != null && !isNaN(clsVal) ? Math.round(clsVal * 1000) / 1000 : null,
+    inpMs: inp != null && !isNaN(inp) ? Math.round(inp) : null,
+  };
+}

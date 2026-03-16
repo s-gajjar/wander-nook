@@ -4,6 +4,9 @@ import {
   fetchPostHogTrafficStats,
   fetchPostHogTopPages,
   fetchPostHogSessionRecordings,
+  fetchPostHogSessionSummary,
+  fetchPostHogBreakdown,
+  fetchPostHogWebVitals,
 } from "@/src/lib/posthog-server";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +22,13 @@ export default async function AdminAnalyticsPage() {
     posthogTraffic,
     posthogTopPages,
     posthogSessions,
+    posthogSessionSummary,
+    posthogDevices,
+    posthogBrowsers,
+    posthogOS,
+    posthogCountries,
+    posthogReferrers,
+    posthogWebVitals,
   ] = await Promise.all([
     prisma.invoice.count(),
     prisma.customer.count(),
@@ -33,6 +43,13 @@ export default async function AdminAnalyticsPage() {
     fetchPostHogTrafficStats("-30d"),
     fetchPostHogTopPages(),
     fetchPostHogSessionRecordings(20),
+    fetchPostHogSessionSummary(),
+    fetchPostHogBreakdown("$device_type"),
+    fetchPostHogBreakdown("$browser"),
+    fetchPostHogBreakdown("$os"),
+    fetchPostHogBreakdown("$geoip_country_name"),
+    fetchPostHogBreakdown("$referring_domain"),
+    fetchPostHogWebVitals(),
   ]);
 
   // Revenue by day (last 30 days)
@@ -134,7 +151,7 @@ export default async function AdminAnalyticsPage() {
       {/* PostHog traffic stats */}
       {posthogTraffic ? (
         <>
-          <section className="grid gap-4 sm:grid-cols-2">
+          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <MetricCard
               label="Pageviews (30d)"
               value={String(posthogTraffic.totalPageviews)}
@@ -143,6 +160,21 @@ export default async function AdminAnalyticsPage() {
             <MetricCard
               label="Unique Visitors (30d)"
               value={String(posthogTraffic.totalVisitors)}
+              accent
+            />
+            <MetricCard
+              label="Sessions (30d)"
+              value={posthogSessionSummary ? String(posthogSessionSummary.sessions) : "—"}
+              accent
+            />
+            <MetricCard
+              label="Avg Duration"
+              value={posthogSessionSummary ? formatDuration(posthogSessionSummary.avgDurationSeconds) : "—"}
+              accent
+            />
+            <MetricCard
+              label="Bounce Rate"
+              value={posthogSessionSummary ? `${posthogSessionSummary.bounceRate}%` : "—"}
               accent
             />
           </section>
@@ -221,6 +253,43 @@ export default async function AdminAnalyticsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+      )}
+
+      {/* Breakdowns: Device Type & Browser */}
+      {(posthogDevices.length > 0 || posthogBrowsers.length > 0) && (
+        <section className="grid gap-4 sm:grid-cols-2">
+          <BreakdownTable title="Device Type" items={posthogDevices} labelHeader="Device" />
+          <BreakdownTable title="Browser" items={posthogBrowsers} labelHeader="Browser" />
+        </section>
+      )}
+
+      {/* Breakdowns: Country & Referrer */}
+      {(posthogCountries.length > 0 || posthogReferrers.length > 0) && (
+        <section className="grid gap-4 sm:grid-cols-2">
+          <BreakdownTable title="Country" items={posthogCountries} labelHeader="Country" />
+          <BreakdownTable title="Referrer" items={posthogReferrers} labelHeader="Source" />
+        </section>
+      )}
+
+      {/* Breakdown: OS */}
+      {posthogOS.length > 0 && (
+        <section className="grid gap-4 sm:grid-cols-2">
+          <BreakdownTable title="Operating System" items={posthogOS} labelHeader="OS" />
+          <div />
+        </section>
+      )}
+
+      {/* Core Web Vitals */}
+      {posthogWebVitals && (
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Core Web Vitals (30d Avg)</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <VitalCard label="LCP" value={posthogWebVitals.lcpMs} unit="ms" good={2500} poor={4000} />
+            <VitalCard label="FCP" value={posthogWebVitals.fcpMs} unit="ms" good={1800} poor={3000} />
+            <VitalCard label="CLS" value={posthogWebVitals.cls} unit="" good={0.1} poor={0.25} />
+            <VitalCard label="INP" value={posthogWebVitals.inpMs} unit="ms" good={200} poor={500} />
           </div>
         </section>
       )}
@@ -354,5 +423,97 @@ function MetricCard({ label, value, accent }: { label: string; value: string; ac
         {value}
       </p>
     </article>
+  );
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+}
+
+function cleanLabel(v: string): string {
+  if (v === "$direct" || v === "$direct ") return "Direct";
+  if (v === "null" || v === "None" || v === "" || v === "(unknown)") return "(unknown)";
+  return v;
+}
+
+function BreakdownTable({
+  title,
+  items,
+  labelHeader = "Value",
+}: {
+  title: string;
+  items: Array<{ value: string; count: number }>;
+  labelHeader?: string;
+}) {
+  if (items.length === 0) return null;
+  const total = items.reduce((s, i) => s + i.count, 0);
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <h2 className="mb-3 text-lg font-semibold text-slate-900">{title}</h2>
+      <table className="min-w-full border-collapse text-sm">
+        <thead>
+          <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
+            <th className="py-2 pr-4">{labelHeader}</th>
+            <th className="py-2 pr-4 text-right">Views</th>
+            <th className="py-2 pr-2 text-right">%</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.value} className="border-b border-slate-100">
+              <td className="py-2.5 pr-4 font-medium text-slate-900">{cleanLabel(item.value)}</td>
+              <td className="py-2.5 pr-4 text-right text-slate-600">{item.count}</td>
+              <td className="py-2.5 pr-2 text-right text-slate-400">
+                {total > 0 ? `${Math.round((item.count / total) * 100)}%` : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function VitalCard({
+  label,
+  value,
+  unit,
+  good,
+  poor,
+}: {
+  label: string;
+  value: number | null;
+  unit: string;
+  good: number;
+  poor: number;
+}) {
+  if (value == null)
+    return (
+      <div className="rounded-lg bg-slate-50 p-4 text-center">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="mt-1 text-xl font-semibold text-slate-300">—</p>
+      </div>
+    );
+
+  const status = value <= good ? "good" : value <= poor ? "needs-improvement" : "poor";
+  const colors: Record<string, string> = {
+    good: "bg-green-50 text-green-700 border-green-200",
+    "needs-improvement": "bg-amber-50 text-amber-700 border-amber-200",
+    poor: "bg-red-50 text-red-700 border-red-200",
+  };
+
+  return (
+    <div className={`rounded-lg border p-4 text-center ${colors[status]}`}>
+      <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{label}</p>
+      <p className="mt-1 text-xl font-bold">
+        {value}
+        {unit}
+      </p>
+      <p className="mt-0.5 text-[11px] capitalize">{status.replace("-", " ")}</p>
+    </div>
   );
 }
