@@ -5,6 +5,7 @@ import {
   razorpayRequest,
   type RazorpayAutopayPlanConfig,
 } from "@/src/lib/razorpay-server";
+import { prisma } from "@/src/lib/prisma";
 
 const SHOPIFY_DOMAIN = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN || "";
 const SHOPIFY_ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || "";
@@ -222,6 +223,22 @@ async function createShopifyOrder(payload: Record<string, unknown>) {
   return json.order;
 }
 
+async function withSubscriptionOrderLock<T>(
+  subscriptionId: string,
+  operation: () => Promise<T>
+) {
+  return prisma.$transaction(
+    async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${subscriptionId}))`;
+      return operation();
+    },
+    {
+      maxWait: 5000,
+      timeout: 20000,
+    }
+  );
+}
+
 export async function ensureAutopayOrder({
   paymentId,
   subscriptionId,
@@ -275,87 +292,94 @@ export async function ensureAutopayOrder({
   }
 
   const paymentTag = `rzp-pay-${normalizedPaymentId}`;
-  const existingOrder = await findExistingOrderByTag(paymentTag);
-  if (existingOrder) {
-    return {
-      status: "already_exists",
-      order: existingOrder,
-    };
-  }
-
   const subscriptionTag = `rzp-sub-${normalizedSubscriptionId}`;
   const amount = (plan.amountPaise / 100).toFixed(2);
   const { firstName, lastName } = splitName(resolvedCustomer.name);
-  const order = await createShopifyOrder({
-    order: {
-      email: resolvedCustomer.email,
-      phone: resolvedCustomer.phone,
-      line_items: [
-        {
-          variant_id: variantId,
-          quantity: 1,
-          price: amount,
-        },
-      ],
-      shipping_address: {
-        first_name: firstName,
-        last_name: lastName,
-        phone: resolvedCustomer.phone,
-        address1: resolvedCustomer.addressLine1,
-        ...(resolvedCustomer.addressLine2 ? { address2: resolvedCustomer.addressLine2 } : {}),
-        city: resolvedCustomer.city,
-        province: resolvedCustomer.state,
-        country: resolvedCustomer.country,
-        zip: resolvedCustomer.pincode,
-      },
-      billing_address: {
-        first_name: firstName,
-        last_name: lastName,
-        phone: resolvedCustomer.phone,
-        address1: resolvedCustomer.addressLine1,
-        ...(resolvedCustomer.addressLine2 ? { address2: resolvedCustomer.addressLine2 } : {}),
-        city: resolvedCustomer.city,
-        province: resolvedCustomer.state,
-        country: resolvedCustomer.country,
-        zip: resolvedCustomer.pincode,
-      },
-      financial_status: "paid",
-      send_receipt: true,
-      send_fulfillment_receipt: false,
-      tags: [
-        "wanderstamps-autopay",
-        "razorpay-autopay",
-        subscriptionTag,
-        paymentTag,
-        plan.id,
-      ].join(", "),
-      note: orderNote || "Order created after verified Razorpay autopay payment.",
-      note_attributes: [
-        { name: "checkout_source", value: "wanderstamps-autopay" },
-        { name: "razorpay_subscription_id", value: normalizedSubscriptionId },
-        { name: "razorpay_payment_id", value: normalizedPaymentId },
-        { name: "razorpay_subscription_status", value: subscription.status },
-        { name: "recurring_plan", value: plan.id },
-        { name: "recurring_amount_inr", value: String(plan.amountInr) },
-        { name: "recurring_total_count", value: String(plan.totalCount) },
-      ],
-      transactions: [
-        {
-          kind: "sale",
-          status: "success",
-          amount,
-          gateway: "Razorpay",
-          authorization: normalizedPaymentId,
-        },
-      ],
-    },
-  });
 
-  return {
-    status: "created",
-    order: {
-      id: order.id,
-      name: order.name,
-    },
-  };
+  return withSubscriptionOrderLock(normalizedSubscriptionId, async () => {
+    const existingOrder =
+      (await findExistingOrderByTag(paymentTag)) ||
+      (await findExistingOrderByTag(subscriptionTag));
+
+    if (existingOrder) {
+      return {
+        status: "already_exists" as const,
+        order: existingOrder,
+      };
+    }
+
+    const order = await createShopifyOrder({
+      order: {
+        email: resolvedCustomer.email,
+        phone: resolvedCustomer.phone,
+        line_items: [
+          {
+            variant_id: variantId,
+            quantity: 1,
+            price: amount,
+          },
+        ],
+        shipping_address: {
+          first_name: firstName,
+          last_name: lastName,
+          phone: resolvedCustomer.phone,
+          address1: resolvedCustomer.addressLine1,
+          ...(resolvedCustomer.addressLine2 ? { address2: resolvedCustomer.addressLine2 } : {}),
+          city: resolvedCustomer.city,
+          province: resolvedCustomer.state,
+          country: resolvedCustomer.country,
+          zip: resolvedCustomer.pincode,
+        },
+        billing_address: {
+          first_name: firstName,
+          last_name: lastName,
+          phone: resolvedCustomer.phone,
+          address1: resolvedCustomer.addressLine1,
+          ...(resolvedCustomer.addressLine2 ? { address2: resolvedCustomer.addressLine2 } : {}),
+          city: resolvedCustomer.city,
+          province: resolvedCustomer.state,
+          country: resolvedCustomer.country,
+          zip: resolvedCustomer.pincode,
+        },
+        financial_status: "paid",
+        send_receipt: true,
+        send_fulfillment_receipt: false,
+        tags: [
+          "wanderstamps-autopay",
+          "razorpay-autopay",
+          subscriptionTag,
+          paymentTag,
+          plan.id,
+        ].join(", "),
+        note:
+          orderNote || "Initial order created after verified Razorpay autopay payment.",
+        note_attributes: [
+          { name: "checkout_source", value: "wanderstamps-autopay" },
+          { name: "razorpay_subscription_id", value: normalizedSubscriptionId },
+          { name: "razorpay_payment_id", value: normalizedPaymentId },
+          { name: "razorpay_subscription_status", value: subscription.status },
+          { name: "recurring_plan", value: plan.id },
+          { name: "recurring_amount_inr", value: String(plan.amountInr) },
+          { name: "recurring_total_count", value: String(plan.totalCount) },
+        ],
+        transactions: [
+          {
+            kind: "sale",
+            status: "success",
+            amount,
+            gateway: "Razorpay",
+            authorization: normalizedPaymentId,
+          },
+        ],
+      },
+    });
+
+    return {
+      status: "created" as const,
+      order: {
+        id: order.id,
+        name: order.name,
+      },
+    };
+  });
 }

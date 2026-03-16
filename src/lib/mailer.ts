@@ -7,7 +7,7 @@ export type EmailAttachment = {
 };
 
 export type SendTransactionalEmailInput = {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
   text?: string;
@@ -36,7 +36,21 @@ function hasResendConfig() {
   return Boolean(env("RESEND_API_KEY"));
 }
 
+function normalizeRecipients(value: string | string[]) {
+  const inputs = Array.isArray(value) ? value : [value];
+
+  return Array.from(
+    new Set(
+      inputs
+        .flatMap((entry) => entry.split(/[;,]/))
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
 async function sendUsingSmtp(input: SendTransactionalEmailInput): Promise<SendTransactionalEmailResult> {
+  const recipients = normalizeRecipients(input.to);
   const transporter = nodemailer.createTransport({
     host: env("SMTP_HOST"),
     port: Number(env("SMTP_PORT")),
@@ -49,7 +63,7 @@ async function sendUsingSmtp(input: SendTransactionalEmailInput): Promise<SendTr
 
   const info = await transporter.sendMail({
     from: getFromEmail(),
-    to: input.to,
+    to: recipients.join(", "),
     subject: input.subject,
     html: input.html,
     text: input.text,
@@ -67,6 +81,7 @@ async function sendUsingSmtp(input: SendTransactionalEmailInput): Promise<SendTr
 }
 
 async function sendUsingResend(input: SendTransactionalEmailInput): Promise<SendTransactionalEmailResult> {
+  const recipients = normalizeRecipients(input.to);
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -75,7 +90,7 @@ async function sendUsingResend(input: SendTransactionalEmailInput): Promise<Send
     },
     body: JSON.stringify({
       from: getFromEmail(),
-      to: [input.to],
+      to: recipients,
       subject: input.subject,
       html: input.html,
       text: input.text,
@@ -106,6 +121,13 @@ async function sendUsingResend(input: SendTransactionalEmailInput): Promise<Send
 export async function sendTransactionalEmail(
   input: SendTransactionalEmailInput
 ): Promise<SendTransactionalEmailResult> {
+  if (normalizeRecipients(input.to).length === 0) {
+    return {
+      sent: false,
+      skippedReason: "missing_recipient",
+    };
+  }
+
   if (hasSmtpConfig()) {
     return sendUsingSmtp(input);
   }

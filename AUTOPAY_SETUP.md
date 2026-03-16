@@ -44,6 +44,9 @@ SMTP_PASS=your_google_workspace_app_password
 RESEND_API_KEY=re_xxxxx
 MAIL_FROM=support@wandernook.in
 
+# Optional direct-order merchant notification recipients
+ORDER_NOTIFICATION_EMAILS=owner@example.com,ops@example.com
+
 # Optional branding overrides for invoice template
 INVOICE_PRIMARY_LOGO_URL=/wander-stamps-logo.png
 INVOICE_SECONDARY_LOGO_URL=/wander-logo.png
@@ -73,20 +76,21 @@ New endpoints:
 - `POST /api/razorpay/autopay/verify`
   - Verifies Razorpay signature.
   - Validates captured payment amount/currency.
-  - Creates Shopify order after successful verification.
-  - Uses payment tags/metadata to avoid duplicate order creation.
+  - Creates the Shopify order only for the first successful payment on a subscription.
+  - Uses subscription-level locking plus payment/subscription tags to avoid duplicate order creation.
   - Creates invoice record (idempotent by Razorpay payment id).
   - Sends invoice email with PDF attachment to customer.
 - `POST /api/razorpay/autopay/webhook`
   - Verifies Razorpay webhook signature.
   - Handles `invoice.paid`, `subscription.charged`, and `payment.captured`.
-  - Creates Shopify order server-side if browser callback was missed.
+  - Creates the initial Shopify order server-side if browser callback was missed.
   - Creates/syncs invoice record for recurring charges.
   - Sends monthly/yearly invoice email with PDF attachment only on successful captured charges.
 
 Existing webhook endpoint:
 - `POST /api/shopify/webhooks/orders`
   - Keeps unpaid-order cancellation guard logic.
+  - Sends fallback merchant emails for new direct website orders.
 
 ## Customer Flow
 1. User clicks monthly or annual autopay card.
@@ -95,8 +99,8 @@ Existing webhook endpoint:
 4. On successful Razorpay callback:
    - signature is verified server-side
    - payment capture status is validated
-   - Shopify order is created as paid
-5. If callback is missed (for example, UPI app-switch flow), webhook fallback creates the order.
+   - Shopify order is created as paid for the first successful subscription charge only
+5. If callback is missed (for example, UPI app-switch flow), webhook fallback creates that initial order.
 
 No Shopify order is created before verified payment.
 
