@@ -2,6 +2,9 @@ import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
 import { formatCurrency } from "@/src/lib/invoice-template";
 import ResendInvoiceButton from "@/src/components/Admin/ResendInvoiceButton";
+import CustomerInvoiceGroup, {
+  type CustomerGroupData,
+} from "@/src/components/Admin/CustomerInvoiceGroup";
 
 export const dynamic = "force-dynamic";
 
@@ -60,14 +63,18 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  const invoicesByCustomer = invoices
+  const invoicesByCustomer: CustomerGroupData[] = invoices
     .reduce<
       Array<{
         customerId: string;
         customerName: string;
         customerEmail: string;
+        customerPhone: string;
+        customerCity: string;
+        customerState: string;
         totalAmountPaise: number;
         latestIssuedAt: Date;
+        latestCurrency: string;
         invoices: typeof invoices;
       }>
     >((groups, invoice) => {
@@ -78,8 +85,12 @@ export default async function AdminDashboardPage() {
           customerId: invoice.customerId,
           customerName: invoice.customer.fullName,
           customerEmail: invoice.customer.email,
+          customerPhone: invoice.customer.phone,
+          customerCity: invoice.customer.city,
+          customerState: invoice.customer.state,
           totalAmountPaise: invoice.amountPaise,
           latestIssuedAt: invoice.issuedAt,
+          latestCurrency: invoice.currency,
           invoices: [invoice],
         });
         return groups;
@@ -89,11 +100,36 @@ export default async function AdminDashboardPage() {
       existing.totalAmountPaise += invoice.amountPaise;
       if (invoice.issuedAt > existing.latestIssuedAt) {
         existing.latestIssuedAt = invoice.issuedAt;
+        existing.latestCurrency = invoice.currency;
       }
 
       return groups;
     }, [])
-    .sort((a, b) => b.latestIssuedAt.getTime() - a.latestIssuedAt.getTime());
+    .sort((a, b) => b.latestIssuedAt.getTime() - a.latestIssuedAt.getTime())
+    .map((group) => ({
+      customerId: group.customerId,
+      customerName: group.customerName,
+      customerEmail: group.customerEmail,
+      customerPhone: group.customerPhone,
+      customerCity: `${group.customerCity}, ${group.customerState}`,
+      customerState: group.customerState,
+      totalAmountPaise: group.totalAmountPaise,
+      latestCurrency: group.latestCurrency,
+      latestIssuedAt: group.latestIssuedAt.toISOString(),
+      invoices: group.invoices.map((inv) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoiceNumber,
+        publicToken: inv.publicToken,
+        planLabel: inv.planLabel,
+        billingCycle: inv.billingCycle,
+        amountPaise: inv.amountPaise,
+        currency: inv.currency,
+        status: inv.status,
+        issuedAt: inv.issuedAt.toISOString(),
+        emailSentAt: inv.emailSentAt?.toISOString() ?? null,
+        razorpayPaymentId: inv.razorpayPaymentId,
+      })),
+    }));
 
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8">
@@ -198,38 +234,12 @@ export default async function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {invoicesByCustomer.map((customerGroup) => {
-                  const latestInvoice = customerGroup.invoices[0];
-
-                  return (
-                    <tr key={customerGroup.customerId} className="border-b border-slate-100 align-top">
-                    <td className="py-3 pr-4">
-                      <p className="font-medium text-slate-900">{customerGroup.customerName}</p>
-                      <p className="text-xs text-slate-500">{customerGroup.customerEmail}</p>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <p className="font-medium text-slate-900">{customerGroup.invoices.length}</p>
-                      <p className="text-xs text-slate-500">Latest: {latestInvoice.invoiceNumber}</p>
-                    </td>
-                    <td className="py-3 pr-4">
-                      {formatCurrency(customerGroup.totalAmountPaise, latestInvoice.currency)}
-                    </td>
-                    <td className="py-3 pr-4">{formatDate(customerGroup.latestIssuedAt)}</td>
-                    <td className="py-3 pr-4">
-                      <div className="space-y-2">
-                        <Link
-                          href={`/invoice/${latestInvoice.publicToken}`}
-                          target="_blank"
-                          className="inline-flex rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700"
-                        >
-                          View Latest
-                        </Link>
-                        <ResendInvoiceButton invoiceId={latestInvoice.id} />
-                      </div>
-                    </td>
-                  </tr>
-                  );
-                })}
+                {invoicesByCustomer.map((customerGroup) => (
+                  <CustomerInvoiceGroup
+                    key={customerGroup.customerId}
+                    group={customerGroup}
+                  />
+                ))}
               </tbody>
             </table>
           </div>
