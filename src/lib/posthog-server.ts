@@ -25,7 +25,7 @@ export async function queryPostHog<T = unknown>(path: string): Promise<T | null>
       headers: {
         Authorization: `Bearer ${apiKey}`,
       },
-      next: { revalidate: 300 },
+      cache: "no-store",
     });
 
     if (!res.ok) return null;
@@ -47,7 +47,7 @@ export async function postPostHog<T = unknown>(path: string, body: unknown): Pro
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-      next: { revalidate: 300 },
+      cache: "no-store",
     });
 
     if (!res.ok) return null;
