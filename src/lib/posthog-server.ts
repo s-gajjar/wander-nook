@@ -209,7 +209,7 @@ export async function fetchPostHogSessionRecordings(
   };
 
   const data = await queryPostHog<ApiResponse>(
-    `/api/projects/${POSTHOG_PROJECT_ID}/session_recordings/?limit=${limit}&order=-start_time`
+    `/api/projects/${POSTHOG_PROJECT_ID}/session_recordings/?limit=${limit}`
   );
 
   if (!data?.results) return [];
