@@ -1,0 +1,60 @@
+import { prisma } from "@/src/lib/prisma";
+
+export const dynamic = "force-dynamic";
+
+function formatDate(value: Date | null | undefined) {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(value);
+}
+
+export default async function AdminEventsPage() {
+  const events = await prisma.conversionEvent.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 200,
+  });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">Conversion Events</h1>
+        <p className="mt-1 text-sm text-slate-600">Payment funnel and webhook events.</p>
+      </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-slate-900">All Events</h2>
+          <span className="text-xs text-slate-500">{events.length} events</span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
+                <th className="py-2 pr-4">Event</th>
+                <th className="py-2 pr-4">Email</th>
+                <th className="py-2 pr-4">Plan</th>
+                <th className="py-2 pr-4">Payment</th>
+                <th className="py-2 pr-4">Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event) => (
+                <tr key={event.id} className="border-b border-slate-100">
+                  <td className="py-3 pr-4 font-medium text-slate-900">{event.eventName}</td>
+                  <td className="py-3 pr-4">{event.customerEmail || "-"}</td>
+                  <td className="py-3 pr-4">{event.planId || "-"}</td>
+                  <td className="py-3 pr-4">{event.razorpayPaymentId || "-"}</td>
+                  <td className="py-3 pr-4">{formatDate(event.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
