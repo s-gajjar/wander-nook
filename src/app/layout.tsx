@@ -3,6 +3,7 @@ import { Geist, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { getSiteUrl } from "@/src/lib/site-url";
+import { PostHogProvider } from "@/src/components/PostHogProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,7 +85,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistPlusJakarta.variable} antialiased`}>
-        {children}
+        <PostHogProvider>
+          {children}
+        </PostHogProvider>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
