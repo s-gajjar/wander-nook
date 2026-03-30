@@ -54,6 +54,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (plan.id !== "monthly-autopay") {
+      return NextResponse.json(
+        { error: "Only the monthly plan supports recurring autopay checkout." },
+        { status: 400 }
+      );
+    }
+
     const customerName = sanitizeText(body.customer?.name || "", 120);
     const customerEmail = sanitizeText((body.customer?.email || "").toLowerCase(), 120);
     const customerPhone = sanitizeText(body.customer?.phone || "", 30).replace(/[^\d]/g, "");

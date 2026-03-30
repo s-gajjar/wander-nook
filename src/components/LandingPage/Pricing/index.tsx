@@ -8,6 +8,7 @@ type PlanOption = {
   id: "monthly-autopay" | "annual-autopay";
   title: string;
   billingLabel: string;
+  checkoutMode: "autopay" | "one-time";
   bgColor: string;
   textColor: string;
   border: boolean;
@@ -66,6 +67,12 @@ type RazorpayCreateResponse = {
     amountInr: number;
     cycle: "monthly" | "yearly";
     totalCount: number;
+  };
+};
+
+type ShopifyCheckoutResponse = {
+  checkout: {
+    checkoutUrl: string;
   };
 };
 
@@ -129,6 +136,7 @@ const pricingData: PlanOption[] = [
     id: "monthly-autopay",
     title: "Monthly",
     billingLabel: "Recurring",
+    checkoutMode: "autopay",
     bgColor: "bg-purple-600",
     textColor: "text-white",
     border: false,
@@ -155,13 +163,14 @@ const pricingData: PlanOption[] = [
     id: "annual-autopay",
     title: "Annual",
     billingLabel: "One-time",
+    checkoutMode: "one-time",
     bgColor: "bg-white",
     textColor: "text-black",
     border: true,
     features: [
       "One-time payment of INR 2300",
       "Valid for 12 months from date of purchase",
-      "Optional auto-renewal for next year",
+      "Renew manually next year if you want to continue",
       "Full subscription benefits included",
     ],
     price: {
@@ -174,7 +183,7 @@ const pricingData: PlanOption[] = [
       bgColor: "bg-orange-500",
       textColor: "text-white",
     },
-    billingFootnote: "Annual plan is one-time payment (no forced recurrence)",
+    billingFootnote: "One-time annual payment. Renew manually next year.",
     durationMonths: 12,
   },
 ];
@@ -257,7 +266,58 @@ const Pricing = () => {
     setAutopaySuccess(null);
   };
 
-  const startAutopayCheckout = async (event: React.FormEvent) => {
+  const buildCheckoutMeta = (plan: PlanOption) => ({
+    plan_id: plan.id,
+    plan_title: plan.title,
+    purchase_mode: plan.checkoutMode,
+    billing_label: plan.billingLabel,
+    customer_name: autopayForm.name,
+    customer_email: autopayForm.email,
+    customer_phone: autopayForm.phone,
+    customer_address_1: autopayForm.addressLine1,
+    ...(autopayForm.addressLine2 ? { customer_address_2: autopayForm.addressLine2 } : {}),
+    customer_city: autopayForm.city,
+    customer_state: autopayForm.state,
+    customer_pincode: autopayForm.pincode,
+    customer_country: autopayForm.country,
+  });
+
+  const startOneTimeCheckout = async (plan: PlanOption) => {
+    const checkoutResponse = await fetch("/api/shopify?action=checkoutOneTime", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        planId: plan.id,
+        checkoutMeta: buildCheckoutMeta(plan),
+      }),
+    });
+
+    const checkoutData = (await checkoutResponse.json().catch(() => null)) as
+      | ShopifyCheckoutResponse
+      | { error?: string; message?: string }
+      | null;
+
+    if (!checkoutResponse.ok || !checkoutData || !("checkout" in checkoutData)) {
+      throw new Error(
+        (checkoutData &&
+          typeof checkoutData === "object" &&
+          (("message" in checkoutData && checkoutData.message) ||
+            ("error" in checkoutData && checkoutData.error))) ||
+          "Failed to start annual checkout."
+      );
+    }
+
+    trackClientEvent("funnel_checkout_initiated", {
+      plan_id: plan.id,
+      purchase_mode: plan.checkoutMode,
+    });
+
+    window.location.assign(checkoutData.checkout.checkoutUrl);
+  };
+
+  const startPlanCheckout = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedPlan) {
       toast.error("Please select a plan first.");
@@ -266,6 +326,11 @@ const Pricing = () => {
 
     try {
       setAutopayLoading(true);
+
+      if (selectedPlan.checkoutMode === "one-time") {
+        await startOneTimeCheckout(selectedPlan);
+        return;
+      }
 
       const createResponse = await fetch("/api/razorpay/autopay/create", {
         method: "POST",
@@ -293,6 +358,7 @@ const Pricing = () => {
       trackClientEvent("funnel_checkout_initiated", {
         plan_id: selectedPlan.id,
         subscription_id: createData.subscriptionId,
+        purchase_mode: selectedPlan.checkoutMode,
       });
 
       const razorpayLoaded = await loadRazorpayScript();
@@ -403,7 +469,7 @@ const Pricing = () => {
       setAutopayLoading(false);
       razorpay.open();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to start autopay.");
+      toast.error(error instanceof Error ? error.message : "Unable to start checkout.");
       setAutopayLoading(false);
     }
   };
@@ -517,15 +583,19 @@ const Pricing = () => {
 
             <div className="text-center mb-6">
               <h4 className="text-[26px] md:text-[34px] leading-tight font-semibold text-[#2C2C2C]">
-                Complete your {selectedPlan.title}
+                Complete your {selectedPlan.title}{" "}
+                {selectedPlan.checkoutMode === "one-time" ? "purchase" : "subscription"}
               </h4>
               <p className="mt-2 text-[#5F6368] text-[15px] md:text-[17px]">
                 {selectedPlan.price.currency} {selectedPlan.price.amount}
                 {selectedPlan.price.period}
               </p>
+              <p className="mt-2 text-[#6B7280] text-[13px] md:text-[14px]">
+                {selectedPlan.billingFootnote}
+              </p>
             </div>
 
-            <form onSubmit={startAutopayCheckout} className="space-y-4">
+            <form onSubmit={startPlanCheckout} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
@@ -652,7 +722,13 @@ const Pricing = () => {
                     autopayLoading ? "opacity-70 cursor-not-allowed" : ""
                   }`}
                 >
-                  {autopayLoading ? "Processing..." : "Proceed to Secure Payment"}
+                  {autopayLoading
+                    ? selectedPlan.checkoutMode === "one-time"
+                      ? "Redirecting..."
+                      : "Processing..."
+                    : selectedPlan.checkoutMode === "one-time"
+                      ? "Continue to Checkout"
+                      : "Proceed to Secure Payment"}
                 </button>
               </div>
             </form>

@@ -79,6 +79,14 @@ function getVariantByPlan(planId: AutopayPlanId) {
   );
 }
 
+export function getPlanVariantId(planId: string) {
+  if (planId !== "monthly-autopay" && planId !== "annual-autopay") {
+    return null;
+  }
+
+  return getVariantByPlan(planId);
+}
+
 function getRazorpayPlanId(planId: AutopayPlanId) {
   if (planId === "monthly-autopay") {
     return (

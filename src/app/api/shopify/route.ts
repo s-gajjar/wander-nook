@@ -5,6 +5,7 @@ import {
   getProductByHandle,
   // getSellingPlans,
 } from "@/src/lib/shopify-client";
+import { getPlanVariantId, parseShopifyVariantId } from "@/src/lib/razorpay-server";
 import { CartCreateMutationVariables } from "@/src/types/storefront.generated";
 import type { CartLineInput } from "@/src/types/storefront.types";
 import { NextRequest, NextResponse } from "next/server";
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     if (isAutopayCheckout || isOneTimeCheckout) {
       const body = await request.json();
-      const { items, checkoutMeta } = body as {
+      const { items, checkoutMeta, planId } = body as {
         items?: Array<{
           attributes?: Array<{ key: string; value: string }>;
           quantity?: number;
@@ -87,9 +88,37 @@ export async function POST(request: NextRequest) {
           sellingPlanId?: string;
         }>;
         checkoutMeta?: Record<string, unknown>;
+        planId?: string;
       };
 
-      if (!items || !Array.isArray(items) || items?.length === 0) {
+      let resolvedItems = items;
+
+      if (
+        isOneTimeCheckout &&
+        (!resolvedItems || !Array.isArray(resolvedItems) || resolvedItems.length === 0) &&
+        planId === "annual-autopay"
+      ) {
+        const variantId = getPlanVariantId(planId);
+        const parsedVariantId = variantId ? parseShopifyVariantId(variantId) : null;
+
+        if (!parsedVariantId) {
+          return NextResponse.json(
+            {
+              message: "Annual one-time checkout is not configured correctly",
+            },
+            { status: 500 }
+          );
+        }
+
+        resolvedItems = [
+          {
+            merchandiseId: `gid://shopify/ProductVariant/${parsedVariantId}`,
+            quantity: 1,
+          },
+        ];
+      }
+
+      if (!resolvedItems || !Array.isArray(resolvedItems) || resolvedItems?.length === 0) {
         return NextResponse.json(
           {
             message: "No items provided for checkout",
@@ -98,7 +127,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const hasInvalidLines = items.some(
+      const hasInvalidLines = resolvedItems.some(
         (item) =>
           !item?.merchandiseId ||
           typeof item.merchandiseId !== "string" ||
@@ -118,7 +147,7 @@ export async function POST(request: NextRequest) {
       }
 
       if (isAutopayCheckout) {
-        const hasMissingSellingPlan = items.some(
+        const hasMissingSellingPlan = resolvedItems.some(
           (item) =>
             !item?.sellingPlanId ||
             typeof item.sellingPlanId !== "string" ||
@@ -135,7 +164,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const safeLines: CartLineInput[] = items.map((item) => {
+      const safeLines: CartLineInput[] = resolvedItems.map((item) => {
         const line: CartLineInput = {
           merchandiseId: item.merchandiseId!,
           quantity: item.quantity!,
@@ -179,6 +208,14 @@ export async function POST(request: NextRequest) {
             key: "purchase_mode",
             value: isAutopayCheckout ? "autopay" : "one-time",
           },
+          ...(planId
+            ? [
+                {
+                  key: "plan_id",
+                  value: planId.slice(0, 255),
+                },
+              ]
+            : []),
           ...safeCheckoutAttributes,
         ],
       };
