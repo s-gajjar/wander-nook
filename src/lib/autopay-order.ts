@@ -39,6 +39,14 @@ type ShopifyOrderResponse = {
   name: string;
 };
 
+type ShopifyCustomerResponse = {
+  id: number;
+  email?: string | null;
+  phone?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+};
+
 export type AutopayCustomerDetails = {
   name?: string;
   email?: string;
@@ -104,6 +112,37 @@ function assertShopifyConfig() {
   }
 }
 
+async function shopifyAdminRequest<TResponse>(
+  path: string,
+  options?: {
+    method?: "GET" | "POST" | "PUT";
+    body?: Record<string, unknown>;
+  }
+) {
+  const response = await fetch(`https://${SHOPIFY_DOMAIN}/admin/api/2025-07${path}`, {
+    method: options?.method ?? "GET",
+    headers: {
+      "X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN,
+      "Content-Type": "application/json",
+    },
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  const json = (await response.json().catch(() => null)) as
+    | (TResponse & { errors?: unknown })
+    | null;
+
+  if (!response.ok || !json || ("errors" in json && json.errors)) {
+    throw new Error(
+      `Shopify admin request failed: ${
+        json && "errors" in json ? JSON.stringify(json.errors) : `HTTP ${response.status}`
+      }`
+    );
+  }
+
+  return json;
+}
+
 function resolvePlan(
   subscriptionPlanId: string,
   expectedPlanId?: string
@@ -155,13 +194,15 @@ function resolveCustomerDetails(
 }
 
 async function findExistingOrderByTag(orderTag: string) {
-  const response = await fetch(`https://${SHOPIFY_DOMAIN}/admin/api/2025-07/graphql.json`, {
+  const response = await shopifyAdminRequest<{
+    data?: {
+      orders?: {
+        edges?: Array<{ node: ExistingOrderNode }>;
+      };
+    };
+  }>("/graphql.json", {
     method: "POST",
-    headers: {
-      "X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+    body: {
       query: `#graphql
         query ExistingOrder($query: String!) {
           orders(first: 1, query: $query) {
@@ -177,50 +218,115 @@ async function findExistingOrderByTag(orderTag: string) {
       variables: {
         query: `tag:"${orderTag}"`,
       },
-    }),
+    },
   });
 
-  const json = (await response.json().catch(() => null)) as
-    | {
-        data?: {
-          orders?: {
-            edges?: Array<{ node: ExistingOrderNode }>;
-          };
-        };
-      }
-    | null;
-
-  if (!response.ok || !json) {
-    return null;
-  }
-
-  return json.data?.orders?.edges?.[0]?.node ?? null;
+  return response.data?.orders?.edges?.[0]?.node ?? null;
 }
 
 async function createShopifyOrder(payload: Record<string, unknown>) {
-  const response = await fetch(`https://${SHOPIFY_DOMAIN}/admin/api/2025-07/orders.json`, {
+  const json = await shopifyAdminRequest<{ order?: ShopifyOrderResponse }>("/orders.json", {
     method: "POST",
-    headers: {
-      "X-Shopify-Access-Token": SHOPIFY_ADMIN_TOKEN,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
 
-  const json = (await response.json().catch(() => null)) as
-    | { order?: ShopifyOrderResponse }
-    | { errors?: unknown }
-    | null;
-
-  if (!response.ok || !json || !("order" in json) || !json.order) {
-    throw new Error(
-      `Failed to create Shopify order: ${
-        json && "errors" in json ? JSON.stringify(json.errors) : `HTTP ${response.status}`
-      }`
-    );
+  if (!json.order) {
+    throw new Error("Failed to create Shopify order: missing order payload");
   }
 
   return json.order;
+}
+
+function buildShopifyAddress(
+  customer: ReturnType<typeof resolveCustomerDetails>,
+  firstName: string,
+  lastName: string
+) {
+  return {
+    first_name: firstName,
+    last_name: lastName,
+    phone: customer.phone,
+    address1: customer.addressLine1,
+    ...(customer.addressLine2 ? { address2: customer.addressLine2 } : {}),
+    city: customer.city,
+    province: customer.state,
+    country: customer.country,
+    zip: customer.pincode,
+  };
+}
+
+async function findShopifyCustomerByEmail(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  const response = await shopifyAdminRequest<{
+    customers?: ShopifyCustomerResponse[];
+  }>(`/customers/search.json?query=${encodeURIComponent(`email:${normalizedEmail}`)}`);
+
+  return (
+    response.customers?.find(
+      (customer) => (customer.email || "").trim().toLowerCase() === normalizedEmail
+    ) ??
+    response.customers?.[0] ??
+    null
+  );
+}
+
+async function syncShopifyCustomer(
+  customer: ReturnType<typeof resolveCustomerDetails>,
+  firstName: string,
+  lastName: string
+) {
+  if (!customer.email) {
+    return null;
+  }
+
+  const existingCustomer = await findShopifyCustomerByEmail(customer.email);
+  if (existingCustomer) {
+    const updated = await shopifyAdminRequest<{ customer?: ShopifyCustomerResponse }>(
+      `/customers/${existingCustomer.id}.json`,
+      {
+        method: "PUT",
+        body: {
+          customer: {
+            id: existingCustomer.id,
+            first_name: firstName,
+            last_name: lastName,
+            email: customer.email,
+            phone: customer.phone,
+          },
+        },
+      }
+    );
+
+    return updated.customer ?? existingCustomer;
+  }
+
+  const created = await shopifyAdminRequest<{ customer?: ShopifyCustomerResponse }>(
+    "/customers.json",
+    {
+      method: "POST",
+      body: {
+        customer: {
+          first_name: firstName,
+          last_name: lastName,
+          email: customer.email,
+          phone: customer.phone,
+          verified_email: true,
+          addresses: [
+            {
+              ...buildShopifyAddress(customer, firstName, lastName),
+              default: true,
+            },
+          ],
+        },
+      },
+    }
+  );
+
+  return created.customer ?? null;
 }
 
 async function withSubscriptionOrderLock<T>(
@@ -295,6 +401,7 @@ export async function ensureAutopayOrder({
   const subscriptionTag = `rzp-sub-${normalizedSubscriptionId}`;
   const amount = (plan.amountPaise / 100).toFixed(2);
   const { firstName, lastName } = splitName(resolvedCustomer.name);
+  const customerAddress = buildShopifyAddress(resolvedCustomer, firstName, lastName);
 
   return withSubscriptionOrderLock(normalizedSubscriptionId, async () => {
     const existingOrder =
@@ -308,10 +415,18 @@ export async function ensureAutopayOrder({
       };
     }
 
+    let shopifyCustomer: ShopifyCustomerResponse | null = null;
+    try {
+      shopifyCustomer = await syncShopifyCustomer(resolvedCustomer, firstName, lastName);
+    } catch (error) {
+      console.error("Failed to sync Shopify customer for Razorpay autopay order", error);
+    }
+
     const order = await createShopifyOrder({
       order: {
         email: resolvedCustomer.email,
         phone: resolvedCustomer.phone,
+        ...(shopifyCustomer ? { customer: { id: shopifyCustomer.id } } : {}),
         line_items: [
           {
             variant_id: variantId,
@@ -319,28 +434,8 @@ export async function ensureAutopayOrder({
             price: amount,
           },
         ],
-        shipping_address: {
-          first_name: firstName,
-          last_name: lastName,
-          phone: resolvedCustomer.phone,
-          address1: resolvedCustomer.addressLine1,
-          ...(resolvedCustomer.addressLine2 ? { address2: resolvedCustomer.addressLine2 } : {}),
-          city: resolvedCustomer.city,
-          province: resolvedCustomer.state,
-          country: resolvedCustomer.country,
-          zip: resolvedCustomer.pincode,
-        },
-        billing_address: {
-          first_name: firstName,
-          last_name: lastName,
-          phone: resolvedCustomer.phone,
-          address1: resolvedCustomer.addressLine1,
-          ...(resolvedCustomer.addressLine2 ? { address2: resolvedCustomer.addressLine2 } : {}),
-          city: resolvedCustomer.city,
-          province: resolvedCustomer.state,
-          country: resolvedCustomer.country,
-          zip: resolvedCustomer.pincode,
-        },
+        shipping_address: customerAddress,
+        billing_address: customerAddress,
         financial_status: "paid",
         send_receipt: true,
         send_fulfillment_receipt: false,
@@ -355,6 +450,16 @@ export async function ensureAutopayOrder({
           orderNote || "Initial order created after verified Razorpay autopay payment.",
         note_attributes: [
           { name: "checkout_source", value: "wanderstamps-autopay" },
+          { name: "customer_name", value: resolvedCustomer.name },
+          { name: "customer_email", value: resolvedCustomer.email },
+          { name: "customer_phone", value: resolvedCustomer.phone },
+          { name: "customer_address_1", value: resolvedCustomer.addressLine1 },
+          { name: "customer_address_2", value: resolvedCustomer.addressLine2 || "" },
+          { name: "customer_city", value: resolvedCustomer.city },
+          { name: "customer_state", value: resolvedCustomer.state },
+          { name: "customer_pincode", value: resolvedCustomer.pincode },
+          { name: "customer_country", value: resolvedCustomer.country },
+          { name: "shopify_customer_id", value: shopifyCustomer ? String(shopifyCustomer.id) : "" },
           { name: "razorpay_subscription_id", value: normalizedSubscriptionId },
           { name: "razorpay_payment_id", value: normalizedPaymentId },
           { name: "razorpay_subscription_status", value: subscription.status },
