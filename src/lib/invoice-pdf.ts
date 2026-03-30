@@ -520,7 +520,7 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   });
   drawTextBlock({
     page,
-    text: "For support, write to support@wondernook.in.",
+    text: "For support, write to contact@wandernook.in.",
     x: tableX,
     top: summaryTop + 82,
     maxWidth: tableWidth,

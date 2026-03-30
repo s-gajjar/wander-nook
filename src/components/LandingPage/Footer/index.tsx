@@ -56,8 +56,8 @@ const Footer = () => {
               {/* Looking for assistance */}
               <div>
                 <h4 className="text-lg font-semibold text-black mb-2">Looking for assistance?</h4>
-                <p className="text-gray-600">email@realestate.ca</p>
-                <p className="text-gray-600">+62 986 098 9867</p>
+                <p className="text-gray-600">contact@wandernook.in</p>
+                <p className="text-gray-600">+91 9820067074</p>
               </div>
 
               {/* Copyright */}

@@ -431,7 +431,7 @@ function invoiceContent(input: InvoiceTemplateInput) {
         )}</strong>.
       </div>
 
-      <p class="footer">For support, write to support@wondernook.in.</p>
+      <p class="footer">For support, write to contact@wandernook.in.</p>
     </div>
   `;
 }
@@ -518,7 +518,7 @@ export function renderInvoiceEmailHtml(params: {
                 params.invoiceUrl
               )}" style="display:inline-block;padding:11px 16px;background:#163b7a;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">View Invoice</a>
             </p>
-            <p style="margin:16px 0 0;color:#475569;font-size:13px;">For support, write to support@wondernook.in.</p>
+            <p style="margin:16px 0 0;color:#475569;font-size:13px;">For support, write to contact@wandernook.in.</p>
           </td>
         </tr>
       </table>

@@ -137,8 +137,8 @@ const faqData = [
           </li>
           <li>
             Email:{" "}
-            <Link href="mailto:support@wondernook.in">
-              support@wondernook.in
+            <Link href="mailto:contact@wandernook.in">
+              contact@wandernook.in
             </Link>
           </li>
         </ul>
