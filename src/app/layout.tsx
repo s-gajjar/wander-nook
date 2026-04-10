@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
+import { Suspense } from "react";
 import "./globals.css";
 import { getSiteUrl } from "@/src/lib/site-url";
 import { PostHogProvider } from "@/src/components/PostHogProvider";
@@ -105,7 +106,9 @@ t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, d
             />
           </>
         ) : null}
-        <MetaPixelPageViewTracker />
+        <Suspense fallback={null}>
+          <MetaPixelPageViewTracker />
+        </Suspense>
         <PostHogProvider>
           {children}
         </PostHogProvider>

@@ -9,23 +9,41 @@ import {
 import { createCartMutation } from "../queries/cart";
 import { createSubscriptionContractMutation, getSellingPlansQuery } from "../queries/subscription";
 
-const client = createStorefrontApiClient({
-  storeDomain: process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN ?? "",
-  apiVersion: process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-07",
-  publicAccessToken: process.env.NEXT_PUBLIC_SHOPIFY_STORE_FRONT_ACCESS_TOKEN,
-});
+function getStorefrontClient() {
+  const storeDomain = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN?.trim() ?? "";
+  const publicAccessToken = process.env.NEXT_PUBLIC_SHOPIFY_STORE_FRONT_ACCESS_TOKEN?.trim();
 
-// Admin client for subscription management
-const adminClient = createStorefrontApiClient({
-  storeDomain: process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN ?? "",
-  apiVersion: "2025-07",
-  publicAccessToken: process.env.SHOPIFY_ADMIN_ACCESS_TOKEN,
-});
+  if (!storeDomain || !publicAccessToken) {
+    throw new Error("Missing Shopify storefront configuration");
+  }
+
+  return createStorefrontApiClient({
+    storeDomain,
+    apiVersion: process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION || "2025-07",
+    publicAccessToken,
+  });
+}
+
+function getAdminClient() {
+  const storeDomain = process.env.NEXT_PUBLIC_SHOPIFY_DOMAIN?.trim() ?? "";
+  const publicAccessToken = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN?.trim();
+
+  if (!storeDomain || !publicAccessToken) {
+    throw new Error("Missing Shopify admin configuration");
+  }
+
+  return createStorefrontApiClient({
+    storeDomain,
+    apiVersion: "2025-07",
+    publicAccessToken,
+  });
+}
 
 export async function getAllProducts(): Promise<
   GetAllProductsQuery | undefined
 > {
   try {
+    const client = getStorefrontClient();
     const { data, errors } = await client.request(getProductsQuery);
 
     if (errors) {
@@ -45,6 +63,7 @@ export async function getProductByHandle(
   handle: string
 ): Promise<GetProductByHandleQuery | undefined> {
   try {
+    const client = getStorefrontClient();
     const { data, errors } = await client.request(getProductByHandleQuery, {
       variables: {
         handle,
@@ -69,6 +88,7 @@ export async function createCheckout(
   input: CartCreateMutationVariables["input"]
 ): Promise<CartCreateMutation | undefined> {
   try {
+    const client = getStorefrontClient();
     const { data, errors } = await client.request(createCartMutation, {
       variables: {
         input,
@@ -99,6 +119,7 @@ export async function createSubscriptionContract(
   quantity: number = 1
 ) {
   try {
+    const adminClient = getAdminClient();
     const { data, errors } = await adminClient.request(createSubscriptionContractMutation, {
       variables: {
         input: {
@@ -129,6 +150,7 @@ export async function createSubscriptionContract(
 // Function to get selling plans for subscription products
 export async function getSellingPlans() {
   try {
+    const client = getStorefrontClient();
     const { data, errors } = await client.request(getSellingPlansQuery, {
       variables: {
         first: 10,
