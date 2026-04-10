@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { trackClientEvent } from "@/src/lib/analytics-client";
+import { trackMetaPixelEvent } from "@/src/lib/meta-pixel";
 
 type PlanOption = {
   id: "monthly-autopay" | "annual-autopay";
@@ -326,6 +327,9 @@ const Pricing = () => {
 
     try {
       setAutopayLoading(true);
+      trackMetaPixelEvent("Lead", {
+        content_name: "Form_Fill",
+      });
 
       if (selectedPlan.checkoutMode === "one-time") {
         await startOneTimeCheckout(selectedPlan);
@@ -426,6 +430,9 @@ const Pricing = () => {
               subscription_id: payload.razorpay_subscription_id,
               order_name: verifyData.order?.name,
               already_exists: Boolean(verifyData.alreadyExists),
+            });
+            trackMetaPixelEvent("Purchase", {
+              content_name: "Payment_Success",
             });
 
             const orderName = verifyData.order?.name;

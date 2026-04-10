@@ -4,6 +4,8 @@ import Script from "next/script";
 import "./globals.css";
 import { getSiteUrl } from "@/src/lib/site-url";
 import { PostHogProvider } from "@/src/components/PostHogProvider";
+import { MetaPixelPageViewTracker } from "@/src/components/MetaPixelPageViewTracker";
+import { META_PIXEL_ID } from "@/src/lib/meta-pixel";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +69,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+  const metaPixelId = META_PIXEL_ID.trim();
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -86,6 +89,23 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistPlusJakarta.variable} antialiased`}>
+        {metaPixelId ? (
+          <>
+            <Script id="meta-pixel-base" strategy="beforeInteractive">
+              {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');fbq('init', '${metaPixelId}');fbq('track', 'PageView');`}
+            </Script>
+            <noscript
+              dangerouslySetInnerHTML={{
+                __html: `<img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1" alt="" />`,
+              }}
+            />
+          </>
+        ) : null}
+        <MetaPixelPageViewTracker />
         <PostHogProvider>
           {children}
         </PostHogProvider>
