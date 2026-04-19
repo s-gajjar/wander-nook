@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
         razorpaySubscriptionId: subscriptionId,
         metadata: {
           paymentStatus: ensureResult.paymentStatus,
+          customerName: body.customer?.name,
+          customerPhone: body.customer?.phone,
         },
       });
 
@@ -127,6 +129,8 @@ export async function POST(request: NextRequest) {
         orderStatus: ensureResult.status,
         invoiceCreated: invoice?.created ?? false,
         invoiceEmailSent: invoice?.emailSent ?? false,
+        customerName: body.customer?.name,
+        customerPhone: body.customer?.phone,
       },
     });
 

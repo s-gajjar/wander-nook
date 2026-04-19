@@ -72,6 +72,18 @@ type EnsureAutopayOrderOptions = {
   orderNote?: string;
 };
 
+type StoredCustomerFallback = {
+  fullName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+};
+
 function sanitizeText(value: string | null | undefined, maxLength = 120) {
   return (value || "").trim().slice(0, maxLength);
 }
@@ -190,6 +202,81 @@ function resolveCustomerDetails(
     state: sanitizeText(firstNonEmpty(input?.state, notes.customer_state), 80),
     pincode: sanitizeText(firstNonEmpty(input?.pincode, notes.customer_pincode), 20),
     country: sanitizeText(firstNonEmpty(input?.country, notes.customer_country, "India"), 60),
+  };
+}
+
+function mergeCustomerDetails(
+  customer: ReturnType<typeof resolveCustomerDetails>,
+  fallback: StoredCustomerFallback | null
+) {
+  if (!fallback) {
+    return customer;
+  }
+
+  return {
+    name: sanitizeText(firstNonEmpty(customer.name, fallback.fullName), 120),
+    email: sanitizeText(firstNonEmpty(customer.email, fallback.email).toLowerCase(), 120),
+    phone: normalizePhone(firstNonEmpty(customer.phone, fallback.phone)),
+    addressLine1: sanitizeText(firstNonEmpty(customer.addressLine1, fallback.addressLine1), 120),
+    addressLine2: sanitizeText(firstNonEmpty(customer.addressLine2, fallback.addressLine2), 120),
+    city: sanitizeText(firstNonEmpty(customer.city, fallback.city), 80),
+    state: sanitizeText(firstNonEmpty(customer.state, fallback.state), 80),
+    pincode: sanitizeText(firstNonEmpty(customer.pincode, fallback.pincode), 20),
+    country: sanitizeText(firstNonEmpty(customer.country, fallback.country, "India"), 60),
+  };
+}
+
+async function findStoredCustomerFallback(subscriptionId: string, email: string) {
+  const latestInvoice = await prisma.invoice.findFirst({
+    where: {
+      razorpaySubscriptionId: subscriptionId,
+    },
+    orderBy: {
+      issuedAt: "desc",
+    },
+    include: {
+      customer: true,
+    },
+  });
+
+  if (latestInvoice?.customer) {
+    return {
+      fullName: latestInvoice.customer.fullName,
+      email: latestInvoice.customer.email,
+      phone: latestInvoice.customer.phone,
+      addressLine1: latestInvoice.customer.addressLine1,
+      addressLine2: latestInvoice.customer.addressLine2,
+      city: latestInvoice.customer.city,
+      state: latestInvoice.customer.state,
+      pincode: latestInvoice.customer.pincode,
+      country: latestInvoice.customer.country,
+    };
+  }
+
+  if (!email) {
+    return null;
+  }
+
+  const existingCustomer = await prisma.customer.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!existingCustomer) {
+    return null;
+  }
+
+  return {
+    fullName: existingCustomer.fullName,
+    email: existingCustomer.email,
+    phone: existingCustomer.phone,
+    addressLine1: existingCustomer.addressLine1,
+    addressLine2: existingCustomer.addressLine2,
+    city: existingCustomer.city,
+    state: existingCustomer.state,
+    pincode: existingCustomer.pincode,
+    country: existingCustomer.country,
   };
 }
 
@@ -384,7 +471,11 @@ export async function ensureAutopayOrder({
     throw new Error("Invalid Shopify variant mapping for selected plan.");
   }
 
-  const resolvedCustomer = resolveCustomerDetails(customer, subscription, payment);
+  const baseCustomer = resolveCustomerDetails(customer, subscription, payment);
+  const resolvedCustomer = mergeCustomerDetails(
+    baseCustomer,
+    await findStoredCustomerFallback(normalizedSubscriptionId, baseCustomer.email)
+  );
   if (
     !resolvedCustomer.name ||
     !resolvedCustomer.email ||
@@ -404,9 +495,7 @@ export async function ensureAutopayOrder({
   const customerAddress = buildShopifyAddress(resolvedCustomer, firstName, lastName);
 
   return withSubscriptionOrderLock(normalizedSubscriptionId, async () => {
-    const existingOrder =
-      (await findExistingOrderByTag(paymentTag)) ||
-      (await findExistingOrderByTag(subscriptionTag));
+    const existingOrder = await findExistingOrderByTag(paymentTag);
 
     if (existingOrder) {
       return {
@@ -447,7 +536,7 @@ export async function ensureAutopayOrder({
           plan.id,
         ].join(", "),
         note:
-          orderNote || "Initial order created after verified Razorpay autopay payment.",
+          orderNote || "Shopify order created after verified Razorpay autopay payment.",
         note_attributes: [
           { name: "checkout_source", value: "wanderstamps-autopay" },
           { name: "customer_name", value: resolvedCustomer.name },

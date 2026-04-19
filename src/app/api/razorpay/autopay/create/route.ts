@@ -138,6 +138,10 @@ export async function POST(request: NextRequest) {
       metadata: {
         billingCycle: plan.cycle,
         amountPaise: plan.amountPaise,
+        customerName,
+        customerPhone,
+        customerCity: city,
+        customerState: state,
       },
     });
 

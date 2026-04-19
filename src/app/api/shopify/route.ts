@@ -5,10 +5,19 @@ import {
   getProductByHandle,
   // getSellingPlans,
 } from "@/src/lib/shopify-client";
+import { trackConversionEvent } from "@/src/lib/conversion-tracking";
 import { getPlanVariantId, parseShopifyVariantId } from "@/src/lib/razorpay-server";
 import { CartCreateMutationVariables } from "@/src/types/storefront.generated";
 import type { CartLineInput } from "@/src/types/storefront.types";
 import { NextRequest, NextResponse } from "next/server";
+
+function sanitizeText(value: unknown, maxLength = 120) {
+  if (typeof value !== "string" && typeof value !== "number") {
+    return "";
+  }
+
+  return String(value).trim().slice(0, maxLength);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -247,6 +256,20 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+
+      await trackConversionEvent({
+        eventName: isOneTimeCheckout ? "shopify_checkout_created" : "shopify_cart_checkout_created",
+        planId: sanitizeText(planId || checkoutMeta?.plan_id, 40),
+        customerEmail: sanitizeText(checkoutMeta?.customer_email, 120),
+        metadata: {
+          checkoutUrl: checkout.checkoutUrl,
+          purchaseMode: isOneTimeCheckout ? "one-time" : "autopay",
+          customerName: sanitizeText(checkoutMeta?.customer_name, 120),
+          customerPhone: sanitizeText(checkoutMeta?.customer_phone, 30),
+          customerCity: sanitizeText(checkoutMeta?.customer_city, 80),
+          customerState: sanitizeText(checkoutMeta?.customer_state, 80),
+        },
+      });
 
       return NextResponse.json({
         checkout,

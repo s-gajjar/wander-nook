@@ -76,14 +76,14 @@ New endpoints:
 - `POST /api/razorpay/autopay/verify`
   - Verifies Razorpay signature.
   - Validates captured payment amount/currency.
-  - Creates the Shopify order only for the first successful payment on a subscription.
-  - Uses subscription-level locking plus payment/subscription tags to avoid duplicate order creation.
+  - Creates one Shopify order for each successful captured payment.
+  - Uses subscription-level locking plus payment tags to avoid duplicate order creation.
   - Creates invoice record (idempotent by Razorpay payment id).
   - Sends invoice email with PDF attachment to customer.
 - `POST /api/razorpay/autopay/webhook`
   - Verifies Razorpay webhook signature.
   - Handles `invoice.paid`, `subscription.charged`, and `payment.captured`.
-  - Creates the initial Shopify order server-side if browser callback was missed.
+  - Creates the matching Shopify order server-side if browser callback was missed.
   - Creates/syncs invoice record for recurring charges.
   - Sends monthly/yearly invoice email with PDF attachment only on successful captured charges.
 
@@ -99,8 +99,8 @@ Existing webhook endpoint:
 4. On successful Razorpay callback:
    - signature is verified server-side
    - payment capture status is validated
-   - Shopify order is created as paid for the first successful subscription charge only
-5. If callback is missed (for example, UPI app-switch flow), webhook fallback creates that initial order.
+   - Shopify order is created as paid for that successful subscription charge
+5. If callback is missed (for example, UPI app-switch flow), webhook fallback creates that matching order.
 
 No Shopify order is created before verified payment.
 

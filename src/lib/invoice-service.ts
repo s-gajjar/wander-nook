@@ -60,6 +60,17 @@ export type EnsureInvoiceForAutopayPaymentResult = {
 };
 
 type InvoiceWithCustomer = Awaited<ReturnType<typeof getInvoiceByPaymentId>>;
+type StoredCustomerFallback = {
+  fullName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+};
 
 function normalizeText(value: string | null | undefined, maxLength = 120) {
   return (value || "").trim().slice(0, maxLength);
@@ -103,6 +114,60 @@ function normalizeCustomer(
     state: normalizeText(firstNonEmpty(input?.state, notes.customer_state), 80),
     pincode: normalizeText(firstNonEmpty(input?.pincode, notes.customer_pincode), 20),
     country: normalizeText(firstNonEmpty(input?.country, notes.customer_country, "India"), 60),
+  };
+}
+
+function mergeCustomerData(
+  customer: ReturnType<typeof normalizeCustomer>,
+  fallback: StoredCustomerFallback | null
+) {
+  if (!fallback) {
+    return customer;
+  }
+
+  return {
+    fullName: normalizeText(firstNonEmpty(customer.fullName, fallback.fullName), 120),
+    email: normalizeText(firstNonEmpty(customer.email, fallback.email).toLowerCase(), 120),
+    phone: normalizePhone(firstNonEmpty(customer.phone, fallback.phone)),
+    addressLine1: normalizeText(firstNonEmpty(customer.addressLine1, fallback.addressLine1), 120),
+    addressLine2: normalizeText(firstNonEmpty(customer.addressLine2, fallback.addressLine2), 120),
+    city: normalizeText(firstNonEmpty(customer.city, fallback.city), 80),
+    state: normalizeText(firstNonEmpty(customer.state, fallback.state), 80),
+    pincode: normalizeText(firstNonEmpty(customer.pincode, fallback.pincode), 20),
+    country: normalizeText(firstNonEmpty(customer.country, fallback.country, "India"), 60),
+  };
+}
+
+function toStoredCustomerFallback(
+  customer:
+    | {
+        fullName: string;
+        email: string;
+        phone: string;
+        addressLine1: string;
+        addressLine2: string | null;
+        city: string;
+        state: string;
+        pincode: string;
+        country: string;
+      }
+    | null
+    | undefined
+): StoredCustomerFallback | null {
+  if (!customer) {
+    return null;
+  }
+
+  return {
+    fullName: customer.fullName,
+    email: customer.email,
+    phone: customer.phone,
+    addressLine1: customer.addressLine1,
+    addressLine2: customer.addressLine2,
+    city: customer.city,
+    state: customer.state,
+    pincode: customer.pincode,
+    country: customer.country,
   };
 }
 
@@ -347,7 +412,21 @@ export async function ensureInvoiceForAutopayPayment(
   }
 
   const { payment, subscription, plan } = await resolveAutopayContext(paymentId, subscriptionId);
-  const customerData = normalizeCustomer(options.customer, subscription, payment);
+  const existingSubscriptionInvoice = await getLatestInvoiceBySubscriptionId(subscription.id);
+  const baseCustomerData = normalizeCustomer(options.customer, subscription, payment);
+  const normalizedEmail = normalizeText(baseCustomerData.email, 120);
+  const existingEmailCustomer =
+    !existingSubscriptionInvoice && normalizedEmail
+      ? await prisma.customer.findUnique({
+          where: {
+            email: normalizedEmail,
+          },
+        })
+      : null;
+  const fallbackCustomer =
+    toStoredCustomerFallback(existingSubscriptionInvoice?.customer) ||
+    toStoredCustomerFallback(existingEmailCustomer);
+  const customerData = mergeCustomerData(baseCustomerData, fallbackCustomer);
 
   if (
     !customerData.fullName ||
@@ -361,8 +440,6 @@ export async function ensureInvoiceForAutopayPayment(
     throw new Error("Cannot generate invoice without complete customer billing details.");
   }
 
-  const existingSubscriptionInvoice = await getLatestInvoiceBySubscriptionId(subscription.id);
-
   const customer = existingSubscriptionInvoice
     ? await prisma.customer.update({
         where: {
@@ -370,6 +447,7 @@ export async function ensureInvoiceForAutopayPayment(
         },
         data: {
           fullName: customerData.fullName,
+          email: customerData.email,
           phone: customerData.phone,
           addressLine1: customerData.addressLine1,
           addressLine2: customerData.addressLine2 || null,

@@ -223,6 +223,8 @@ export async function POST(request: NextRequest) {
         metadata: {
           event,
           paymentStatus: ensureResult.paymentStatus,
+          customerName: paymentDetails.customer?.name,
+          customerPhone: paymentDetails.customer?.phone,
         },
       });
 
@@ -270,6 +272,8 @@ export async function POST(request: NextRequest) {
         orderStatus: ensureResult.status,
         invoiceCreated: invoice?.created ?? false,
         invoiceEmailSent: invoice?.emailSent ?? false,
+        customerName: paymentDetails.customer?.name,
+        customerPhone: paymentDetails.customer?.phone,
       },
     });
 

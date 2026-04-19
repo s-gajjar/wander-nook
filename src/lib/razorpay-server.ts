@@ -69,13 +69,15 @@ function getVariantByPlan(planId: AutopayPlanId) {
     return (
       envValue("SHOPIFY_MONTHLY_VARIANT_ID") ||
       envValue("NEXT_PUBLIC_MONTHLY_VARIANT_ID") ||
+      envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID1") ||
       envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID2")
     );
   }
   return (
     envValue("SHOPIFY_ANNUAL_VARIANT_ID") ||
     envValue("NEXT_PUBLIC_ANNUAL_VARIANT_ID") ||
-    envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID2")
+    envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID2") ||
+    envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID1")
   );
 }
 

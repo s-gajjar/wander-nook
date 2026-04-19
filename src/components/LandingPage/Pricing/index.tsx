@@ -283,6 +283,17 @@ const Pricing = () => {
     customer_country: autopayForm.country,
   });
 
+  const buildLeadTrackingMeta = (plan: PlanOption) => ({
+    plan_id: plan.id,
+    plan_title: plan.title,
+    purchase_mode: plan.checkoutMode,
+    customer_name: autopayForm.name,
+    customer_email: autopayForm.email,
+    customer_phone: autopayForm.phone,
+    customer_city: autopayForm.city,
+    customer_state: autopayForm.state,
+  });
+
   const startOneTimeCheckout = async (plan: PlanOption) => {
     const checkoutResponse = await fetch("/api/shopify?action=checkoutOneTime", {
       method: "POST",
@@ -311,8 +322,7 @@ const Pricing = () => {
     }
 
     trackClientEvent("funnel_checkout_initiated", {
-      plan_id: plan.id,
-      purchase_mode: plan.checkoutMode,
+      ...buildLeadTrackingMeta(plan),
     });
 
     window.location.assign(checkoutData.checkout.checkoutUrl);
@@ -360,9 +370,8 @@ const Pricing = () => {
       }
 
       trackClientEvent("funnel_checkout_initiated", {
-        plan_id: selectedPlan.id,
+        ...buildLeadTrackingMeta(selectedPlan),
         subscription_id: createData.subscriptionId,
-        purchase_mode: selectedPlan.checkoutMode,
       });
 
       const razorpayLoaded = await loadRazorpayScript();
@@ -425,7 +434,7 @@ const Pricing = () => {
             }
 
             trackClientEvent("funnel_payment_success", {
-              plan_id: selectedPlan.id,
+              ...buildLeadTrackingMeta(selectedPlan),
               payment_id: payload.razorpay_payment_id,
               subscription_id: payload.razorpay_subscription_id,
               order_name: verifyData.order?.name,
@@ -467,7 +476,7 @@ const Pricing = () => {
 
       razorpay.on("payment.failed", () => {
         trackClientEvent("funnel_payment_failed", {
-          plan_id: selectedPlan.id,
+          ...buildLeadTrackingMeta(selectedPlan),
         });
         toast.error("Payment was not completed. Please try again.");
         setAutopayLoading(false);
