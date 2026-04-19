@@ -294,6 +294,16 @@ const Pricing = () => {
     customer_state: autopayForm.state,
   });
 
+  const buildMetaPixelCheckoutPayload = (plan: PlanOption) => ({
+    content_name: `${plan.title} Plan`,
+    content_category: "Subscription",
+    content_type: "product",
+    content_ids: [plan.id],
+    value: Number(plan.price.amount),
+    currency: plan.price.currency,
+    num_items: 1,
+  });
+
   const startOneTimeCheckout = async (plan: PlanOption) => {
     const checkoutResponse = await fetch("/api/shopify?action=checkoutOneTime", {
       method: "POST",
@@ -324,6 +334,7 @@ const Pricing = () => {
     trackClientEvent("funnel_checkout_initiated", {
       ...buildLeadTrackingMeta(plan),
     });
+    trackMetaPixelEvent("InitiateCheckout", buildMetaPixelCheckoutPayload(plan));
 
     window.location.assign(checkoutData.checkout.checkoutUrl);
   };
@@ -373,6 +384,7 @@ const Pricing = () => {
         ...buildLeadTrackingMeta(selectedPlan),
         subscription_id: createData.subscriptionId,
       });
+      trackMetaPixelEvent("InitiateCheckout", buildMetaPixelCheckoutPayload(selectedPlan));
 
       const razorpayLoaded = await loadRazorpayScript();
       if (!razorpayLoaded || !window.Razorpay) {
@@ -441,7 +453,9 @@ const Pricing = () => {
               already_exists: Boolean(verifyData.alreadyExists),
             });
             trackMetaPixelEvent("Purchase", {
-              content_name: "Payment_Success",
+              ...buildMetaPixelCheckoutPayload(selectedPlan),
+              content_name: `${selectedPlan.title} Purchase`,
+              order_name: verifyData.order?.name,
             });
 
             const orderName = verifyData.order?.name;

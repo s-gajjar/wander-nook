@@ -1,4 +1,5 @@
-type MetaPixelParams = Record<string, string | number | boolean | null | undefined>;
+type MetaPixelScalar = string | number | boolean | null | undefined;
+type MetaPixelParams = Record<string, MetaPixelScalar | Array<string | number>>;
 
 declare global {
   interface Window {
@@ -7,7 +8,8 @@ declare global {
   }
 }
 
-export const META_PIXEL_ID = "2080573292785521";
+export const META_PIXEL_ID =
+  process.env.NEXT_PUBLIC_META_PIXEL_ID?.trim() || "2080573292785521";
 
 function compactParams(params: MetaPixelParams | undefined) {
   if (!params) {
