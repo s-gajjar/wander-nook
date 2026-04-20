@@ -26,7 +26,7 @@ function parseEntries(input: string) {
       const subscriptionId = line.match(/sub_[A-Za-z0-9]+/i)?.[0] || "";
       return { paymentId, subscriptionId };
     })
-    .filter((entry) => entry.paymentId && entry.subscriptionId);
+    .filter((entry) => entry.paymentId);
 }
 
 export default function ReplayAutopayForm() {
@@ -42,7 +42,7 @@ export default function ReplayAutopayForm() {
 
     const entries = parseEntries(value);
     if (entries.length === 0) {
-      setMessage("Paste at least one line containing both a pay_... and sub_... id.");
+      setMessage("Paste at least one line containing a pay_... id. sub_... is optional.");
       return;
     }
 
@@ -78,7 +78,8 @@ export default function ReplayAutopayForm() {
       <div className="mb-3">
         <h2 className="text-lg font-semibold text-slate-900">Replay Razorpay Payments</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Paste one line per payment using any format that contains both `pay_...` and `sub_...`.
+          Paste one line per payment using any format that contains `pay_...`. If you also have
+          `sub_...`, include it, but the replay will try to infer it from Razorpay when missing.
         </p>
       </div>
 
@@ -88,7 +89,7 @@ export default function ReplayAutopayForm() {
           onChange={(event) => setValue(event.target.value)}
           rows={6}
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-          placeholder={"pay_ABC123 sub_DEF456\npay_XYZ789, sub_QWE987"}
+          placeholder={"pay_ABC123\npay_XYZ789 sub_QWE987"}
         />
         <div className="flex items-center gap-3">
           <button
