@@ -14,6 +14,7 @@ type ReplayEntry = {
 type RazorpayReplayPayment = {
   id: string;
   invoice_id?: string | null;
+  status?: string | null;
 };
 
 type RazorpayReplayInvoice = {
@@ -34,16 +35,30 @@ async function resolveSubscriptionId(
     return normalizedSubscriptionId;
   }
 
-  const payment = await razorpayRequest<RazorpayReplayPayment>(`/payments/${paymentId}`);
+  let payment: RazorpayReplayPayment;
+  try {
+    payment = await razorpayRequest<RazorpayReplayPayment>(`/payments/${paymentId}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown Razorpay payment lookup error.";
+    throw new Error(`Payment lookup failed for ${paymentId}: ${message}`);
+  }
+
   const invoiceId = sanitizeText(payment.invoice_id, 80);
   if (!invoiceId) {
     throw new Error("Could not infer subscription id from payment. Paste the sub_... id too.");
   }
 
-  const invoice = await razorpayRequest<RazorpayReplayInvoice>(`/invoices/${invoiceId}`);
+  let invoice: RazorpayReplayInvoice;
+  try {
+    invoice = await razorpayRequest<RazorpayReplayInvoice>(`/invoices/${invoiceId}`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown Razorpay invoice lookup error.";
+    throw new Error(`Invoice lookup failed for ${invoiceId} from ${paymentId}: ${message}`);
+  }
+
   const inferredSubscriptionId = sanitizeText(invoice.subscription_id, 80);
   if (!inferredSubscriptionId) {
-    throw new Error("Razorpay invoice does not contain a subscription id for this payment.");
+    throw new Error(`Razorpay invoice ${invoiceId} does not contain a subscription id for ${paymentId}.`);
   }
 
   return inferredSubscriptionId;

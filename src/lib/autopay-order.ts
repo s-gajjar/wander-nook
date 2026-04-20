@@ -422,7 +422,7 @@ async function withSubscriptionOrderLock<T>(
 ) {
   return prisma.$transaction(
     async (tx) => {
-      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${subscriptionId}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${subscriptionId}))`;
       return operation();
     },
     {
