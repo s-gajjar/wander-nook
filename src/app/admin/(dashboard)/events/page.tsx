@@ -1,4 +1,5 @@
 import { prisma } from "@/src/lib/prisma";
+import ReplayAutopayForm from "@/src/components/Admin/ReplayAutopayForm";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,8 @@ export default async function AdminEventsPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Conversion Events</h1>
         <p className="mt-1 text-sm text-slate-600">Payment funnel and webhook events.</p>
       </div>
+
+      <ReplayAutopayForm />
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
