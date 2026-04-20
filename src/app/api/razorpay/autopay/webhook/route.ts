@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ensureAutopayOrder, type AutopayCustomerDetails } from "@/src/lib/autopay-order";
+import { reconcileRecentAutopayPayments } from "@/src/lib/autopay-reconcile";
 import { razorpayRequest } from "@/src/lib/razorpay-server";
 import { ensureInvoiceForAutopayPayment } from "@/src/lib/invoice-service";
 import { trackConversionEvent } from "@/src/lib/conversion-tracking";
@@ -200,6 +201,14 @@ export async function POST(request: NextRequest) {
 
     const paymentDetails = await extractPaymentAndSubscriptionDetails(body);
     if (!paymentDetails) {
+      try {
+        await reconcileRecentAutopayPayments({
+          trigger: `webhook:${event}:missing_reference`,
+        });
+      } catch (error) {
+        console.error("Autopay reconciliation fallback failed after webhook with missing references", error);
+      }
+
       return NextResponse.json({
         ok: true,
         event,
@@ -227,6 +236,14 @@ export async function POST(request: NextRequest) {
           customerPhone: paymentDetails.customer?.phone,
         },
       });
+
+      try {
+        await reconcileRecentAutopayPayments({
+          trigger: `webhook:${event}:payment_not_captured`,
+        });
+      } catch (error) {
+        console.error("Autopay reconciliation fallback failed after non-captured webhook payment", error);
+      }
 
       return NextResponse.json({
         ok: true,
@@ -276,6 +293,14 @@ export async function POST(request: NextRequest) {
         customerPhone: paymentDetails.customer?.phone,
       },
     });
+
+    try {
+      await reconcileRecentAutopayPayments({
+        trigger: `webhook:${event}`,
+      });
+    } catch (error) {
+      console.error("Autopay reconciliation fallback failed after webhook processing", error);
+    }
 
     return NextResponse.json({
       ok: true,
