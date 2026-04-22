@@ -629,7 +629,7 @@ const Pricing = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                    Full Name
+                    Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={autopayForm.name}
@@ -640,7 +640,7 @@ const Pricing = () => {
                 </div>
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                    Email
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -655,18 +655,22 @@ const Pricing = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={autopayForm.phone}
                     onChange={(event) => handleAutopayFieldChange("phone", event.target.value)}
                     className="w-full rounded-xl border border-[#E7EBF0] px-4 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-[#6A43D7]"
                     required
+                    maxLength={10}
+                    minLength={10}
+                    pattern="\d{10}"
+                    title="Please enter a 10-digit phone number"
                   />
                 </div>
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                    Pincode
+                    Pincode <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={autopayForm.pincode}
@@ -679,7 +683,7 @@ const Pricing = () => {
 
               <div>
                 <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                  Address Line 1
+                  Address Line 1 <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={autopayForm.addressLine1}
@@ -703,7 +707,7 @@ const Pricing = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                    City
+                    City <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={autopayForm.city}
@@ -714,7 +718,7 @@ const Pricing = () => {
                 </div>
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                    State
+                    State <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={autopayForm.state}
@@ -725,7 +729,7 @@ const Pricing = () => {
                 </div>
                 <div>
                   <label className="block text-[15px] font-medium text-[#0F1728] mb-2">
-                    Country
+                    Country <span className="text-red-500">*</span>
                   </label>
                   <input
                     value={autopayForm.country}
@@ -922,7 +926,7 @@ const Pricing = () => {
             <div className="rounded-2xl bg-white border border-[#EDF0F3] shadow-sm p-5 md:p-7">
               <form onSubmit={submitSample} className="space-y-5 md:space-y-6">
                 <div>
-                  <label className="block text-[15px] font-medium text-[#0F1728] mb-2">Name</label>
+                  <label className="block text-[15px] font-medium text-[#0F1728] mb-2">Name <span className="text-red-500">*</span></label>
                   <input
                     placeholder="Value"
                     value={name}
@@ -932,7 +936,7 @@ const Pricing = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[15px] font-medium text-[#0F1728] mb-2">Email</label>
+                  <label className="block text-[15px] font-medium text-[#0F1728] mb-2">Email <span className="text-red-500">*</span></label>
                   <input
                     type="email"
                     placeholder="Value"
@@ -943,12 +947,17 @@ const Pricing = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[15px] font-medium text-[#0F1728] mb-2">Contact No</label>
+                  <label className="block text-[15px] font-medium text-[#0F1728] mb-2">Contact No <span className="text-red-500">*</span></label>
                   <input
                     placeholder="Value"
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
                     className="w-full rounded-xl border border-[#E7EBF0] bg-white px-4 py-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-[#6A43D7]"
+                    required
+                    maxLength={10}
+                    minLength={10}
+                    pattern="\d{10}"
+                    title="Please enter a 10-digit phone number"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
