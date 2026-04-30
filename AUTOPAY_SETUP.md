@@ -53,6 +53,13 @@ INVOICE_SECONDARY_LOGO_URL=/wander-logo.png
 
 # Optional analytics
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_META_PIXEL_ID=2080573292785521
+
+# Optional Meta Conversions API for server-side Purchase events
+META_CAPI_ACCESS_TOKEN=EAAB...
+# Optional: override Graph API version or send to Meta Test Events
+META_GRAPH_API_VERSION=v21.0
+META_CAPI_TEST_EVENT_CODE=TEST12345
 ```
 
 ## Required Shopify App Scopes
@@ -80,17 +87,21 @@ New endpoints:
   - Uses subscription-level locking plus payment tags to avoid duplicate order creation.
   - Creates invoice record (idempotent by Razorpay payment id).
   - Sends invoice email with PDF attachment to customer.
+  - Sends a server-side Meta `Purchase` event when `META_CAPI_ACCESS_TOKEN` is set.
 - `POST /api/razorpay/autopay/webhook`
   - Verifies Razorpay webhook signature.
   - Handles `invoice.paid`, `subscription.charged`, and `payment.captured`.
   - Creates the matching Shopify order server-side if browser callback was missed.
+  - Reuses the first Shopify order for later recurring payments on the same Razorpay subscription.
   - Creates/syncs invoice record for recurring charges.
   - Sends monthly/yearly invoice email with PDF attachment only on successful captured charges.
+  - Sends a server-side Meta `Purchase` event only when a new Shopify order is created.
 
 Existing webhook endpoint:
 - `POST /api/shopify/webhooks/orders`
   - Keeps unpaid-order cancellation guard logic.
   - Sends fallback merchant emails for new direct website orders.
+  - Sends a server-side Meta `Purchase` event for paid one-time Shopify checkout orders.
 
 ## Customer Flow
 1. User clicks monthly or annual autopay card.
@@ -101,6 +112,7 @@ Existing webhook endpoint:
    - payment capture status is validated
    - Shopify order is created as paid for that successful subscription charge
 5. If callback is missed (for example, UPI app-switch flow), webhook fallback creates that matching order.
+6. Later recurring monthly charges create invoice/backend records and link back to the first Shopify order instead of creating a new Shopify order.
 
 No Shopify order is created before verified payment.
 

@@ -79,6 +79,10 @@ type ShopifyCheckoutResponse = {
 
 type RazorpayVerifyResponse = {
   ok: boolean;
+  meta?: {
+    purchaseEventId?: string;
+    shouldTrackPurchase?: boolean;
+  };
   alreadyExists?: boolean;
   order?: {
     id?: string | number;
@@ -201,6 +205,20 @@ const defaultAutopayForm: AutopayCustomerForm = {
   country: "India",
 };
 
+function readCookie(name: string) {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  return (
+    document.cookie
+      .split(";")
+      .map((item) => item.trim())
+      .find((item) => item.startsWith(`${name}=`))
+      ?.slice(name.length + 1) || ""
+  );
+}
+
 const Pricing = () => {
   const [openSample, setOpenSample] = useState(false);
   const [email, setEmail] = useState("");
@@ -281,6 +299,9 @@ const Pricing = () => {
     customer_state: autopayForm.state,
     customer_pincode: autopayForm.pincode,
     customer_country: autopayForm.country,
+    event_source_url: typeof window !== "undefined" ? window.location.href : "",
+    meta_fbp: readCookie("_fbp"),
+    meta_fbc: readCookie("_fbc"),
   });
 
   const buildLeadTrackingMeta = (plan: PlanOption) => ({
@@ -302,6 +323,12 @@ const Pricing = () => {
     value: Number(plan.price.amount),
     currency: plan.price.currency,
     num_items: 1,
+  });
+
+  const buildMetaBrowserTracking = () => ({
+    eventSourceUrl: typeof window !== "undefined" ? window.location.href : "",
+    fbp: readCookie("_fbp"),
+    fbc: readCookie("_fbc"),
   });
 
   const startOneTimeCheckout = async (plan: PlanOption) => {
@@ -365,6 +392,7 @@ const Pricing = () => {
         body: JSON.stringify({
           planId: selectedPlan.id,
           customer: autopayForm,
+          tracking: buildMetaBrowserTracking(),
         }),
       });
 
@@ -452,11 +480,23 @@ const Pricing = () => {
               order_name: verifyData.order?.name,
               already_exists: Boolean(verifyData.alreadyExists),
             });
-            trackMetaPixelEvent("Purchase", {
-              ...buildMetaPixelCheckoutPayload(selectedPlan),
-              content_name: `${selectedPlan.title} Purchase`,
-              order_name: verifyData.order?.name,
-            });
+            if (verifyData.meta?.shouldTrackPurchase !== false) {
+              const purchaseEventId =
+                verifyData.meta?.purchaseEventId ||
+                `purchase:razorpay:${payload.razorpay_payment_id}`;
+
+              trackMetaPixelEvent(
+                "Purchase",
+                {
+                  ...buildMetaPixelCheckoutPayload(selectedPlan),
+                  content_name: `${selectedPlan.title} Purchase`,
+                  order_name: verifyData.order?.name,
+                },
+                {
+                  eventID: purchaseEventId,
+                }
+              );
+            }
 
             const orderName = verifyData.order?.name;
             setAutopaySuccess({

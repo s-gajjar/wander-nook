@@ -5,6 +5,10 @@ import { reconcileRecentAutopayPayments } from "@/src/lib/autopay-reconcile";
 import { razorpayRequest } from "@/src/lib/razorpay-server";
 import { ensureInvoiceForAutopayPayment } from "@/src/lib/invoice-service";
 import { trackConversionEvent } from "@/src/lib/conversion-tracking";
+import {
+  buildRazorpayPurchaseEventId,
+  sendMetaPurchaseEvent,
+} from "@/src/lib/meta-conversions-api";
 
 export const runtime = "nodejs";
 
@@ -294,6 +298,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (ensureResult.status === "created") {
+      await sendMetaPurchaseEvent({
+        eventId: buildRazorpayPurchaseEventId(paymentDetails.paymentId),
+        eventSourceUrl: ensureResult.conversion.eventSourceUrl,
+        value: ensureResult.conversion.amountInr,
+        currency: ensureResult.conversion.currency,
+        contentName: `${ensureResult.conversion.planId} Purchase`,
+        contentIds: [ensureResult.conversion.planId],
+        planId: ensureResult.conversion.planId,
+        orderId: ensureResult.order.name,
+        customer: {
+          name: ensureResult.conversion.customer.name,
+          email: ensureResult.conversion.customer.email,
+          phone: ensureResult.conversion.customer.phone,
+          city: ensureResult.conversion.customer.city,
+          state: ensureResult.conversion.customer.state,
+          pincode: ensureResult.conversion.customer.pincode,
+          country: ensureResult.conversion.customer.country,
+          fbp: ensureResult.conversion.fbp,
+          fbc: ensureResult.conversion.fbc,
+        },
+      });
+    }
+
     try {
       await reconcileRecentAutopayPayments({
         trigger: `webhook:${event}`,
@@ -305,7 +333,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       event,
-      alreadyExists: ensureResult.status === "already_exists",
+      alreadyExists: ensureResult.status !== "created",
       order: ensureResult.order,
       invoice,
       invoiceError,

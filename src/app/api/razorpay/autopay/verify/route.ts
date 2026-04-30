@@ -6,6 +6,11 @@ import {
 import { ensureAutopayOrder } from "@/src/lib/autopay-order";
 import { ensureInvoiceForAutopayPayment } from "@/src/lib/invoice-service";
 import { trackConversionEvent } from "@/src/lib/conversion-tracking";
+import {
+  buildRazorpayPurchaseEventId,
+  getMetaRequestData,
+  sendMetaPurchaseEvent,
+} from "@/src/lib/meta-conversions-api";
 
 export const runtime = "nodejs";
 
@@ -134,9 +139,42 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const metaRequestData = getMetaRequestData(request);
+    const shouldTrackPurchase = ensureResult.status === "created";
+    const purchaseEventId = shouldTrackPurchase ? buildRazorpayPurchaseEventId(paymentId) : undefined;
+    if (shouldTrackPurchase && purchaseEventId) {
+      await sendMetaPurchaseEvent({
+        eventId: purchaseEventId,
+        eventSourceUrl: ensureResult.conversion.eventSourceUrl,
+        value: ensureResult.conversion.amountInr,
+        currency: ensureResult.conversion.currency,
+        contentName: `${ensureResult.conversion.planId} Purchase`,
+        contentIds: [ensureResult.conversion.planId],
+        planId: ensureResult.conversion.planId,
+        orderId: ensureResult.order.name,
+        customer: {
+          name: ensureResult.conversion.customer.name,
+          email: ensureResult.conversion.customer.email,
+          phone: ensureResult.conversion.customer.phone,
+          city: ensureResult.conversion.customer.city,
+          state: ensureResult.conversion.customer.state,
+          pincode: ensureResult.conversion.customer.pincode,
+          country: ensureResult.conversion.customer.country,
+          fbp: ensureResult.conversion.fbp || metaRequestData.fbp,
+          fbc: ensureResult.conversion.fbc || metaRequestData.fbc,
+          clientIpAddress: metaRequestData.clientIpAddress,
+          clientUserAgent: metaRequestData.clientUserAgent,
+        },
+      });
+    }
+
     if (ensureResult.status === "already_exists") {
       return NextResponse.json({
         ok: true,
+        meta: {
+          purchaseEventId,
+          shouldTrackPurchase,
+        },
         alreadyExists: true,
         order: ensureResult.order,
         invoice,
@@ -146,6 +184,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      meta: {
+        purchaseEventId,
+        shouldTrackPurchase,
+      },
+      alreadyExists: ensureResult.status !== "created",
       order: {
         id: ensureResult.order.id,
         name: ensureResult.order.name,

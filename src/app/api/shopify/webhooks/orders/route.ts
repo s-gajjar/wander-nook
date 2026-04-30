@@ -1,6 +1,11 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { sendTransactionalEmail } from "@/src/lib/mailer";
+import { trackConversionEvent } from "@/src/lib/conversion-tracking";
+import {
+  buildShopifyPurchaseEventId,
+  sendMetaPurchaseEvent,
+} from "@/src/lib/meta-conversions-api";
 
 export const runtime = "nodejs";
 
@@ -9,6 +14,7 @@ const ADMIN_TOKEN = process.env.SHOPIFY_ADMIN_ACCESS_TOKEN || "";
 const WEBHOOK_SECRET = process.env.SHOPIFY_WEBHOOK_SECRET || "";
 const UNPAID_FINANCIAL_STATUSES = new Set(["pending", "unpaid", "voided"]);
 const DIRECT_WEBSITE_ORDER_SOURCES = new Set(["", "web"]);
+const PAID_FINANCIAL_STATUSES = new Set(["paid", "partially_paid"]);
 
 type NoteAttribute = {
   name?: string;
@@ -103,6 +109,23 @@ function shouldCancelForUnpaidStatus(order: OrderWebhookPayload) {
 function isDirectWebsiteOrder(order: OrderWebhookPayload) {
   const sourceName = sanitizeText(order.source_name, 40).toLowerCase();
   return DIRECT_WEBSITE_ORDER_SOURCES.has(sourceName);
+}
+
+function isPaidOrder(order: OrderWebhookPayload) {
+  return PAID_FINANCIAL_STATUSES.has((order.financial_status ?? "").toLowerCase());
+}
+
+function getNoteAttribute(order: OrderWebhookPayload, keys: string[]) {
+  const normalizedKeys = new Set(keys.map((key) => key.toLowerCase()));
+
+  for (const attribute of order.note_attributes ?? []) {
+    const key = (attribute.name ?? attribute.key ?? "").trim().toLowerCase();
+    if (normalizedKeys.has(key)) {
+      return sanitizeText(attribute.value, 255);
+    }
+  }
+
+  return "";
 }
 
 function parseOrderId(orderId: number | string | undefined) {
@@ -331,6 +354,56 @@ export async function POST(request: NextRequest) {
           error: error instanceof Error ? error.message : "merchant_notification_failed",
         };
       }
+    }
+
+    if (!autopayOrder && isDirectWebsiteOrder(order) && isPaidOrder(order) && order.id) {
+      const planId = getNoteAttribute(order, ["plan_id", "recurring_plan"]);
+      const purchaseMode = getNoteAttribute(order, ["purchase_mode"]);
+      const customerName =
+        getNoteAttribute(order, ["customer_name"]) || resolveCustomerName(order);
+      const customerEmail =
+        getNoteAttribute(order, ["customer_email"]) ||
+        sanitizeText(order.contact_email || order.email, 120);
+      const customerPhone =
+        getNoteAttribute(order, ["customer_phone"]) ||
+        sanitizeText(order.customer?.phone || order.phone, 40);
+
+      await trackConversionEvent({
+        eventName: "shopify_order_paid",
+        planId,
+        customerEmail,
+        metadata: {
+          orderId: String(order.id),
+          orderName: order.name,
+          purchaseMode,
+          totalPrice: order.total_price,
+          currency: order.currency,
+          customerName,
+          customerPhone,
+        },
+      });
+
+      await sendMetaPurchaseEvent({
+        eventId: buildShopifyPurchaseEventId(order.id),
+        eventSourceUrl: getNoteAttribute(order, ["event_source_url"]),
+        value: Number(order.total_price) || 0,
+        currency: order.currency || "INR",
+        contentName: planId ? `${planId} Purchase` : "Shopify Purchase",
+        contentIds: planId ? [planId] : [],
+        planId,
+        orderId: order.name || order.id,
+        customer: {
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone,
+          city: getNoteAttribute(order, ["customer_city"]),
+          state: getNoteAttribute(order, ["customer_state"]),
+          pincode: getNoteAttribute(order, ["customer_pincode"]),
+          country: getNoteAttribute(order, ["customer_country"]),
+          fbp: getNoteAttribute(order, ["meta_fbp"]),
+          fbc: getNoteAttribute(order, ["meta_fbc"]),
+        },
+      });
     }
 
     if (autopayOrder && shouldCancelForUnpaidStatus(order)) {

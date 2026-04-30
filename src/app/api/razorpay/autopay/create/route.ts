@@ -21,6 +21,11 @@ type CreateAutopayRequestBody = {
     pincode?: string;
     country?: string;
   };
+  tracking?: {
+    fbp?: string;
+    fbc?: string;
+    eventSourceUrl?: string;
+  };
 };
 
 type RazorpaySubscriptionResponse = {
@@ -70,6 +75,9 @@ export async function POST(request: NextRequest) {
     const state = sanitizeText(body.customer?.state || "", 80);
     const pincode = sanitizeText(body.customer?.pincode || "", 20);
     const country = sanitizeText(body.customer?.country || "India", 60);
+    const metaFbp = sanitizeText(body.tracking?.fbp || "", 120);
+    const metaFbc = sanitizeText(body.tracking?.fbc || "", 240);
+    const eventSourceUrl = sanitizeText(body.tracking?.eventSourceUrl || "", 300);
 
     if (
       !customerName ||
@@ -125,6 +133,9 @@ export async function POST(request: NextRequest) {
             customer_country: country,
             customer_address_1: addressLine1,
             ...(addressLine2 ? { customer_address_2: addressLine2 } : {}),
+            ...(metaFbp ? { meta_fbp: metaFbp } : {}),
+            ...(metaFbc ? { meta_fbc: metaFbc } : {}),
+            ...(eventSourceUrl ? { event_source_url: eventSourceUrl } : {}),
           },
         },
       }

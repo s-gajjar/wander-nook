@@ -59,10 +59,21 @@ export type AutopayCustomerDetails = {
   country?: string;
 };
 
+type AutopayOrderConversionMeta = {
+  planId: string;
+  amountInr: number;
+  currency: string;
+  customer: ReturnType<typeof resolveCustomerDetails>;
+  fbp?: string;
+  fbc?: string;
+  eventSourceUrl?: string;
+};
+
 export type EnsureAutopayOrderResult =
   | { status: "payment_not_captured"; paymentStatus: string }
-  | { status: "already_exists"; order: ExistingOrderNode }
-  | { status: "created"; order: ShopifyOrderResponse };
+  | { status: "already_exists"; order: ExistingOrderNode; conversion: AutopayOrderConversionMeta }
+  | { status: "subscription_order_exists"; order: ExistingOrderNode; conversion: AutopayOrderConversionMeta }
+  | { status: "created"; order: ShopifyOrderResponse; conversion: AutopayOrderConversionMeta };
 
 type EnsureAutopayOrderOptions = {
   paymentId: string;
@@ -476,6 +487,15 @@ export async function ensureAutopayOrder({
     baseCustomer,
     await findStoredCustomerFallback(normalizedSubscriptionId, baseCustomer.email)
   );
+  const conversion: AutopayOrderConversionMeta = {
+    planId: plan.id,
+    amountInr: plan.amountInr,
+    currency: SUPPORTED_CURRENCY,
+    customer: resolvedCustomer,
+    fbp: sanitizeText(subscription.notes?.meta_fbp, 120),
+    fbc: sanitizeText(subscription.notes?.meta_fbc, 240),
+    eventSourceUrl: sanitizeText(subscription.notes?.event_source_url, 300),
+  };
   if (
     !resolvedCustomer.name ||
     !resolvedCustomer.email ||
@@ -501,6 +521,16 @@ export async function ensureAutopayOrder({
       return {
         status: "already_exists" as const,
         order: existingOrder,
+        conversion,
+      };
+    }
+
+    const existingSubscriptionOrder = await findExistingOrderByTag(subscriptionTag);
+    if (existingSubscriptionOrder) {
+      return {
+        status: "subscription_order_exists" as const,
+        order: existingSubscriptionOrder,
+        conversion,
       };
     }
 
@@ -574,6 +604,7 @@ export async function ensureAutopayOrder({
         id: order.id,
         name: order.name,
       },
+      conversion,
     };
   });
 }
