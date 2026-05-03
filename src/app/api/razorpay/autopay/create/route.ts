@@ -120,10 +120,6 @@ export async function POST(request: NextRequest) {
           notes: {
             checkout_source: "wanderstamps-autopay",
             recurring_plan_id: plan.id,
-            recurring_cycle: plan.cycle,
-            recurring_amount_inr: String(plan.amountInr),
-            recurring_total_count: String(plan.totalCount),
-            shopify_variant_id: plan.shopifyVariantId,
             customer_name: customerName,
             customer_email: customerEmail,
             customer_phone: customerPhone,
