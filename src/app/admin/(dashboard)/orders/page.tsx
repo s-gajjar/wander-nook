@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
 import { formatCurrency } from "@/src/lib/invoice-template";
+import FilterSelect from "@/src/components/Admin/FilterSelect";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,6 @@ export default async function OrdersPage({
         <SearchForm currentQuery={q || ""} />
         <FilterSelect
           name="status"
-          current={status || "all"}
           options={[
             { value: "all", label: "All statuses" },
             { value: "paid", label: "Paid" },
@@ -75,7 +75,6 @@ export default async function OrdersPage({
         />
         <FilterSelect
           name="fulfillment"
-          current={fulfillment || "all"}
           options={[
             { value: "all", label: "All fulfillment" },
             { value: "unfulfilled", label: "Unfulfilled" },
@@ -154,23 +153,6 @@ function SearchForm({ currentQuery }: { currentQuery: string }) {
         placeholder="Search orders, customers..."
         className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-[13px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#6366F1] focus:outline-none focus:ring-2 focus:ring-[#6366F1]/10 transition-all"
       />
-    </form>
-  );
-}
-
-function FilterSelect({ name, current, options }: { name: string; current: string; options: { value: string; label: string }[] }) {
-  return (
-    <form method="GET">
-      <select
-        name={name}
-        defaultValue={current}
-        onChange={(e) => { (e.target.form as HTMLFormElement)?.submit(); }}
-        className="rounded-xl border border-[#E5E7EB] bg-white px-3 py-2.5 text-[13px] text-[#374151] focus:border-[#6366F1] focus:outline-none focus:ring-2 focus:ring-[#6366F1]/10 transition-all appearance-none pr-8 cursor-pointer"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
     </form>
   );
 }
