@@ -4,13 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/admin", label: "Overview", icon: "◻" },
-  { href: "/admin/customers", label: "Customers", icon: "◎" },
-  { href: "/admin/orders", label: "Orders", icon: "◈" },
-  { href: "/admin/invoices", label: "Invoices", icon: "◇" },
-  { href: "/admin/subscribers", label: "Subscribers", icon: "◉" },
-  { href: "/admin/events", label: "Events", icon: "◆" },
-  { href: "/admin/analytics", label: "Analytics", icon: "◐" },
+  { href: "/admin", label: "Overview" },
+  { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/orders", label: "Orders" },
+  { href: "/admin/invoices", label: "Invoices" },
+  { href: "/admin/events", label: "Events" },
+  { href: "/admin/analytics", label: "Analytics" },
 ];
 
 export default function AdminNav() {

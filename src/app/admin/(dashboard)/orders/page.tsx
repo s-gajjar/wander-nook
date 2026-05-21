@@ -39,10 +39,7 @@ export default async function OrdersPage() {
 
       {orders.length === 0 ? (
         <div className="rounded-2xl border border-[#E8ECF0] bg-white p-12 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F6] mb-3">
-            <span className="text-xl">📦</span>
-          </div>
-          <p className="text-[14px] text-[#6B7280]">No orders yet. Orders will appear here after one-time payments are completed.</p>
+          <p className="text-[14px] text-[#6B7280]">No orders yet. Orders will appear here after payments are completed.</p>
         </div>
       ) : (
         <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
@@ -61,21 +58,20 @@ export default async function OrdersPage() {
               </thead>
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                  <tr key={order.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#F3F4F6] transition-colors relative">
                     <td className="px-5 py-3.5 font-medium text-[#111827] whitespace-nowrap">
-                      <Link href={`/admin/orders/${order.id}`} className="hover:text-[#4F46E5] transition-colors">
-                        {order.orderNumber}
-                      </Link>
+                      <Link href={`/admin/orders/${order.id}`} className="absolute inset-0" />
+                      <span className="relative pointer-events-none">{order.orderNumber}</span>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 relative">
                       <p className="font-medium text-[#111827]">{order.customer.fullName}</p>
                       <p className="text-[11px] text-[#9CA3AF] mt-0.5">{order.customer.email}</p>
                     </td>
-                    <td className="px-5 py-3.5 text-[#6B7280]">{order.planLabel}</td>
-                    <td className="px-5 py-3.5 text-right font-semibold text-[#111827] tabular-nums">
+                    <td className="px-5 py-3.5 text-[#6B7280] relative">{order.planLabel}</td>
+                    <td className="px-5 py-3.5 text-right font-semibold text-[#111827] tabular-nums relative">
                       {formatCurrency(order.amountPaise, order.currency)}
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 relative">
                       <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-medium ${
                         order.paymentMethod === "razorpay-onetime"
                           ? "bg-[#FFF7ED] text-[#C2410C] border border-[#FED7AA]"
@@ -90,7 +86,7 @@ export default async function OrdersPage() {
                             : "Shopify"}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 relative">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                         order.status === "paid"
                           ? "bg-[#ECFDF5] text-[#059669]"
@@ -106,7 +102,7 @@ export default async function OrdersPage() {
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-[#6B7280] whitespace-nowrap">
+                    <td className="px-5 py-3.5 text-[#6B7280] whitespace-nowrap relative">
                       {formatDate(order.createdAt)}
                     </td>
                   </tr>
