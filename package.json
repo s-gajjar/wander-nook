@@ -24,6 +24,7 @@
     "pdfkit": "^0.17.2",
     "posthog-js": "^1.360.2",
     "posthog-node": "^5.28.2",
+    "razorpay": "^2.9.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-icons": "^5.5.0",

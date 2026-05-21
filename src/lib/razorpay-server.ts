@@ -2,6 +2,8 @@ import crypto from "crypto";
 
 export type AutopayPlanId = "monthly-autopay" | "annual-autopay";
 
+export type OnetimePlanId = "annual-onetime";
+
 export type RazorpayAutopayPlanConfig = {
   id: AutopayPlanId;
   displayName: string;
@@ -11,6 +13,26 @@ export type RazorpayAutopayPlanConfig = {
   cycle: "monthly" | "yearly";
   razorpayPlanId: string;
   shopifyVariantId: string;
+};
+
+export type RazorpayOnetimePlanConfig = {
+  id: OnetimePlanId;
+  displayName: string;
+  amountInr: number;
+  amountPaise: number;
+  currency: string;
+  durationMonths: number;
+};
+
+const ONETIME_PLAN_DEFINITIONS: Record<OnetimePlanId, RazorpayOnetimePlanConfig> = {
+  "annual-onetime": {
+    id: "annual-onetime",
+    displayName: "Annual Plan",
+    amountInr: 2300,
+    amountPaise: 230000,
+    currency: "INR",
+    durationMonths: 12,
+  },
 };
 
 const PLAN_DEFINITIONS: Record<
@@ -224,4 +246,35 @@ export function verifyRazorpaySubscriptionSignature({
   }
 
   return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+export function verifyRazorpayPaymentSignature({
+  orderId,
+  paymentId,
+  signature,
+}: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}) {
+  const expected = crypto
+    .createHmac("sha256", getRazorpaySecret())
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+
+  const expectedBuffer = Buffer.from(expected, "utf8");
+  const receivedBuffer = Buffer.from(signature, "utf8");
+
+  if (expectedBuffer.length !== receivedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+export function getOnetimePlanConfig(planId: string): RazorpayOnetimePlanConfig | null {
+  if (planId in ONETIME_PLAN_DEFINITIONS) {
+    return ONETIME_PLAN_DEFINITIONS[planId as OnetimePlanId];
+  }
+  return null;
 }
