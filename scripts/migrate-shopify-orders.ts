@@ -115,17 +115,29 @@ function getNoteAttr(order: ShopifyOrder, keys: string[]): string {
 }
 
 function resolveCustomerName(order: ShopifyOrder): string {
+  // Check note_attributes first (autopay orders store data there)
+  const noteAttrName = getNoteAttr(order, ["customer_name"]);
+  if (noteAttrName) return noteAttrName;
+
   const firstName = order.customer?.first_name?.trim() ?? "";
   const lastName = order.customer?.last_name?.trim() ?? "";
   const full = [firstName, lastName].filter(Boolean).join(" ");
-  return full || order.email || "Unknown";
+  return full || resolveEmail(order) || "Unknown";
 }
 
 function resolveEmail(order: ShopifyOrder): string {
+  // Check note_attributes first (autopay orders store data there)
+  const noteAttrEmail = getNoteAttr(order, ["customer_email"]);
+  if (noteAttrEmail) return noteAttrEmail.toLowerCase();
+
   return (order.customer?.email || order.email || "").trim().toLowerCase();
 }
 
 function resolvePhone(order: ShopifyOrder): string {
+  // Check note_attributes first
+  const noteAttrPhone = getNoteAttr(order, ["customer_phone"]);
+  if (noteAttrPhone) return noteAttrPhone.replace(/\s+/g, "");
+
   return (order.customer?.phone || order.phone || "").trim().replace(/\s+/g, "");
 }
 
@@ -226,14 +238,34 @@ async function migrateOrders() {
 
     const customerName = resolveCustomerName(order);
     const phone = resolvePhone(order);
-    const address = order.shipping_address || order.billing_address;
     const planId = derivePlanId(order);
     const planLabel = derivePlanLabel(planId, order);
     const paymentMethod = derivePaymentMethod(order);
     const amountPaise = Math.round(parseFloat(order.total_price) * 100);
 
+    // Resolve address from note_attributes first, then shipping/billing address
+    const noteAddr = {
+      address1: getNoteAttr(order, ["customer_address_1"]),
+      address2: getNoteAttr(order, ["customer_address_2"]),
+      city: getNoteAttr(order, ["customer_city"]),
+      state: getNoteAttr(order, ["customer_state"]),
+      pincode: getNoteAttr(order, ["customer_pincode"]),
+      country: getNoteAttr(order, ["customer_country"]),
+    };
+    const shipAddr = order.shipping_address || order.billing_address;
+    const addressLine1 = noteAddr.address1 || shipAddr?.address1 || "N/A";
+    const addressLine2 = noteAddr.address2 || shipAddr?.address2 || "";
+    const city = noteAddr.city || shipAddr?.city || "N/A";
+    const state = noteAddr.state || shipAddr?.province || "N/A";
+    const pincode = noteAddr.pincode || shipAddr?.zip || "000000";
+    const country = noteAddr.country || shipAddr?.country || "India";
+
+    // Use Razorpay payment ID from note_attributes if available
+    const razorpayPaymentId = getNoteAttr(order, ["razorpay_payment_id"]) || `shopify_${order.id}`;
+    const razorpaySubscriptionId = getNoteAttr(order, ["razorpay_subscription_id"]) || null;
+
     if (DRY_RUN) {
-      console.log(`   🧪 [DRY] Would create: ${orderNumber} | ${customerName} | ${planLabel} | ₹${order.total_price}`);
+      console.log(`   🧪 [DRY] Would create: ${orderNumber} | ${customerName} | ${planLabel} | ₹${order.total_price} | ${razorpayPaymentId}`);
       created++;
       continue;
     }
@@ -251,12 +283,12 @@ async function migrateOrders() {
           fullName: customerName,
           email,
           phone: phone || "0000000000",
-          addressLine1: address?.address1 || "N/A",
-          addressLine2: address?.address2 || "",
-          city: address?.city || "N/A",
-          state: address?.province || "N/A",
-          pincode: address?.zip || "000000",
-          country: address?.country || "India",
+          addressLine1,
+          addressLine2,
+          city,
+          state,
+          pincode,
+          country,
         },
       });
 
@@ -271,19 +303,17 @@ async function migrateOrders() {
           currency: order.currency || "INR",
           status: "paid",
           paymentMethod,
-          razorpayPaymentId: `shopify_${order.id}`, // Placeholder since original Razorpay ID not available
+          razorpayPaymentId,
           razorpayOrderId: null,
-          razorpaySubscriptionId: null,
-          shippingAddress: address
-            ? {
-                line1: address.address1 || "",
-                line2: address.address2 || "",
-                city: address.city || "",
-                state: address.province || "",
-                pincode: address.zip || "",
-                country: address.country || "India",
-              }
-            : undefined,
+          razorpaySubscriptionId,
+          shippingAddress: {
+            line1: addressLine1,
+            line2: addressLine2,
+            city,
+            state,
+            pincode,
+            country,
+          },
           notes: `Migrated from Shopify order ${order.name} (ID: ${order.id})`,
           createdAt: new Date(order.created_at),
         },
