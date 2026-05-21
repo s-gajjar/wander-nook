@@ -52,42 +52,48 @@ function formatDateClient(value: string | null) {
 export default function CustomerInvoiceGroup({ group }: { group: CustomerGroupData }) {
   const [expanded, setExpanded] = useState(false);
 
-  const latestInvoice = group.invoices[0];
-
   return (
     <>
       <tr
-        className="border-b border-slate-100 align-top cursor-pointer transition-colors hover:bg-slate-50"
+        className="border-b border-[#F9FAFB] align-top cursor-pointer transition-colors hover:bg-[#FAFBFC]"
         onClick={() => setExpanded((prev) => !prev)}
       >
-        <td className="py-3 pr-4">
-          <div className="flex items-center gap-2">
+        <td className="px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
             <span
-              className={`inline-block text-[10px] leading-none text-slate-400 transition-transform ${
+              className={`inline-block text-[10px] leading-none text-[#9CA3AF] transition-transform duration-150 ${
                 expanded ? "rotate-90" : ""
               }`}
             >
               ▶
             </span>
             <div>
-              <p className="font-medium text-slate-900">{group.customerName}</p>
-              <p className="text-xs text-slate-500">{group.customerEmail}</p>
+              <Link
+                href={`/admin/customers/${group.customerId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="font-medium text-[#111827] hover:text-[#4F46E5] transition-colors"
+              >
+                {group.customerName}
+              </Link>
+              <p className="text-[11px] text-[#9CA3AF] mt-0.5">{group.customerEmail}</p>
               {group.customerPhone && (
-                <p className="text-xs text-slate-400">{group.customerPhone}</p>
+                <p className="text-[11px] text-[#9CA3AF]">{group.customerPhone}</p>
               )}
             </div>
           </div>
         </td>
-        <td className="py-3 pr-4">
-          <p className="font-medium text-slate-900">{group.invoices.length}</p>
+        <td className="px-5 py-3.5">
+          <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-medium">
+            {group.invoices.length}
+          </span>
         </td>
-        <td className="py-3 pr-4">
+        <td className="px-5 py-3.5 font-semibold text-[#111827] tabular-nums">
           {formatCurrencyClient(group.totalAmountPaise, group.latestCurrency)}
         </td>
-        <td className="py-3 pr-4">{formatDateClient(group.latestIssuedAt)}</td>
-        <td className="py-3 pr-4">
-          <span className="text-xs text-slate-500">
-            {expanded ? "Click to collapse" : "Click to expand"}
+        <td className="px-5 py-3.5 text-[#6B7280]">{formatDateClient(group.latestIssuedAt)}</td>
+        <td className="px-5 py-3.5">
+          <span className="text-[11px] text-[#9CA3AF]">
+            {expanded ? "Collapse" : "Expand"}
           </span>
         </td>
       </tr>
@@ -96,33 +102,33 @@ export default function CustomerInvoiceGroup({ group }: { group: CustomerGroupDa
         group.invoices.map((invoice) => (
           <tr
             key={invoice.id}
-            className="border-b border-slate-50 bg-slate-50/60 align-top"
+            className="border-b border-[#F9FAFB] bg-[#FAFBFC] align-top"
           >
-            <td className="py-2.5 pl-8 pr-4">
-              <p className="text-sm font-medium text-slate-800">{invoice.invoiceNumber}</p>
-              <p className="text-[11px] text-slate-400">{invoice.razorpayPaymentId}</p>
+            <td className="py-3 pl-12 pr-5">
+              <p className="text-[13px] font-medium text-[#111827]">{invoice.invoiceNumber}</p>
+              <p className="text-[10px] text-[#9CA3AF] mt-0.5 font-mono">{invoice.razorpayPaymentId}</p>
             </td>
-            <td className="py-2.5 pr-4">
-              <span className="inline-flex items-center rounded-full bg-slate-200/70 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+            <td className="px-5 py-3">
+              <span className="inline-flex rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-medium text-[#374151]">
                 {invoice.planLabel}
               </span>
             </td>
-            <td className="py-2.5 pr-4 text-sm text-slate-700">
+            <td className="px-5 py-3 text-[13px] font-medium text-[#111827] tabular-nums">
               {formatCurrencyClient(invoice.amountPaise, invoice.currency)}
             </td>
-            <td className="py-2.5 pr-4 text-sm text-slate-700">
+            <td className="px-5 py-3 text-[13px] text-[#6B7280]">
               {formatDateClient(invoice.issuedAt)}
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[10px] text-[#9CA3AF] mt-0.5">
                 Email: {invoice.emailSentAt ? formatDateClient(invoice.emailSentAt) : "Not sent"}
               </p>
             </td>
-            <td className="py-2.5 pr-4">
+            <td className="px-5 py-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href={`/invoice/${invoice.publicToken}`}
                   target="_blank"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  className="inline-flex rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB] hover:border-[#D1D5DB] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
                 >
                   View
                 </Link>

@@ -50,9 +50,7 @@ export default function ReplayAutopayForm() {
     try {
       const response = await fetch("/api/admin/autopay/replay", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ entries }),
       });
 
@@ -74,71 +72,76 @@ export default function ReplayAutopayForm() {
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-      <div className="mb-3">
-        <h2 className="text-lg font-semibold text-slate-900">Replay Razorpay Payments</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Paste one line per payment using any format that contains `pay_...`. If you also have
-          `sub_...`, include it, but the replay will try to infer it from Razorpay when missing.
+    <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      <div className="border-b border-[#F3F4F6] px-6 py-4">
+        <h2 className="text-[15px] font-semibold text-[#111827]">Replay Razorpay Payments</h2>
+        <p className="mt-1 text-[12px] text-[#9CA3AF] leading-relaxed">
+          Paste one line per payment using any format that contains <code className="rounded bg-[#F3F4F6] px-1 py-0.5 text-[11px] font-mono">pay_...</code>. 
+          If you also have <code className="rounded bg-[#F3F4F6] px-1 py-0.5 text-[11px] font-mono">sub_...</code>, include it.
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-3">
-        <textarea
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          rows={6}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-          placeholder={"pay_ABC123\npay_XYZ789 sub_QWE987"}
-        />
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {loading ? "Replaying..." : "Replay Payments"}
-          </button>
-          {message ? <span className="text-sm text-slate-600">{message}</span> : null}
-        </div>
-      </form>
+      <div className="px-6 py-5">
+        <form onSubmit={onSubmit} className="space-y-4">
+          <textarea
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            rows={5}
+            className="w-full rounded-xl border border-[#E5E7EB] px-4 py-3 text-[13px] text-[#111827] font-mono placeholder:text-[#9CA3AF] focus:border-[#6366F1] focus:outline-none focus:ring-2 focus:ring-[#6366F1]/10 transition-all"
+            placeholder={"pay_ABC123\npay_XYZ789 sub_QWE987"}
+          />
+          <div className="flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-lg bg-[#111827] px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] hover:bg-[#1F2937] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {loading ? "Replaying..." : "Replay Payments"}
+            </button>
+            {message && <span className="text-[12px] text-[#6B7280]">{message}</span>}
+          </div>
+        </form>
 
-      {results.length > 0 ? (
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                <th className="py-2 pr-4">Payment</th>
-                <th className="py-2 pr-4">Subscription</th>
-                <th className="py-2 pr-4">Result</th>
-                <th className="py-2 pr-4">Order</th>
-                <th className="py-2 pr-4">Invoice</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((result) => (
-                <tr key={`${result.paymentId}:${result.subscriptionId}`} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-mono text-xs text-slate-700">{result.paymentId}</td>
-                  <td className="py-3 pr-4 font-mono text-xs text-slate-700">{result.subscriptionId}</td>
-                  <td className={`py-3 pr-4 ${result.ok ? "text-emerald-700" : "text-rose-700"}`}>
-                    {result.error
-                      ? result.error
-                      : result.orderStatus === "payment_not_captured"
-                        ? `Skipped: ${result.paymentStatus || "not captured"}`
-                        : "OK"}
-                  </td>
-                  <td className="py-3 pr-4 text-slate-700">{result.orderName || result.orderStatus || "-"}</td>
-                  <td className="py-3 pr-4 text-slate-700">
-                    {result.invoiceNumber
-                      ? `${result.invoiceNumber}${result.invoiceCreated ? " (new)" : ""}`
-                      : result.invoiceEmailSkippedReason || "-"}
-                  </td>
+        {results.length > 0 && (
+          <div className="mt-5 overflow-x-auto rounded-xl border border-[#E8ECF0]">
+            <table className="min-w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-[#F3F4F6] bg-[#FAFBFC] text-left text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF]">
+                  <th className="px-4 py-2.5 font-medium">Payment</th>
+                  <th className="px-4 py-2.5 font-medium">Subscription</th>
+                  <th className="px-4 py-2.5 font-medium">Result</th>
+                  <th className="px-4 py-2.5 font-medium">Order</th>
+                  <th className="px-4 py-2.5 font-medium">Invoice</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
+              </thead>
+              <tbody>
+                {results.map((result) => (
+                  <tr key={`${result.paymentId}:${result.subscriptionId}`} className="border-b border-[#F9FAFB] last:border-0">
+                    <td className="px-4 py-3 font-mono text-[11px] text-[#374151]">{result.paymentId}</td>
+                    <td className="px-4 py-3 font-mono text-[11px] text-[#374151]">{result.subscriptionId || "-"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${result.ok ? "text-[#059669]" : "text-[#DC2626]"}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${result.ok ? "bg-[#10B981]" : "bg-[#EF4444]"}`}></span>
+                        {result.error
+                          ? result.error.slice(0, 40)
+                          : result.orderStatus === "payment_not_captured"
+                            ? `Skipped: ${result.paymentStatus || "not captured"}`
+                            : "OK"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[#374151]">{result.orderName || result.orderStatus || "-"}</td>
+                    <td className="px-4 py-3 text-[#374151]">
+                      {result.invoiceNumber
+                        ? `${result.invoiceNumber}${result.invoiceCreated ? " (new)" : ""}`
+                        : result.invoiceEmailSkippedReason || "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

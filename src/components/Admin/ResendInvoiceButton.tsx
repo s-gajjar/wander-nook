@@ -28,7 +28,7 @@ export default function ResendInvoiceButton({ invoiceId }: ResendInvoiceButtonPr
       }
 
       if (data.emailSent) {
-        setMessage("Email sent");
+        setMessage("Sent");
       } else {
         setMessage(`Skipped: ${data.emailSkippedReason || "provider not configured"}`);
       }
@@ -45,11 +45,15 @@ export default function ResendInvoiceButton({ invoiceId }: ResendInvoiceButtonPr
         type="button"
         disabled={loading}
         onClick={onClick}
-        className="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-lg border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB] hover:border-[#D1D5DB] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)] disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? "Sending..." : "Resend Email"}
+        {loading ? "Sending..." : "Resend"}
       </button>
-      {message ? <span className="text-xs text-slate-500">{message}</span> : null}
+      {message && (
+        <span className={`text-[11px] font-medium ${message === "Sent" ? "text-[#059669]" : "text-[#9CA3AF]"}`}>
+          {message}
+        </span>
+      )}
     </div>
   );
 }

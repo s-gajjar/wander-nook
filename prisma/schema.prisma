@@ -145,18 +145,25 @@ model Order {
   amountPaise            Int
   currency               String   @default("INR")
   status                 String   @default("paid")
+  fulfillmentStatus      String   @default("unfulfilled") // "unfulfilled" | "fulfilled" | "shipped" | "delivered"
   paymentMethod          String // "razorpay-onetime" | "razorpay-autopay"
   razorpayPaymentId      String   @unique
   razorpayOrderId        String?  @unique
   razorpaySubscriptionId String?
   shippingAddress        Json?
   notes                  String?
+  fulfilledAt            DateTime?
+  shippedAt              DateTime?
+  deliveredAt            DateTime?
+  trackingNumber         String?
+  trackingUrl            String?
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
   customer               Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
 
   @@index([customerId, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
+  @@index([fulfillmentStatus])
 }
 
 model ConversionEvent {

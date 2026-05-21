@@ -15,29 +15,20 @@ function formatDateTime(value: Date | null | undefined) {
 }
 
 function getMetadataRecord(metadata: unknown) {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return null;
-  }
-
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return null;
   return metadata as Record<string, unknown>;
 }
 
 function getMetadataText(metadata: unknown, keys: string[]) {
   const record = getMetadataRecord(metadata);
-  if (!record) {
-    return "";
-  }
-
+  if (!record) return "";
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" || typeof value === "number") {
       const normalized = String(value).trim();
-      if (normalized) {
-        return normalized;
-      }
+      if (normalized) return normalized;
     }
   }
-
   return "";
 }
 
@@ -50,9 +41,7 @@ export default async function AdminEventsPage() {
   const leads = Array.from(
     events
       .reduce<
-      Map<
-        string,
-        {
+        Map<string, {
           key: string;
           name: string;
           email: string;
@@ -60,30 +49,15 @@ export default async function AdminEventsPage() {
           plan: string;
           latestEvent: string;
           createdAt: Date;
-        }
-      >
-    >((map, event) => {
-      const email =
-        (event.customerEmail || getMetadataText(event.metadata, ["customer_email"])).toLowerCase();
-      const phone = getMetadataText(event.metadata, ["customer_phone", "customerPhone"]);
-      const name = getMetadataText(event.metadata, ["customer_name", "customerName"]);
-      const plan = event.planId || getMetadataText(event.metadata, ["plan_id"]);
-      const key = phone || email;
-
-      if (!key || map.has(key)) {
-        return map;
-      }
-
-      map.set(key, {
-        key,
-        name: name || "-",
-        email: email || "-",
-        phone: phone || "-",
-        plan: plan || "-",
-        latestEvent: event.eventName,
-        createdAt: event.createdAt,
-      });
-
+        }>
+      >((map, event) => {
+        const email = (event.customerEmail || getMetadataText(event.metadata, ["customer_email"])).toLowerCase();
+        const phone = getMetadataText(event.metadata, ["customer_phone", "customerPhone"]);
+        const name = getMetadataText(event.metadata, ["customer_name", "customerName"]);
+        const plan = event.planId || getMetadataText(event.metadata, ["plan_id"]);
+        const key = phone || email;
+        if (!key || map.has(key)) return map;
+        map.set(key, { key, name: name || "-", email: email || "-", phone: phone || "-", plan: plan || "-", latestEvent: event.eventName, createdAt: event.createdAt });
         return map;
       }, new Map())
       .values()
@@ -92,39 +66,47 @@ export default async function AdminEventsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Conversion Events</h1>
-        <p className="mt-1 text-sm text-slate-600">Payment funnel and webhook events.</p>
+        <h1 className="text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Conversion Events</h1>
+        <p className="mt-1 text-[14px] text-[#6B7280]">Payment funnel, webhook events, and lead contacts.</p>
       </div>
 
       <ReplayAutopayForm />
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">Lead Contacts</h2>
-          <span className="text-xs text-slate-500">{leads.length} leads</span>
+      {/* Leads table */}
+      <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
+          <h2 className="text-[15px] font-semibold text-[#111827]">Lead Contacts</h2>
+          <span className="text-[12px] font-medium text-[#9CA3AF] bg-[#F3F4F6] rounded-full px-2.5 py-1">{leads.length} leads</span>
         </div>
-
         <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
+          <table className="min-w-full text-[13px]">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Email</th>
-                <th className="py-2 pr-4">Phone</th>
-                <th className="py-2 pr-4">Plan</th>
-                <th className="py-2 pr-4">Latest Event</th>
-                <th className="py-2 pr-4">Last Seen</th>
+              <tr className="border-b border-[#F3F4F6] bg-[#FAFBFC] text-left text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF]">
+                <th className="px-5 py-2.5 font-medium">Name</th>
+                <th className="px-5 py-2.5 font-medium">Email</th>
+                <th className="px-5 py-2.5 font-medium">Phone</th>
+                <th className="px-5 py-2.5 font-medium">Plan</th>
+                <th className="px-5 py-2.5 font-medium">Latest Event</th>
+                <th className="px-5 py-2.5 font-medium">Last Seen</th>
               </tr>
             </thead>
             <tbody>
               {leads.map((lead) => (
-                <tr key={lead.key} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-medium text-slate-900">{lead.name}</td>
-                  <td className="py-3 pr-4">{lead.email}</td>
-                  <td className="py-3 pr-4">{lead.phone}</td>
-                  <td className="py-3 pr-4">{lead.plan}</td>
-                  <td className="py-3 pr-4">{lead.latestEvent}</td>
-                  <td className="py-3 pr-4">{formatDateTime(lead.createdAt)}</td>
+                <tr key={lead.key} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                  <td className="px-5 py-3 font-medium text-[#111827]">{lead.name}</td>
+                  <td className="px-5 py-3 text-[#6B7280]">{lead.email}</td>
+                  <td className="px-5 py-3 text-[#6B7280] tabular-nums">{lead.phone}</td>
+                  <td className="px-5 py-3">
+                    <span className="inline-flex rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-medium text-[#374151]">
+                      {lead.plan}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-medium">
+                      {lead.latestEvent}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-[#9CA3AF]">{formatDateTime(lead.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -132,45 +114,49 @@ export default async function AdminEventsPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">All Events</h2>
-          <span className="text-xs text-slate-500">{events.length} events</span>
+      {/* All events table */}
+      <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
+          <h2 className="text-[15px] font-semibold text-[#111827]">All Events</h2>
+          <span className="text-[12px] font-medium text-[#9CA3AF] bg-[#F3F4F6] rounded-full px-2.5 py-1">{events.length} events</span>
         </div>
-
         <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
+          <table className="min-w-full text-[13px]">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                <th className="py-2 pr-4">Event</th>
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Email</th>
-                <th className="py-2 pr-4">Phone</th>
-                <th className="py-2 pr-4">Plan</th>
-                <th className="py-2 pr-4">Payment</th>
-                <th className="py-2 pr-4">Time</th>
+              <tr className="border-b border-[#F3F4F6] bg-[#FAFBFC] text-left text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF]">
+                <th className="px-5 py-2.5 font-medium">Event</th>
+                <th className="px-5 py-2.5 font-medium">Name</th>
+                <th className="px-5 py-2.5 font-medium">Email</th>
+                <th className="px-5 py-2.5 font-medium">Phone</th>
+                <th className="px-5 py-2.5 font-medium">Plan</th>
+                <th className="px-5 py-2.5 font-medium">Payment</th>
+                <th className="px-5 py-2.5 font-medium">Time</th>
               </tr>
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr key={event.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-medium text-slate-900">{event.eventName}</td>
-                  <td className="py-3 pr-4">
+                <tr key={event.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                  <td className="px-5 py-3">
+                    <span className="inline-flex rounded-full bg-[#F3F4F6] text-[#374151] px-2 py-0.5 text-[11px] font-medium">
+                      {event.eventName}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 font-medium text-[#111827]">
                     {getMetadataText(event.metadata, ["customer_name", "customerName"]) || "-"}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="px-5 py-3 text-[#6B7280]">
                     {event.customerEmail || getMetadataText(event.metadata, ["customer_email"]) || "-"}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="px-5 py-3 text-[#6B7280] tabular-nums">
                     {getMetadataText(event.metadata, ["customer_phone", "customerPhone"]) || "-"}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="px-5 py-3 text-[#6B7280]">
                     {event.planId || getMetadataText(event.metadata, ["plan_id"]) || "-"}
                   </td>
-                  <td className="py-3 pr-4">
+                  <td className="px-5 py-3 font-mono text-[11px] text-[#6B7280]">
                     {event.razorpayPaymentId || getMetadataText(event.metadata, ["payment_id"]) || "-"}
                   </td>
-                  <td className="py-3 pr-4">{formatDateTime(event.createdAt)}</td>
+                  <td className="px-5 py-3 text-[#9CA3AF] whitespace-nowrap">{formatDateTime(event.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
