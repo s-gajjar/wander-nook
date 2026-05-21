@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
 import { formatCurrency } from "@/src/lib/invoice-template";
 
@@ -26,64 +27,86 @@ export default async function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Orders</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {orders.length} order{orders.length !== 1 ? "s" : ""} · Total paid: {formatCurrency(totalPaid, "INR")}
+          <h1 className="text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Orders</h1>
+          <p className="mt-1 text-[14px] text-[#6B7280]">
+            {orders.length} order{orders.length !== 1 ? "s" : ""} · Total paid:{" "}
+            <span className="font-medium text-[#111827] tabular-nums">{formatCurrency(totalPaid, "INR")}</span>
           </p>
         </div>
       </div>
 
       {orders.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm text-slate-500">No orders yet. Orders will appear here after one-time payments are completed.</p>
+        <div className="rounded-2xl border border-[#E8ECF0] bg-white p-12 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#F3F4F6] mb-3">
+            <span className="text-xl">📦</span>
+          </div>
+          <p className="text-[14px] text-[#6B7280]">No orders yet. Orders will appear here after one-time payments are completed.</p>
         </div>
       ) : (
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full border-collapse text-sm">
+            <table className="min-w-full text-[13px]">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                  <th className="px-4 py-3">Order</th>
-                  <th className="px-4 py-3">Customer</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Plan</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Method</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Date</th>
+                <tr className="border-b border-[#F3F4F6] bg-[#FAFBFC] text-left text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF]">
+                  <th className="px-5 py-3 font-medium">Order</th>
+                  <th className="px-5 py-3 font-medium">Customer</th>
+                  <th className="px-5 py-3 font-medium">Plan</th>
+                  <th className="px-5 py-3 font-medium text-right">Amount</th>
+                  <th className="px-5 py-3 font-medium">Method</th>
+                  <th className="px-5 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 font-medium">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
-                      {order.orderNumber}
+                  <tr key={order.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                    <td className="px-5 py-3.5 font-medium text-[#111827] whitespace-nowrap">
+                      <Link href={`/admin/orders/${order.id}`} className="hover:text-[#4F46E5] transition-colors">
+                        {order.orderNumber}
+                      </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{order.customer.fullName}</td>
-                    <td className="px-4 py-3 text-slate-500 text-xs">{order.customer.email}</td>
-                    <td className="px-4 py-3 text-slate-600">{order.planLabel}</td>
-                    <td className="px-4 py-3 tabular-nums font-medium text-slate-900">
+                    <td className="px-5 py-3.5">
+                      <p className="font-medium text-[#111827]">{order.customer.fullName}</p>
+                      <p className="text-[11px] text-[#9CA3AF] mt-0.5">{order.customer.email}</p>
+                    </td>
+                    <td className="px-5 py-3.5 text-[#6B7280]">{order.planLabel}</td>
+                    <td className="px-5 py-3.5 text-right font-semibold text-[#111827] tabular-nums">
                       {formatCurrency(order.amountPaise, order.currency)}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
-                        {order.paymentMethod === "razorpay-onetime" ? "One-time" : "Autopay"}
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-medium ${
+                        order.paymentMethod === "razorpay-onetime"
+                          ? "bg-[#FFF7ED] text-[#C2410C] border border-[#FED7AA]"
+                          : order.paymentMethod === "razorpay-autopay"
+                            ? "bg-[#F5F3FF] text-[#6D28D9] border border-[#DDD6FE]"
+                            : "bg-[#F3F4F6] text-[#374151] border border-[#E5E7EB]"
+                      }`}>
+                        {order.paymentMethod === "razorpay-onetime"
+                          ? "One-time"
+                          : order.paymentMethod === "razorpay-autopay"
+                            ? "Autopay"
+                            : "Shopify"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                         order.status === "paid"
-                          ? "bg-green-50 text-green-700"
+                          ? "bg-[#ECFDF5] text-[#059669]"
                           : order.status === "failed"
-                            ? "bg-red-50 text-red-700"
-                            : "bg-yellow-50 text-yellow-700"
+                            ? "bg-[#FEF2F2] text-[#DC2626]"
+                            : "bg-[#FEF3C7] text-[#D97706]"
                       }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${
+                          order.status === "paid" ? "bg-[#10B981]"
+                            : order.status === "failed" ? "bg-[#EF4444]"
+                            : "bg-[#F59E0B]"
+                        }`}></span>
                         {order.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">
+                    <td className="px-5 py-3.5 text-[#6B7280] whitespace-nowrap">
                       {formatDate(order.createdAt)}
                     </td>
                   </tr>
