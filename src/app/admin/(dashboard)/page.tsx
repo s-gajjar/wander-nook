@@ -236,7 +236,7 @@ export default async function AdminDashboardPage({
                     <tr key={order.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
                       <td className="px-5 py-3">
                         <Link href={`/admin/orders/${order.id}`} className="font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
-                          {order.orderNumber.replace("WN-SHOPIFY-", "#")}
+                          {order.orderNumber}
                         </Link>
                         <p className="text-[11px] text-[#9CA3AF] mt-0.5">{formatDate(order.createdAt)}</p>
                       </td>

@@ -14,10 +14,13 @@ function formatDate(value: Date | null | undefined) {
 type ShippingAddress = {
   line1?: string;
   line2?: string;
+  addressLine1?: string;
+  addressLine2?: string | null;
   city?: string;
   state?: string;
   pincode?: string;
   country?: string;
+  phone?: string;
 };
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,6 +34,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!order) notFound();
 
   const address = order.shippingAddress as ShippingAddress | null;
+  const shippingLine1 = address?.line1 || address?.addressLine1 || order.customer.addressLine1;
+  const shippingLine2 = address?.line2 || address?.addressLine2 || order.customer.addressLine2;
+  const shippingCity = address?.city || order.customer.city;
+  const shippingState = address?.state || order.customer.state;
+  const shippingPincode = address?.pincode || order.customer.pincode;
+  const shippingCountry = address?.country || order.customer.country;
+  const shippingPhone = address?.phone || order.customer.phone;
 
   return (
     <div className="space-y-6">
@@ -59,7 +69,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           }`}>
             {order.paymentMethod === "razorpay-onetime" ? "One-time Payment"
               : order.paymentMethod === "razorpay-autopay" ? "Autopay"
-              : "Shopify Checkout"}
+              : "Legacy Checkout"}
           </span>
           <span className={`inline-flex rounded-full px-3 py-1.5 text-[12px] font-medium border ${
             order.fulfillmentStatus === "delivered" ? "bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]"
@@ -115,7 +125,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
               <DetailRow label="Payment Method" value={
                 order.paymentMethod === "razorpay-onetime" ? "Razorpay One-time"
                   : order.paymentMethod === "razorpay-autopay" ? "Razorpay Autopay"
-                  : "Shopify Checkout"
+                  : "Legacy Checkout"
               } />
               <DetailRow label="Currency" value={order.currency} />
               <DetailRow label="Created" value={formatDate(order.createdAt)} />
@@ -172,22 +182,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             </div>
             <div className="px-5 py-5 text-[14px] text-[#374151] leading-relaxed space-y-1">
               <p className="font-medium text-[#111827]">{order.customer.fullName}</p>
-              {address ? (
-                <>
-                  <p>{address.line1}</p>
-                  {address.line2 && <p>{address.line2}</p>}
-                  <p>{address.city}, {address.state} {address.pincode}</p>
-                  <p>{address.country}</p>
-                </>
-              ) : (
-                <>
-                  <p>{order.customer.addressLine1}</p>
-                  {order.customer.addressLine2 && <p>{order.customer.addressLine2}</p>}
-                  <p>{order.customer.city}, {order.customer.state} {order.customer.pincode}</p>
-                  <p>{order.customer.country}</p>
-                </>
-              )}
-              <p className="pt-2 text-[13px] text-[#6B7280] tabular-nums">{order.customer.phone}</p>
+              <p>{shippingLine1}</p>
+              {shippingLine2 && <p>{shippingLine2}</p>}
+              <p>{shippingCity}, {shippingState} {shippingPincode}</p>
+              <p>{shippingCountry}</p>
+              <p className="pt-2 text-[13px] text-[#6B7280] tabular-nums">{shippingPhone}</p>
             </div>
           </section>
         </div>

@@ -388,7 +388,7 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
       `Payment ID: ${safeText(input.razorpayPaymentId)}`,
       `Subscription ID: ${safeText(input.razorpaySubscriptionId)}`,
       input.razorpayInvoiceId ? `Invoice ID: ${safeText(input.razorpayInvoiceId)}` : "",
-      input.shopifyOrderName ? `Shopify Order: ${safeText(input.shopifyOrderName)}` : "",
+      input.shopifyOrderName ? `Order: ${safeText(input.shopifyOrderName)}` : "",
     ].filter(Boolean),
     rightInfoX
   );

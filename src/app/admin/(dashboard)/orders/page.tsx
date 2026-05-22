@@ -164,7 +164,7 @@ function MethodBadge({ method }: { method: string }) {
       ? "bg-[#F5F3FF] text-[#6D28D9] border-[#DDD6FE]"
       : "bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]";
   const label = method === "razorpay-onetime" ? "One-time"
-    : method === "razorpay-autopay" ? "Autopay" : "Shopify";
+    : method === "razorpay-autopay" ? "Autopay" : "Legacy";
   return <span className={`inline-flex rounded-md px-2 py-1 text-[11px] font-medium border ${styles}`}>{label}</span>;
 }
 

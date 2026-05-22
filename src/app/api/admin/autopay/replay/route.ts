@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
           const order = await ensureAutopayOrder({
             paymentId,
             subscriptionId: resolvedSubscriptionId,
-            orderNote: "Shopify order replayed manually from admin.",
+            orderNote: "Local order replayed manually from admin.",
           });
 
           if (order.status === "payment_not_captured") {

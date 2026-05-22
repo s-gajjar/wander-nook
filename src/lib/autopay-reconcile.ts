@@ -182,7 +182,7 @@ export async function reconcileRecentAutopayPayments({
         paymentId,
         subscriptionId,
         customer,
-        orderNote: "Shopify order created from Razorpay reconciliation fallback.",
+        orderNote: "Local order created from Razorpay reconciliation fallback.",
       });
 
       processed += 1;
