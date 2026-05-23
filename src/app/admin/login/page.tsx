@@ -1,33 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export default function AdminLoginPage() {
-  const [password, setPassword] = useState("");
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const next = searchParams.get("next") || "/admin";
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Login failed");
-      const params = new URLSearchParams(window.location.search);
-      const next = params.get("next") || "/admin";
-      window.location.href = next;
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#F8F9FB] px-4">
@@ -40,7 +20,13 @@ export default function AdminLoginPage() {
           <p className="mt-1.5 text-[14px] text-[#6B7280]">Sign in to the WanderNook admin panel</p>
         </div>
 
-        <form onSubmit={onSubmit} className="rounded-2xl border border-[#E5E7EB] bg-white p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)]">
+        <form
+          action="/api/admin/login"
+          method="POST"
+          onSubmit={() => setLoading(true)}
+          className="rounded-2xl border border-[#E5E7EB] bg-white p-7 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)]"
+        >
+          <input type="hidden" name="next" value={next} />
           <div className="space-y-5">
             <div>
               <label className="block text-[13px] font-medium text-[#374151] mb-2">
@@ -48,9 +34,8 @@ export default function AdminLoginPage() {
               </label>
               <input
                 type="password"
+                name="password"
                 className="w-full rounded-xl border border-[#E5E7EB] bg-[#FAFBFC] px-4 py-3 text-[15px] text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#111827]/10 focus:border-[#111827] transition-shadow"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter password"
                 required
                 autoFocus
@@ -59,7 +44,7 @@ export default function AdminLoginPage() {
 
             {error && (
               <div className="rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3.5 py-2.5 text-[13px] text-[#DC2626]">
-                {error}
+                Invalid password
               </div>
             )}
 
