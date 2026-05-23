@@ -14,8 +14,10 @@ export function validateSessionToken(token: string): boolean {
 
 /**
  * Checks if the incoming request has a valid admin session.
+ * On Vercel Preview, Deployment Protection already guards access.
  */
 export function isAdminRequest(request: NextRequest): boolean {
+  if (process.env.VERCEL_ENV === "preview") return true;
   const token = request.cookies.get(COOKIE_NAME)?.value;
   if (!token) return false;
   return validateSessionToken(token);

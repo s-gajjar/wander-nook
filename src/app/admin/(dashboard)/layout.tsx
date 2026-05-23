@@ -1,9 +1,21 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import AdminNav from "@/src/components/Admin/AdminNav";
 
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
-  // AUTH COMPLETELY DISABLED FOR DEBUGGING - NO REDIRECT POSSIBLE FROM THIS FILE
+  // On Preview, Vercel Deployment Protection handles access control.
+  // On Production, enforce our own cookie-based auth.
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
+  
+  if (!isVercelPreview) {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("admin_session")?.value;
+    if (session !== "authenticated") {
+      redirect("/admin/login?next=/admin");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F8F9FB]">
