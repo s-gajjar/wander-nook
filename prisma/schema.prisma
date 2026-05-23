@@ -164,6 +164,8 @@ model Order {
   @@index([customerId, createdAt(sort: Desc)])
   @@index([createdAt(sort: Desc)])
   @@index([fulfillmentStatus])
+  @@index([status, fulfillmentStatus])
+  @@index([status, createdAt(sort: Desc)])
 }
 
 model ConversionEvent {
@@ -177,4 +179,37 @@ model ConversionEvent {
   createdAt              DateTime @default(now())
 
   @@index([eventName, createdAt(sort: Desc)])
+}
+
+model WebhookEvent {
+  id            String    @id @default(cuid())
+  provider      String    // "razorpay"
+  eventType     String    // "invoice.paid", "payment.captured", etc.
+  eventId       String?   // Provider-supplied event ID for deduplication
+  paymentId     String?
+  subscriptionId String?
+  status        String    @default("received") // "received" | "processed" | "failed" | "skipped"
+  attempts      Int       @default(1)
+  payload       Json?     // Raw webhook body (for debugging)
+  error         String?   // Error message if failed
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider, status, createdAt(sort: Desc)])
+  @@index([paymentId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actor       String   // "admin", "system", "webhook"
+  action      String   // "order.fulfill", "order.ship", "invoice.resend", etc.
+  resourceType String  // "order", "invoice", "customer"
+  resourceId  String
+  metadata    Json?    // Before/after state, additional context
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([resourceType, resourceId, createdAt(sort: Desc)])
+  @@index([actor, createdAt(sort: Desc)])
 }

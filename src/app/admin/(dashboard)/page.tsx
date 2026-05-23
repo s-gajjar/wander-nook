@@ -129,16 +129,16 @@ export default async function AdminDashboardPage({
   });
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {/* Header with period selector */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Dashboard</h1>
-          <p className="mt-1 text-[14px] text-[#6B7280]">
+          <h1 className="text-[22px] sm:text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Dashboard</h1>
+          <p className="mt-1 text-[13px] sm:text-[14px] text-[#6B7280]">
             Revenue and order overview · <span className="font-medium text-[#374151]">{periodLabel}</span>
           </p>
         </div>
-        <div className="flex rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="flex rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] self-start sm:self-auto">
           <PeriodTab href="/admin?period=this-month" label="This Month" active={selectedPeriod === "this-month"} />
           <PeriodTab href="/admin?period=last-month" label="Last Month" active={selectedPeriod === "last-month"} />
           <PeriodTab href="/admin?period=all-time" label="All Time" active={selectedPeriod === "all-time"} />
@@ -146,26 +146,26 @@ export default async function AdminDashboardPage({
       </div>
 
       {/* Stats cards */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard label="Total Revenue" value={formatCurrency(totalRevenuePaise, "INR")} subtitle={`${invoiceCount} invoices + ${orderCount} orders`} />
+      <section className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard label="Total Revenue" value={formatCurrency(totalRevenuePaise, "INR")} subtitle={`${invoiceCount} inv + ${orderCount} ord`} />
         <StatCard label="Customers" value={String(customerCount)} subtitle="Total registered" />
-        <StatCard label="Active Subs" value={String(activeSubscriptions.length)} subtitle="Invoiced in last 45d" />
+        <StatCard label="Active Subs" value={String(activeSubscriptions.length)} subtitle="Last 45d" />
         <StatCard label="Orders" value={String(orderCount)} subtitle={periodLabel} />
         <StatCard label="Unfulfilled" value={String(unfulfilledCount)} subtitle="Awaiting shipment" highlight={unfulfilledCount > 0} />
       </section>
 
       {/* Revenue chart */}
       <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#F3F4F6] px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#F3F4F6] px-4 sm:px-6 py-4 gap-2">
           <div>
-            <h2 className="text-[15px] font-semibold text-[#111827]">Revenue</h2>
-            <p className="text-[12px] text-[#9CA3AF] mt-0.5">{chartSubtitle} · Daily breakdown</p>
+            <h2 className="text-[14px] sm:text-[15px] font-semibold text-[#111827]">Revenue</h2>
+            <p className="text-[11px] sm:text-[12px] text-[#9CA3AF] mt-0.5">{chartSubtitle} · Daily breakdown</p>
           </div>
-          <p className="text-[18px] font-bold text-[#111827] tabular-nums">
+          <p className="text-[16px] sm:text-[18px] font-bold text-[#111827] tabular-nums">
             {formatCurrency(chartData.reduce((s, d) => s + d.amount * 100, 0), "INR")}
           </p>
         </div>
-        <div className="px-6 py-5">
+        <div className="px-4 sm:px-6 py-5 overflow-x-auto">
           <RevenueChart data={chartData} />
         </div>
       </section>
@@ -273,12 +273,12 @@ function PeriodTab({ href, label, active }: { href: string; label: string; activ
 
 function StatCard({ label, value, subtitle, highlight }: { label: string; value: string; subtitle: string; highlight?: boolean }) {
   return (
-    <article className={`rounded-2xl border p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${
+    <article className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${
       highlight ? "border-[#FDE68A] bg-[#FFFBEB]" : "border-[#E8ECF0] bg-white"
     }`}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">{label}</p>
-      <p className={`mt-2 text-[24px] font-bold tracking-[-0.02em] tabular-nums leading-none ${highlight ? "text-[#D97706]" : "text-[#111827]"}`}>{value}</p>
-      <p className="mt-2 text-[12px] text-[#9CA3AF]">{subtitle}</p>
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">{label}</p>
+      <p className={`mt-1.5 sm:mt-2 text-[18px] sm:text-[24px] font-bold tracking-[-0.02em] tabular-nums leading-none ${highlight ? "text-[#D97706]" : "text-[#111827]"}`}>{value}</p>
+      <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-[12px] text-[#9CA3AF] truncate">{subtitle}</p>
     </article>
   );
 }

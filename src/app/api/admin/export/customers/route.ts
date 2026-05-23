@@ -1,9 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { isAdminRequest, adminUnauthorizedJson } from "@/src/lib/admin-auth";
+import { recordAuditLog, getClientIp } from "@/src/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!isAdminRequest(request)) {
+    return adminUnauthorizedJson();
+  }
+
+  await recordAuditLog({
+    actor: "admin",
+    action: "export.customers",
+    resourceType: "customer",
+    resourceId: "all",
+    ipAddress: getClientIp(request.headers),
+  });
+
   const customers = await prisma.customer.findMany({
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { invoices: true, orders: true } } },

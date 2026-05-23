@@ -5,6 +5,8 @@ import {
   razorpayRequest,
 } from "@/src/lib/razorpay-server";
 import { trackConversionEvent } from "@/src/lib/conversion-tracking";
+import { checkRateLimit } from "@/src/lib/rate-limit";
+import { getClientIp } from "@/src/lib/audit-log";
 
 export const runtime = "nodejs";
 
@@ -47,6 +49,16 @@ function sanitizeText(value: string, maxLength = 100) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 5 subscription creations per IP per 60 seconds
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`payment:autopay:${ip}`, 5, 60);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rl.resetInSeconds) } }
+    );
+  }
+
   try {
     const body = (await request.json()) as CreateAutopayRequestBody;
     const planId = (body.planId || "").trim();

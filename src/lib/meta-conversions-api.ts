@@ -128,10 +128,6 @@ export function buildRazorpayPurchaseEventId(paymentId: string) {
   return `purchase:razorpay:${normalizeText(paymentId, 80)}`;
 }
 
-export function buildShopifyPurchaseEventId(orderId: string | number) {
-  return `purchase:shopify:${normalizeText(orderId, 80)}`;
-}
-
 function buildUserData(customer: MetaCustomerData | undefined) {
   const { firstName, lastName } = splitName(customer?.name);
   return compactObject({

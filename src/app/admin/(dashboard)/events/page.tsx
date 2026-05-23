@@ -64,16 +64,16 @@ export default async function AdminEventsPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h1 className="text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Conversion Events</h1>
-        <p className="mt-1 text-[14px] text-[#6B7280]">Payment funnel, webhook events, and lead contacts.</p>
+        <h1 className="text-[22px] sm:text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Conversion Events</h1>
+        <p className="mt-1 text-[13px] sm:text-[14px] text-[#6B7280]">Payment funnel, webhook events, and lead contacts.</p>
       </div>
 
       <ReplayAutopayForm />
 
-      {/* Leads table */}
-      <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      {/* Leads — desktop table */}
+      <section className="hidden md:block rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
           <h2 className="text-[15px] font-semibold text-[#111827]">Lead Contacts</h2>
           <span className="text-[12px] font-medium text-[#9CA3AF] bg-[#F3F4F6] rounded-full px-2.5 py-1">{leads.length} leads</span>
@@ -97,14 +97,10 @@ export default async function AdminEventsPage() {
                   <td className="px-5 py-3 text-[#6B7280]">{lead.email}</td>
                   <td className="px-5 py-3 text-[#6B7280] tabular-nums">{lead.phone}</td>
                   <td className="px-5 py-3">
-                    <span className="inline-flex rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-medium text-[#374151]">
-                      {lead.plan}
-                    </span>
+                    <span className="inline-flex rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-medium text-[#374151]">{lead.plan}</span>
                   </td>
                   <td className="px-5 py-3">
-                    <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-medium">
-                      {lead.latestEvent}
-                    </span>
+                    <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-medium">{lead.latestEvent}</span>
                   </td>
                   <td className="px-5 py-3 text-[#9CA3AF]">{formatDateTime(lead.createdAt)}</td>
                 </tr>
@@ -114,11 +110,37 @@ export default async function AdminEventsPage() {
         </div>
       </section>
 
-      {/* All events table */}
-      <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      {/* Leads — mobile cards */}
+      <section className="md:hidden space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[14px] font-semibold text-[#111827]">Lead Contacts</h2>
+          <span className="text-[11px] font-medium text-[#9CA3AF] bg-[#F3F4F6] rounded-full px-2.5 py-1">{leads.length}</span>
+        </div>
+        {leads.slice(0, 50).map((lead) => (
+          <div key={lead.key} className="rounded-xl border border-[#E8ECF0] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-[#111827] truncate">{lead.name}</p>
+                <p className="text-[11px] text-[#6B7280] truncate">{lead.email}</p>
+              </div>
+              <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[10px] font-medium shrink-0">
+                {lead.latestEvent}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 mt-2 text-[11px] text-[#6B7280]">
+              <span className="tabular-nums">{lead.phone}</span>
+              <span className="inline-flex rounded-md bg-[#F3F4F6] px-1.5 py-0.5 text-[10px] text-[#374151]">{lead.plan}</span>
+              <span className="ml-auto text-[#9CA3AF]">{formatDateTime(lead.createdAt)}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* All events — desktop table */}
+      <section className="hidden md:block rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
           <h2 className="text-[15px] font-semibold text-[#111827]">All Events</h2>
-          <span className="text-[12px] font-medium text-[#9CA3AF] bg-[#F3F4F6] rounded-full px-2.5 py-1">{events.length} events</span>
+          <span className="text-[12px] font-medium text-[#9CA3AF] bg-[#F3F4F6] rounded-full px-2.5 py-1">{events.length}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-[13px]">
@@ -162,6 +184,35 @@ export default async function AdminEventsPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      {/* All events — mobile cards */}
+      <section className="md:hidden space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[14px] font-semibold text-[#111827]">All Events</h2>
+          <span className="text-[11px] font-medium text-[#9CA3AF] bg-[#F3F4F6] rounded-full px-2.5 py-1">{events.length}</span>
+        </div>
+        {events.slice(0, 50).map((event) => (
+          <div key={event.id} className="rounded-xl border border-[#E8ECF0] bg-white p-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <div className="flex items-center justify-between gap-2">
+              <span className="inline-flex rounded-full bg-[#F3F4F6] text-[#374151] px-2 py-0.5 text-[10px] font-medium">
+                {event.eventName}
+              </span>
+              <span className="text-[10px] text-[#9CA3AF]">{formatDateTime(event.createdAt)}</span>
+            </div>
+            <div className="mt-2 space-y-1 text-[11px]">
+              <p className="text-[#111827] font-medium truncate">
+                {getMetadataText(event.metadata, ["customer_name", "customerName"]) || "-"}
+              </p>
+              <p className="text-[#6B7280] truncate">
+                {event.customerEmail || getMetadataText(event.metadata, ["customer_email"]) || "-"}
+              </p>
+              {event.razorpayPaymentId && (
+                <p className="font-mono text-[10px] text-[#9CA3AF] truncate">{event.razorpayPaymentId}</p>
+              )}
+            </div>
+          </div>
+        ))}
       </section>
     </div>
   );

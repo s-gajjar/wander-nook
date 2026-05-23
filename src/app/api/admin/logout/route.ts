@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
+import { clearSessionCookie } from "@/src/lib/admin-auth";
 
 export async function POST() {
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("admin", "", {
-    path: "/",
-    maxAge: 0,
-    secure: process.env.NODE_ENV === "production",
-  });
-  return res;
+  return clearSessionCookie(res);
 }

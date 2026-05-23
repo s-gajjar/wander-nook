@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
+import { setSessionCookie } from "@/src/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -8,17 +10,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Server not configured" }, { status: 500 });
   }
 
-  if (password !== process.env.ADMIN_PASSWORD) {
+  // Timing-safe password comparison
+  const expected = Buffer.from(process.env.ADMIN_PASSWORD, "utf8");
+  const provided = Buffer.from(password, "utf8");
+
+  const isValid =
+    expected.length === provided.length &&
+    crypto.timingSafeEqual(expected, provided);
+
+  if (!isValid) {
+    // Add small delay to prevent brute force timing attacks
+    await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300));
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("admin", "1", {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60 * 60 * 8,
-  });
-  return res;
-} 
+  return setSessionCookie(res);
+}

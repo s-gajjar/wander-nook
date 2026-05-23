@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { isAdminRequest, adminUnauthorizedJson } from "@/src/lib/admin-auth";
 
 export async function GET(
   _req: NextRequest,
@@ -37,8 +38,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
-  const isAdmin = req.cookies.get("admin")?.value === "1";
-  if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isAdminRequest(req)) return adminUnauthorizedJson();
 
   const { slug } = await params;
   const deleted = await prisma.post.delete({ where: { slug } }).catch(() => null);
