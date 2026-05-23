@@ -8,9 +8,31 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   // Server-side auth check (runs in Node.js, not Edge)
   const cookieStore = await cookies();
   const session = cookieStore.get("admin_session")?.value;
+  const allCookies = cookieStore.getAll();
   
   if (session !== "authenticated") {
-    redirect("/admin/login?next=/admin");
+    // Instead of redirecting, show what we received
+    return (
+      <div className="min-h-screen bg-red-50 p-8">
+        <div className="max-w-[600px] mx-auto bg-white rounded-2xl border border-red-200 p-6 shadow-lg">
+          <h1 className="text-xl font-bold text-red-600 mb-4">🔒 Auth Check Failed in Layout</h1>
+          <div className="space-y-3 text-sm font-mono">
+            <p><strong>admin_session value:</strong> {JSON.stringify(session)}</p>
+            <p><strong>Expected:</strong> &quot;authenticated&quot;</p>
+            <p><strong>All cookies received ({allCookies.length}):</strong></p>
+            <ul className="list-disc pl-5 space-y-1">
+              {allCookies.map((c, i) => (
+                <li key={i}>{c.name} = {c.value.slice(0, 40)}{c.value.length > 40 ? '...' : ''}</li>
+              ))}
+            </ul>
+            {allCookies.length === 0 && <p className="text-red-500">⚠️ NO COOKIES AT ALL received by layout!</p>}
+          </div>
+          <div className="mt-6 pt-4 border-t">
+            <a href="/admin/login" className="text-blue-600 underline text-sm">Back to Login</a>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
