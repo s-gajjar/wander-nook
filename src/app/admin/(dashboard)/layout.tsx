@@ -1,8 +1,18 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import AdminNav from "@/src/components/Admin/AdminNav";
 
-export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+  // Server-side auth check (runs in Node.js, not Edge)
+  const cookieStore = await cookies();
+  const session = cookieStore.get("admin_session")?.value;
+  
+  if (session !== "authenticated") {
+    redirect("/admin/login?next=/admin");
+  }
+
   return (
     <div className="min-h-screen bg-[#F8F9FB]">
       <header className="sticky top-0 z-30 border-b border-[#E8ECF0] bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">

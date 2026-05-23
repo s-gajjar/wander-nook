@@ -1,29 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
-import { validateSessionToken } from "@/src/lib/admin-auth";
+import { NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // --- Admin route protection ---
-  if (pathname.startsWith("/admin") && !pathname.startsWith("/admin/login")) {
-    const token = request.cookies.get("admin_session")?.value;
-    const isValid = token ? validateSessionToken(token) : false;
-
-    if (!isValid) {
-      // API routes get 401 JSON
-      if (pathname.startsWith("/admin") && request.headers.get("accept")?.includes("application/json")) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      // Page routes redirect to login
-      const loginUrl = new URL("/admin/login", request.url);
-      loginUrl.searchParams.set("next", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
-  // --- Security headers ---
+export function middleware() {
   const response = NextResponse.next();
 
+  // --- Security headers ---
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -55,7 +35,7 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api routes (handled by their own auth)
+     * - api routes
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
