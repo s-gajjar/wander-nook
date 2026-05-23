@@ -113,12 +113,20 @@ function LoginForm() {
             </button>
 
             {done && (
-              <a
-                href={next}
-                className="block w-full text-center rounded-xl bg-green-600 text-white py-3 px-4 text-[15px] font-semibold hover:bg-green-700 transition-colors"
-              >
-                Go to Admin →
-              </a>
+              <div className="space-y-2">
+                <a
+                  href="/admin/test"
+                  className="block w-full text-center rounded-xl bg-green-600 text-white py-3 px-4 text-[15px] font-semibold hover:bg-green-700 transition-colors"
+                >
+                  Test Admin (simple page) →
+                </a>
+                <a
+                  href={next}
+                  className="block w-full text-center rounded-xl border-2 border-[#111827] text-[#111827] py-3 px-4 text-[15px] font-semibold hover:bg-[#111827] hover:text-white transition-colors"
+                >
+                  Full Dashboard →
+                </a>
+              </div>
             )}
           </div>
         </form>
