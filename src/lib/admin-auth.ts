@@ -1,67 +1,66 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-
-function getSessionSecret(): string {
-  return process.env.ADMIN_PASSWORD || "fallback-not-secure";
-}
 
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
+const COOKIE_NAME = "admin_session";
 
 /**
- * Creates an HMAC-signed session token.
- * Format: `timestamp.signature`
+ * Base64url encode a string (works in both Node.js and Edge Runtime)
+ */
+function toBase64Url(str: string): string {
+  // Use btoa which is available in both runtimes
+  const base64 = btoa(
+    str
+      .split("")
+      .map((c) => String.fromCharCode(c.charCodeAt(0)))
+      .join("")
+  );
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/**
+ * Creates a session token.
+ * Format: timestamp.hash
  */
 export function createSessionToken(): string {
   const timestamp = Math.floor(Date.now() / 1000);
-  const payload = `admin:${timestamp}`;
-  const signature = crypto
-    .createHmac("sha256", getSessionSecret())
-    .update(payload)
-    .digest("hex");
-  return `${timestamp}.${signature}`;
+  const secret = process.env.ADMIN_PASSWORD || "";
+  const payload = `${secret}:${timestamp}:wandernook-admin`;
+  const hash = toBase64Url(payload);
+  return `${timestamp}.${hash}`;
 }
 
 /**
- * Validates an HMAC-signed session token.
- * Returns true only if signature matches AND token is not expired.
+ * Validates a session token.
  */
 export function validateSessionToken(token: string): boolean {
   if (!token || !token.includes(".")) return false;
 
-  const [timestampStr, signature] = token.split(".");
-  const timestamp = parseInt(timestampStr, 10);
+  const dotIndex = token.indexOf(".");
+  const timestampStr = token.substring(0, dotIndex);
+  const hash = token.substring(dotIndex + 1);
 
+  const timestamp = parseInt(timestampStr, 10);
   if (isNaN(timestamp)) return false;
 
   // Check expiration
   const now = Math.floor(Date.now() / 1000);
   if (now - timestamp > SESSION_MAX_AGE) return false;
 
-  // Verify signature
-  const payload = `admin:${timestamp}`;
-  const expectedSignature = crypto
-    .createHmac("sha256", getSessionSecret())
-    .update(payload)
-    .digest("hex");
+  // Verify hash by reconstructing it
+  const secret = process.env.ADMIN_PASSWORD || "";
+  if (!secret) return false;
+  
+  const payload = `${secret}:${timestamp}:wandernook-admin`;
+  const expectedHash = toBase64Url(payload);
 
-  // Timing-safe comparison
-  if (signature.length !== expectedSignature.length) return false;
-
-  try {
-    return crypto.timingSafeEqual(
-      Buffer.from(signature, "utf8"),
-      Buffer.from(expectedSignature, "utf8")
-    );
-  } catch {
-    return false;
-  }
+  return hash === expectedHash;
 }
 
 /**
  * Checks if the incoming request has a valid admin session.
  */
 export function isAdminRequest(request: NextRequest): boolean {
-  const token = request.cookies.get("admin_session")?.value;
+  const token = request.cookies.get(COOKIE_NAME)?.value;
   if (!token) return false;
   return validateSessionToken(token);
 }
@@ -78,7 +77,7 @@ export function adminUnauthorizedJson() {
  */
 export function setSessionCookie(response: NextResponse): NextResponse {
   const token = createSessionToken();
-  response.cookies.set("admin_session", token, {
+  response.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -92,7 +91,7 @@ export function setSessionCookie(response: NextResponse): NextResponse {
  * Clears the session cookie.
  */
 export function clearSessionCookie(response: NextResponse): NextResponse {
-  response.cookies.set("admin_session", "", {
+  response.cookies.set(COOKIE_NAME, "", {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -101,3 +100,5 @@ export function clearSessionCookie(response: NextResponse): NextResponse {
   });
   return response;
 }
+
+export { COOKIE_NAME, SESSION_MAX_AGE };

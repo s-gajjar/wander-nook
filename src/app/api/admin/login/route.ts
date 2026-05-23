@@ -1,34 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
-import { createSessionToken } from "@/src/lib/admin-auth";
-
-const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
+import { createSessionToken, SESSION_MAX_AGE } from "@/src/lib/admin-auth";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  const password = String(body?.password || "");
+  const password = String(body?.password || "").trim();
 
   if (!process.env.ADMIN_PASSWORD) {
     return NextResponse.json({ error: "Server not configured" }, { status: 500 });
   }
 
-  // Timing-safe password comparison (trim to handle copy-paste whitespace)
-  const expected = Buffer.from(process.env.ADMIN_PASSWORD.trim(), "utf8");
-  const provided = Buffer.from(password.trim(), "utf8");
+  const expected = process.env.ADMIN_PASSWORD.trim();
 
-  const isValid =
-    expected.length === provided.length &&
-    crypto.timingSafeEqual(expected, provided);
-
-  if (!isValid) {
-    // Add small delay to prevent brute force timing attacks
+  if (password !== expected) {
+    // Add small delay to prevent brute force
     await new Promise((resolve) => setTimeout(resolve, 200 + Math.random() * 300));
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
-  // Create session token and set cookie via Set-Cookie header directly
+  // Create session token and set cookie
   const token = createSessionToken();
-  const isProduction = process.env.NODE_ENV === "production";
+  const isSecure = process.env.NODE_ENV === "production";
+
   const cookieParts = [
     `admin_session=${token}`,
     `Path=/`,
@@ -36,7 +28,7 @@ export async function POST(req: NextRequest) {
     `SameSite=Lax`,
     `Max-Age=${SESSION_MAX_AGE}`,
   ];
-  if (isProduction) cookieParts.push("Secure");
+  if (isSecure) cookieParts.push("Secure");
 
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
