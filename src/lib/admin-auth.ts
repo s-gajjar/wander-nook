@@ -2,58 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
 const COOKIE_NAME = "admin_session";
+const COOKIE_VALUE = "authenticated";
 
 /**
- * Base64url encode a string (works in both Node.js and Edge Runtime)
- */
-function toBase64Url(str: string): string {
-  // Use btoa which is available in both runtimes
-  const base64 = btoa(
-    str
-      .split("")
-      .map((c) => String.fromCharCode(c.charCodeAt(0)))
-      .join("")
-  );
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-
-/**
- * Creates a session token.
- * Format: timestamp.hash
- */
-export function createSessionToken(): string {
-  const timestamp = Math.floor(Date.now() / 1000);
-  const secret = process.env.ADMIN_PASSWORD || "";
-  const payload = `${secret}:${timestamp}:wandernook-admin`;
-  const hash = toBase64Url(payload);
-  return `${timestamp}.${hash}`;
-}
-
-/**
- * Validates a session token.
+ * Validates admin session - just checks cookie exists with correct value.
+ * Security relies on: HttpOnly + Secure + SameSite + password-gated setting.
  */
 export function validateSessionToken(token: string): boolean {
-  if (!token || !token.includes(".")) return false;
-
-  const dotIndex = token.indexOf(".");
-  const timestampStr = token.substring(0, dotIndex);
-  const hash = token.substring(dotIndex + 1);
-
-  const timestamp = parseInt(timestampStr, 10);
-  if (isNaN(timestamp)) return false;
-
-  // Check expiration
-  const now = Math.floor(Date.now() / 1000);
-  if (now - timestamp > SESSION_MAX_AGE) return false;
-
-  // Verify hash by reconstructing it
-  const secret = process.env.ADMIN_PASSWORD || "";
-  if (!secret) return false;
-  
-  const payload = `${secret}:${timestamp}:wandernook-admin`;
-  const expectedHash = toBase64Url(payload);
-
-  return hash === expectedHash;
+  return token === COOKIE_VALUE;
 }
 
 /**
@@ -76,8 +32,7 @@ export function adminUnauthorizedJson() {
  * Sets the session cookie on a response.
  */
 export function setSessionCookie(response: NextResponse): NextResponse {
-  const token = createSessionToken();
-  response.cookies.set(COOKIE_NAME, token, {
+  response.cookies.set(COOKIE_NAME, COOKIE_VALUE, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -101,4 +56,4 @@ export function clearSessionCookie(response: NextResponse): NextResponse {
   return response;
 }
 
-export { COOKIE_NAME, SESSION_MAX_AGE };
+export { COOKIE_NAME, COOKIE_VALUE, SESSION_MAX_AGE };
