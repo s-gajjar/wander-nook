@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { setSessionCookie } from "@/src/lib/admin-auth";
+import { createSessionToken } from "@/src/lib/admin-auth";
+
+const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
@@ -24,6 +26,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid password" }, { status: 401 });
   }
 
-  const res = NextResponse.json({ ok: true });
-  return setSessionCookie(res);
+  // Create session token and set cookie via Set-Cookie header directly
+  const token = createSessionToken();
+  const isProduction = process.env.NODE_ENV === "production";
+  const cookieParts = [
+    `admin_session=${token}`,
+    `Path=/`,
+    `HttpOnly`,
+    `SameSite=Lax`,
+    `Max-Age=${SESSION_MAX_AGE}`,
+  ];
+  if (isProduction) cookieParts.push("Secure");
+
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Set-Cookie": cookieParts.join("; "),
+    },
+  });
 }
