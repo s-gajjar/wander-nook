@@ -24,13 +24,12 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
           <div className="flex items-center gap-4 sm:gap-8">
             <Link href="/admin" className="flex items-center gap-2">
               <Image
-                src="/wander-stamps-logo.png"
+                src="/svgs/logo.svg"
                 alt="WanderNook"
-                width={28}
-                height={28}
-                className="rounded-full sm:w-8 sm:h-8"
+                width={120}
+                height={32}
+                className="h-7 w-auto sm:h-8"
               />
-              <span className="text-[14px] sm:text-[15px] font-semibold text-[#111827] tracking-[-0.01em] hidden sm:inline">WanderNook</span>
             </Link>
             <div className="hidden md:block">
               <AdminNav />
