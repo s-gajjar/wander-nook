@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
       }
       // Page routes redirect to login
       const loginUrl = new URL("/admin/login", request.url);
-      loginUrl.searchParams.set("from", pathname);
+      loginUrl.searchParams.set("next", pathname);
       return NextResponse.redirect(loginUrl);
     }
   }

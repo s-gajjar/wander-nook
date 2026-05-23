@@ -10,9 +10,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Server not configured" }, { status: 500 });
   }
 
-  // Timing-safe password comparison
-  const expected = Buffer.from(process.env.ADMIN_PASSWORD, "utf8");
-  const provided = Buffer.from(password, "utf8");
+  // Timing-safe password comparison (trim to handle copy-paste whitespace)
+  const expected = Buffer.from(process.env.ADMIN_PASSWORD.trim(), "utf8");
+  const provided = Buffer.from(password.trim(), "utf8");
 
   const isValid =
     expected.length === provided.length &&
