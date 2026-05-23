@@ -37,6 +37,29 @@ export default async function AdminDashboardPage({
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
+  try {
+    return await AdminDashboardContent({ searchParams });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return (
+      <div className="space-y-4 p-8">
+        <h1 className="text-[22px] font-semibold text-[#111827]">Dashboard</h1>
+        <div className="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-6">
+          <h2 className="text-[16px] font-semibold text-[#DC2626] mb-2">⚠️ Database Error</h2>
+          <p className="text-[14px] text-[#7F1D1D] mb-3">Could not load dashboard data:</p>
+          <pre className="text-[12px] bg-[#FFF1F2] rounded-lg p-3 overflow-auto text-[#991B1B] whitespace-pre-wrap">{message}</pre>
+          <p className="text-[13px] text-[#9CA3AF] mt-4">Check that DATABASE_URL is set in Vercel Environment Variables for <strong>Preview</strong> deployments (not just Production).</p>
+        </div>
+      </div>
+    );
+  }
+}
+
+async function AdminDashboardContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
   const { period } = await searchParams;
   const selectedPeriod = period === "last-month" ? "last-month" : period === "all-time" ? "all-time" : "this-month";
 
