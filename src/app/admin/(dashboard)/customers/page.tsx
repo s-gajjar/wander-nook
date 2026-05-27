@@ -1,166 +1,152 @@
+import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
-import CustomerInvoiceGroup, {
-  type CustomerGroupData,
-} from "@/src/components/Admin/CustomerInvoiceGroup";
+import { Prisma } from "@prisma/client";
+import Pagination from "@/src/components/Admin/Pagination";
 
 export const dynamic = "force-dynamic";
 
+const PER_PAGE = 25;
+
 function formatDate(value: Date | null | undefined) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(value);
+  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(value);
 }
 
-export default async function AdminCustomersPage() {
-  const [customers, invoices] = await Promise.all([
+export default async function AdminCustomersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; page?: string }>;
+}) {
+  const { q, page: pageStr } = await searchParams;
+  const currentPage = Math.max(1, parseInt(pageStr || "1", 10) || 1);
+
+  const where: Prisma.CustomerWhereInput = {};
+  if (q) {
+    where.OR = [
+      { fullName: { contains: q, mode: "insensitive" } },
+      { email: { contains: q, mode: "insensitive" } },
+      { phone: { contains: q } },
+      { city: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
+  const [customers, totalCount] = await Promise.all([
     prisma.customer.findMany({
+      where,
       orderBy: { createdAt: "desc" },
-      take: 100,
-      include: { _count: { select: { invoices: true } } },
+      include: { _count: { select: { invoices: true, orders: true } } },
+      skip: (currentPage - 1) * PER_PAGE,
+      take: PER_PAGE,
     }),
-    prisma.invoice.findMany({
-      orderBy: { issuedAt: "desc" },
-      take: 500,
-      include: { customer: true },
-    }),
+    prisma.customer.count({ where }),
   ]);
 
-  const invoicesByCustomer: CustomerGroupData[] = invoices
-    .reduce<
-      Array<{
-        customerId: string;
-        customerName: string;
-        customerEmail: string;
-        customerPhone: string;
-        customerCity: string;
-        customerState: string;
-        totalAmountPaise: number;
-        latestIssuedAt: Date;
-        latestCurrency: string;
-        invoices: typeof invoices;
-      }>
-    >((groups, invoice) => {
-      const existing = groups.find((g) => g.customerId === invoice.customerId);
-      if (!existing) {
-        groups.push({
-          customerId: invoice.customerId,
-          customerName: invoice.customer.fullName,
-          customerEmail: invoice.customer.email,
-          customerPhone: invoice.customer.phone,
-          customerCity: invoice.customer.city,
-          customerState: invoice.customer.state,
-          totalAmountPaise: invoice.amountPaise,
-          latestIssuedAt: invoice.issuedAt,
-          latestCurrency: invoice.currency,
-          invoices: [invoice],
-        });
-        return groups;
-      }
-      existing.invoices.push(invoice);
-      existing.totalAmountPaise += invoice.amountPaise;
-      if (invoice.issuedAt > existing.latestIssuedAt) {
-        existing.latestIssuedAt = invoice.issuedAt;
-        existing.latestCurrency = invoice.currency;
-      }
-      return groups;
-    }, [])
-    .sort((a, b) => b.latestIssuedAt.getTime() - a.latestIssuedAt.getTime())
-    .map((group) => ({
-      customerId: group.customerId,
-      customerName: group.customerName,
-      customerEmail: group.customerEmail,
-      customerPhone: group.customerPhone,
-      customerCity: `${group.customerCity}, ${group.customerState}`,
-      customerState: group.customerState,
-      totalAmountPaise: group.totalAmountPaise,
-      latestCurrency: group.latestCurrency,
-      latestIssuedAt: group.latestIssuedAt.toISOString(),
-      invoices: group.invoices.map((inv) => ({
-        id: inv.id,
-        invoiceNumber: inv.invoiceNumber,
-        publicToken: inv.publicToken,
-        planLabel: inv.planLabel,
-        billingCycle: inv.billingCycle,
-        amountPaise: inv.amountPaise,
-        currency: inv.currency,
-        status: inv.status,
-        issuedAt: inv.issuedAt.toISOString(),
-        emailSentAt: inv.emailSentAt?.toISOString() ?? null,
-        razorpayPaymentId: inv.razorpayPaymentId,
-      })),
-    }));
+  const totalPages = Math.ceil(totalCount / PER_PAGE);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Customers</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Click a customer to expand their invoice history. View or resend individual invoices.
-        </p>
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="text-[22px] sm:text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Customers</h1>
+          <p className="mt-1 text-[13px] sm:text-[14px] text-[#6B7280]">
+            {totalCount} customer{totalCount !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <a
+          href="/api/admin/export/customers"
+          className="self-start sm:self-auto rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2 text-[13px] font-medium text-[#374151] hover:bg-[#F9FAFB] hover:border-[#D1D5DB] transition-all shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+        >
+          Export CSV
+        </a>
       </div>
 
-      {/* Grouped invoices by customer */}
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">Invoices by Customer</h2>
-          <span className="text-xs text-slate-500">{invoicesByCustomer.length} customers</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                <th className="py-2 pr-4">Customer</th>
-                <th className="py-2 pr-4">Invoices</th>
-                <th className="py-2 pr-4">Total Paid</th>
-                <th className="py-2 pr-4">Latest Charged</th>
-                <th className="py-2 pr-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoicesByCustomer.map((group) => (
-                <CustomerInvoiceGroup key={group.customerId} group={group} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      {/* Search */}
+      <form method="GET" className="w-full sm:max-w-md">
+        <input
+          type="search"
+          name="q"
+          defaultValue={q || ""}
+          placeholder="Search by name, email, phone, city..."
+          className="w-full rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-[13px] text-[#111827] placeholder:text-[#9CA3AF] focus:border-[#6366F1] focus:outline-none focus:ring-2 focus:ring-[#6366F1]/10 transition-all"
+        />
+      </form>
 
-      {/* All customers table */}
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">All Customers</h2>
-          <span className="text-xs text-slate-500">{customers.length} total</span>
-        </div>
+      {/* Desktop table */}
+      <section className="hidden md:block rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
+          <table className="min-w-full text-[13px]">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                <th className="py-2 pr-4">Name</th>
-                <th className="py-2 pr-4">Email</th>
-                <th className="py-2 pr-4">Phone</th>
-                <th className="py-2 pr-4">City</th>
-                <th className="py-2 pr-4">Invoices</th>
-                <th className="py-2 pr-4">Joined</th>
+              <tr className="border-b border-[#F3F4F6] bg-[#FAFBFC] text-left text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF]">
+                <th className="px-5 py-2.5 font-medium">Name</th>
+                <th className="px-5 py-2.5 font-medium">Email</th>
+                <th className="px-5 py-2.5 font-medium">Phone</th>
+                <th className="px-5 py-2.5 font-medium">City</th>
+                <th className="px-5 py-2.5 font-medium">Invoices</th>
+                <th className="px-5 py-2.5 font-medium">Orders</th>
+                <th className="px-5 py-2.5 font-medium">Joined</th>
               </tr>
             </thead>
             <tbody>
               {customers.map((c) => (
-                <tr key={c.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4 font-medium text-slate-900">{c.fullName}</td>
-                  <td className="py-3 pr-4">{c.email}</td>
-                  <td className="py-3 pr-4">{c.phone}</td>
-                  <td className="py-3 pr-4">{c.city}, {c.state}</td>
-                  <td className="py-3 pr-4">{c._count.invoices}</td>
-                  <td className="py-3 pr-4">{formatDate(c.createdAt)}</td>
+                <tr key={c.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#F3F4F6] transition-colors relative">
+                  <td className="px-5 py-3.5 font-medium text-[#111827]">
+                    <Link href={`/admin/customers/${c.id}`} className="absolute inset-0" aria-label={`View ${c.fullName}`} />
+                    <span className="relative pointer-events-none">{c.fullName}</span>
+                  </td>
+                  <td className="px-5 py-3.5 text-[#6B7280] relative pointer-events-none">{c.email}</td>
+                  <td className="px-5 py-3.5 text-[#6B7280] tabular-nums relative pointer-events-none">{c.phone}</td>
+                  <td className="px-5 py-3.5 text-[#6B7280] relative pointer-events-none">{c.city}, {c.state}</td>
+                  <td className="px-5 py-3.5 relative pointer-events-none">
+                    <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-medium">{c._count.invoices}</span>
+                  </td>
+                  <td className="px-5 py-3.5 relative pointer-events-none">
+                    <span className="inline-flex rounded-full bg-[#FFF7ED] text-[#C2410C] px-2 py-0.5 text-[11px] font-medium">{c._count.orders}</span>
+                  </td>
+                  <td className="px-5 py-3.5 text-[#9CA3AF] relative pointer-events-none">{formatDate(c.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
+
+      {/* Mobile cards */}
+      <section className="md:hidden space-y-3">
+        {customers.map((c) => (
+          <Link
+            key={c.id}
+            href={`/admin/customers/${c.id}`}
+            className="block rounded-xl border border-[#E8ECF0] bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:border-[#D1D5DB] active:bg-[#F9FAFB] transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#6366F1] to-[#8B5CF6] text-white text-[13px] font-semibold shrink-0">
+                {c.fullName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-[#111827] truncate">{c.fullName}</p>
+                <p className="text-[11px] text-[#6B7280] truncate">{c.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#F3F4F6] text-[11px] text-[#6B7280]">
+              <span>{c.city}, {c.state}</span>
+              <span className="ml-auto tabular-nums">{c.phone}</span>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[10px] font-medium">{c._count.invoices} invoices</span>
+              <span className="inline-flex rounded-full bg-[#FFF7ED] text-[#C2410C] px-2 py-0.5 text-[10px] font-medium">{c._count.orders} orders</span>
+              <span className="ml-auto text-[10px] text-[#9CA3AF]">{formatDate(c.createdAt)}</span>
+            </div>
+          </Link>
+        ))}
+      </section>
+
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        basePath="/admin/customers"
+      />
     </div>
   );
 }

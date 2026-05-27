@@ -1,30 +1,45 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import AdminNav from "@/src/components/Admin/AdminNav";
 
-export default function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
+  // On Preview, Vercel Deployment Protection handles access control.
+  // On Production, enforce our own cookie-based auth.
+  const isVercelPreview = process.env.VERCEL_ENV === "preview";
+  
+  if (!isVercelPreview) {
+    const cookieStore = await cookies();
+    const session = cookieStore.get("admin_session")?.value;
+    if (session !== "authenticated") {
+      redirect("/admin/login?next=/admin");
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-lg font-semibold text-slate-900">
-              Admin
+    <div className="min-h-screen bg-[#F8F9FB]">
+      <header className="sticky top-0 z-30 border-b border-[#E8ECF0] bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 sm:px-5 py-3">
+          <div className="flex items-center gap-4 sm:gap-8">
+            <Link href="/admin" className="flex items-center gap-2">
+              <Image
+                src="/svgs/logo.svg"
+                alt="WanderNook"
+                width={120}
+                height={32}
+                className="h-7 w-auto sm:h-8"
+              />
             </Link>
-            <div className="hidden sm:block">
+            <div className="hidden md:block">
               <AdminNav />
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/admin/blog/new"
-              className="hidden rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:inline-flex"
-            >
-              New Blog Post
-            </Link>
+          <div className="flex items-center gap-3">
             <form action="/api/admin/logout" method="POST">
               <button
                 type="submit"
-                className="rounded-md border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
+                className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-1.5 sm:px-3.5 sm:py-2 text-[12px] sm:text-[13px] font-medium text-[#DC2626] hover:bg-[#FEE2E2] transition-colors"
               >
                 Logout
               </button>
@@ -32,11 +47,13 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           </div>
         </div>
         {/* Mobile nav */}
-        <div className="sm:hidden">
-          <AdminNav />
+        <div className="border-t border-[#F3F4F6] md:hidden">
+          <div className="px-3 py-2 overflow-x-auto scrollbar-none">
+            <AdminNav />
+          </div>
         </div>
       </header>
-      <div className="mx-auto max-w-7xl px-4 py-6">{children}</div>
+      <main className="mx-auto max-w-[1400px] px-4 sm:px-5 py-5 sm:py-8">{children}</main>
     </div>
   );
 }

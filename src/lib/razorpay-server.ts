@@ -2,6 +2,8 @@ import crypto from "crypto";
 
 export type AutopayPlanId = "monthly-autopay" | "annual-autopay";
 
+export type OnetimePlanId = "annual-onetime";
+
 export type RazorpayAutopayPlanConfig = {
   id: AutopayPlanId;
   displayName: string;
@@ -10,12 +12,31 @@ export type RazorpayAutopayPlanConfig = {
   totalCount: number;
   cycle: "monthly" | "yearly";
   razorpayPlanId: string;
-  shopifyVariantId: string;
+};
+
+export type RazorpayOnetimePlanConfig = {
+  id: OnetimePlanId;
+  displayName: string;
+  amountInr: number;
+  amountPaise: number;
+  currency: string;
+  durationMonths: number;
+};
+
+const ONETIME_PLAN_DEFINITIONS: Record<OnetimePlanId, RazorpayOnetimePlanConfig> = {
+  "annual-onetime": {
+    id: "annual-onetime",
+    displayName: "Annual Plan",
+    amountInr: 2300,
+    amountPaise: 230000,
+    currency: "INR",
+    durationMonths: 12,
+  },
 };
 
 const PLAN_DEFINITIONS: Record<
   AutopayPlanId,
-  Omit<RazorpayAutopayPlanConfig, "razorpayPlanId" | "shopifyVariantId">
+  Omit<RazorpayAutopayPlanConfig, "razorpayPlanId">
 > = {
   "monthly-autopay": {
     id: "monthly-autopay",
@@ -64,31 +85,6 @@ function getRazorpayAuthHeader() {
   return `Basic ${token}`;
 }
 
-function getVariantByPlan(planId: AutopayPlanId) {
-  if (planId === "monthly-autopay") {
-    return (
-      envValue("SHOPIFY_MONTHLY_VARIANT_ID") ||
-      envValue("NEXT_PUBLIC_MONTHLY_VARIANT_ID") ||
-      envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID1") ||
-      envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID2")
-    );
-  }
-  return (
-    envValue("SHOPIFY_ANNUAL_VARIANT_ID") ||
-    envValue("NEXT_PUBLIC_ANNUAL_VARIANT_ID") ||
-    envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID2") ||
-    envValue("NEXT_PUBLIC_SHOPIFY_VARIANT_ID1")
-  );
-}
-
-export function getPlanVariantId(planId: string) {
-  if (planId !== "monthly-autopay" && planId !== "annual-autopay") {
-    return null;
-  }
-
-  return getVariantByPlan(planId);
-}
-
 function getRazorpayPlanId(planId: AutopayPlanId) {
   if (planId === "monthly-autopay") {
     return (
@@ -109,7 +105,6 @@ export function getAutopayPlanConfig(planId: string): RazorpayAutopayPlanConfig 
 
   const basePlan = PLAN_DEFINITIONS[planId];
   const razorpayPlanId = getRazorpayPlanId(planId);
-  const shopifyVariantId = getVariantByPlan(planId);
 
   if (!razorpayPlanId) {
     throw new Error(
@@ -119,18 +114,9 @@ export function getAutopayPlanConfig(planId: string): RazorpayAutopayPlanConfig 
     );
   }
 
-  if (!shopifyVariantId) {
-    throw new Error(
-      `Missing Shopify variant mapping for ${planId}. Set SHOPIFY_${
-        planId === "monthly-autopay" ? "MONTHLY" : "ANNUAL"
-      }_VARIANT_ID in env.`
-    );
-  }
-
   return {
     ...basePlan,
     razorpayPlanId,
-    shopifyVariantId,
   };
 }
 
@@ -152,20 +138,6 @@ export function getAutopayPlanConfigByRazorpayPlanId(
     } catch {
       // Skip unconfigured plans while checking configured mappings.
     }
-  }
-
-  return null;
-}
-
-export function parseShopifyVariantId(variant: string) {
-  const trimmed = variant.trim();
-  const gidMatch = trimmed.match(/^gid:\/\/shopify\/ProductVariant\/(\d+)$/);
-  if (gidMatch) {
-    return Number(gidMatch[1]);
-  }
-
-  if (/^\d+$/.test(trimmed)) {
-    return Number(trimmed);
   }
 
   return null;
@@ -224,4 +196,35 @@ export function verifyRazorpaySubscriptionSignature({
   }
 
   return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+export function verifyRazorpayPaymentSignature({
+  orderId,
+  paymentId,
+  signature,
+}: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}) {
+  const expected = crypto
+    .createHmac("sha256", getRazorpaySecret())
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+
+  const expectedBuffer = Buffer.from(expected, "utf8");
+  const receivedBuffer = Buffer.from(signature, "utf8");
+
+  if (expectedBuffer.length !== receivedBuffer.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+}
+
+export function getOnetimePlanConfig(planId: string): RazorpayOnetimePlanConfig | null {
+  if (planId in ONETIME_PLAN_DEFINITIONS) {
+    return ONETIME_PLAN_DEFINITIONS[planId as OnetimePlanId];
+  }
+  return null;
 }

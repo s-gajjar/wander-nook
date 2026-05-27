@@ -1,137 +1,316 @@
 import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
 import { formatCurrency } from "@/src/lib/invoice-template";
+import RevenueChart from "@/src/components/Admin/RevenueChart";
 
 export const dynamic = "force-dynamic";
 
 function formatDate(value: Date | null | undefined) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(value);
+  return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short", year: "numeric" }).format(value);
 }
 
-export default async function AdminDashboardPage() {
-  const [customerCount, invoiceCount, revenue, recentInvoices] = await Promise.all([
-    prisma.customer.count(),
-    prisma.invoice.count(),
-    prisma.invoice.aggregate({ _sum: { amountPaise: true } }),
+function getMonthRange(offset: number) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0, 23, 59, 59, 999);
+  return { start, end };
+}
+
+function getMonthLabel(offset: number) {
+  const { start } = getMonthRange(offset);
+  return start.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+}
+
+function getDaysInRange(start: Date, end: Date): string[] {
+  const days: string[] = [];
+  const d = new Date(start);
+  while (d <= end) {
+    days.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return days;
+}
+
+export default async function AdminDashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  try {
+    return await AdminDashboardContent({ searchParams });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return (
+      <div className="space-y-4 p-8">
+        <h1 className="text-[22px] font-semibold text-[#111827]">Dashboard</h1>
+        <div className="rounded-2xl border border-[#FECACA] bg-[#FEF2F2] p-6">
+          <h2 className="text-[16px] font-semibold text-[#DC2626] mb-2">⚠️ Database Error</h2>
+          <p className="text-[14px] text-[#7F1D1D] mb-3">Could not load dashboard data:</p>
+          <pre className="text-[12px] bg-[#FFF1F2] rounded-lg p-3 overflow-auto text-[#991B1B] whitespace-pre-wrap">{message}</pre>
+          <p className="text-[13px] text-[#9CA3AF] mt-4">Check that DATABASE_URL is set in Vercel Environment Variables for <strong>Preview</strong> deployments (not just Production).</p>
+        </div>
+      </div>
+    );
+  }
+}
+
+async function AdminDashboardContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period } = await searchParams;
+  const selectedPeriod = period === "last-month" ? "last-month" : period === "all-time" ? "all-time" : "this-month";
+
+  // Date filters
+  const dateFilter =
+    selectedPeriod === "all-time"
+      ? {}
+      : selectedPeriod === "last-month"
+        ? { gte: getMonthRange(-1).start, lte: getMonthRange(-1).end }
+        : { gte: getMonthRange(0).start, lte: getMonthRange(0).end };
+
+  const invoiceWhere = selectedPeriod === "all-time" ? {} : { issuedAt: dateFilter };
+  const orderWhere = selectedPeriod === "all-time" ? { status: "paid" as const } : { status: "paid" as const, createdAt: dateFilter };
+
+  const [customerCount, invoiceCount, orderCount, invoiceRevenue, onetimeOrderRevenue, recentInvoices, recentOrders, activeSubscriptions] =
+    await Promise.all([
+      prisma.customer.count(),
+      prisma.invoice.count({ where: invoiceWhere }),
+      prisma.order.count({ where: orderWhere }),
+      prisma.invoice.aggregate({ _sum: { amountPaise: true }, where: invoiceWhere }),
+      prisma.order.aggregate({ _sum: { amountPaise: true }, where: { ...orderWhere, paymentMethod: "razorpay-onetime" } }),
+      prisma.invoice.findMany({ orderBy: { issuedAt: "desc" }, take: 5, include: { customer: true } }),
+      prisma.order.findMany({ orderBy: { createdAt: "desc" }, take: 5, include: { customer: true } }),
+      // Active subscriptions = customers who have at least 1 invoice in the last 45 days
+      prisma.invoice.groupBy({
+        by: ["customerId"],
+        where: { issuedAt: { gte: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000) } },
+        _count: true,
+      }),
+    ]);
+
+  const totalRevenuePaise = (invoiceRevenue._sum.amountPaise || 0) + (onetimeOrderRevenue._sum.amountPaise || 0);
+
+  // Chart data respects the selected period
+  let chartStart: Date;
+  let chartEnd: Date;
+  if (selectedPeriod === "last-month") {
+    const range = getMonthRange(-1);
+    chartStart = range.start;
+    chartEnd = range.end;
+  } else if (selectedPeriod === "all-time") {
+    // Last 90 days for all-time chart
+    chartStart = new Date();
+    chartStart.setDate(chartStart.getDate() - 90);
+    chartEnd = new Date();
+  } else {
+    const range = getMonthRange(0);
+    chartStart = range.start;
+    chartEnd = new Date(); // up to today
+  }
+
+  const [chartInvoices, chartOrders] = await Promise.all([
     prisma.invoice.findMany({
-      orderBy: { issuedAt: "desc" },
-      take: 5,
-      include: { customer: true },
+      where: { issuedAt: { gte: chartStart, lte: chartEnd } },
+      select: { issuedAt: true, amountPaise: true },
+    }),
+    prisma.order.findMany({
+      where: { createdAt: { gte: chartStart, lte: chartEnd }, status: "paid", paymentMethod: "razorpay-onetime" },
+      select: { createdAt: true, amountPaise: true },
     }),
   ]);
 
+  const days = getDaysInRange(chartStart, chartEnd);
+  const dailyMap: Record<string, number> = {};
+  for (const day of days) dailyMap[day] = 0;
+  for (const inv of chartInvoices) {
+    const key = inv.issuedAt.toISOString().slice(0, 10);
+    if (dailyMap[key] !== undefined) dailyMap[key] += inv.amountPaise;
+  }
+  for (const ord of chartOrders) {
+    const key = ord.createdAt.toISOString().slice(0, 10);
+    if (dailyMap[key] !== undefined) dailyMap[key] += ord.amountPaise;
+  }
+
+  const chartData = Object.entries(dailyMap).map(([date, amount]) => ({ date, amount: amount / 100 }));
+
+  const periodLabel =
+    selectedPeriod === "all-time" ? "All Time"
+      : selectedPeriod === "last-month" ? getMonthLabel(-1)
+      : getMonthLabel(0);
+
+  const chartSubtitle =
+    selectedPeriod === "all-time" ? "Last 90 days"
+      : selectedPeriod === "last-month" ? getMonthLabel(-1)
+      : `${getMonthLabel(0)} (to date)`;
+
+  // Unfulfilled orders count
+  const unfulfilledCount = await prisma.order.count({
+    where: { status: "paid", fulfillmentStatus: "unfulfilled" },
+  });
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Overview of your billing, customers, and subscriptions.
-        </p>
+    <div className="space-y-5 sm:space-y-8">
+      {/* Header with period selector */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h1 className="text-[22px] sm:text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Dashboard</h1>
+          <p className="mt-1 text-[13px] sm:text-[14px] text-[#6B7280]">
+            Revenue and order overview · <span className="font-medium text-[#374151]">{periodLabel}</span>
+          </p>
+        </div>
+        <div className="flex rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] self-start sm:self-auto">
+          <PeriodTab href="/admin?period=this-month" label="This Month" active={selectedPeriod === "this-month"} />
+          <PeriodTab href="/admin?period=last-month" label="Last Month" active={selectedPeriod === "last-month"} />
+          <PeriodTab href="/admin?period=all-time" label="All Time" active={selectedPeriod === "all-time"} />
+        </div>
       </div>
 
       {/* Stats cards */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Customers" value={String(customerCount)} href="/admin/customers" />
-        <StatCard label="Invoices" value={String(invoiceCount)} href="/admin/invoices" />
-        <StatCard label="Revenue" value={formatCurrency(revenue._sum.amountPaise || 0, "INR")} />
-        <StatCard label="Analytics" value="→" href="/admin/analytics" accent />
+      <section className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+        <StatCard label="Total Revenue" value={formatCurrency(totalRevenuePaise, "INR")} subtitle={`${invoiceCount} inv + ${orderCount} ord`} />
+        <StatCard label="Customers" value={String(customerCount)} subtitle="Total registered" />
+        <StatCard label="Active Subs" value={String(activeSubscriptions.length)} subtitle="Last 45d" />
+        <StatCard label="Orders" value={String(orderCount)} subtitle={periodLabel} />
+        <StatCard label="Unfulfilled" value={String(unfulfilledCount)} subtitle="Awaiting shipment" highlight={unfulfilledCount > 0} />
+      </section>
+
+      {/* Revenue chart */}
+      <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#F3F4F6] px-4 sm:px-6 py-4 gap-2">
+          <div>
+            <h2 className="text-[14px] sm:text-[15px] font-semibold text-[#111827]">Revenue</h2>
+            <p className="text-[11px] sm:text-[12px] text-[#9CA3AF] mt-0.5">{chartSubtitle} · Daily breakdown</p>
+          </div>
+          <p className="text-[16px] sm:text-[18px] font-bold text-[#111827] tabular-nums">
+            {formatCurrency(chartData.reduce((s, d) => s + d.amount * 100, 0), "INR")}
+          </p>
+        </div>
+        <div className="px-4 sm:px-6 py-5 overflow-x-auto">
+          <RevenueChart data={chartData} />
+        </div>
       </section>
 
       {/* Quick links */}
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <QuickLink href="/admin/customers" title="Customers" description="View all customers and expand their invoices" />
-        <QuickLink href="/admin/invoices" title="Invoices" description="Browse and resend individual invoices" />
-        <QuickLink href="/admin/subscribers" title="Subscribers" description="Newsletter subscriber list" />
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <QuickLink href="/admin/customers" title="Customers" description="View all customers and their history" />
+        <QuickLink href="/admin/orders" title="Orders" description="One-time and subscription orders" />
+        <QuickLink href="/admin/invoices" title="Invoices" description="Browse and resend invoices" />
         <QuickLink href="/admin/events" title="Conversion Events" description="Funnel and payment events" />
-        <QuickLink href="/admin/analytics" title="Analytics" description="Revenue charts and PostHog metrics" />
-        <QuickLink href="/admin/blog/new" title="New Blog Post" description="Write and publish a blog post" />
       </section>
 
-      {/* Recent invoices */}
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-slate-900">Recent Invoices</h2>
-          <Link href="/admin/invoices" className="text-xs font-medium text-slate-500 hover:text-slate-700">
-            View all →
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-[0.12em] text-slate-500">
-                <th className="py-2 pr-4">Invoice</th>
-                <th className="py-2 pr-4">Customer</th>
-                <th className="py-2 pr-4">Amount</th>
-                <th className="py-2 pr-4">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentInvoices.map((inv) => (
-                <tr key={inv.id} className="border-b border-slate-100">
-                  <td className="py-3 pr-4">
-                    <Link
-                      href={`/invoice/${inv.publicToken}`}
-                      target="_blank"
-                      className="font-medium text-slate-900 hover:underline"
-                    >
-                      {inv.invoiceNumber}
-                    </Link>
-                  </td>
-                  <td className="py-3 pr-4">{inv.customer.fullName}</td>
-                  <td className="py-3 pr-4">{formatCurrency(inv.amountPaise, inv.currency)}</td>
-                  <td className="py-3 pr-4">{formatDate(inv.issuedAt)}</td>
+      {/* Tables */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent invoices */}
+        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827]">Recent Invoices</h2>
+            <Link href="/admin/invoices" className="text-[12px] font-medium text-[#6B7280] hover:text-[#111827] transition-colors">View all →</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-[#F3F4F6] text-left text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF]">
+                  <th className="px-5 py-2.5 font-medium">Invoice</th>
+                  <th className="px-5 py-2.5 font-medium">Customer</th>
+                  <th className="px-5 py-2.5 font-medium text-right">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              </thead>
+              <tbody>
+                {recentInvoices.map((inv) => (
+                  <tr key={inv.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                    <td className="px-5 py-3">
+                      <Link href={`/invoice/${inv.publicToken}`} target="_blank" className="font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                        {inv.invoiceNumber.slice(-12)}
+                      </Link>
+                      <p className="text-[11px] text-[#9CA3AF] mt-0.5">{formatDate(inv.issuedAt)}</p>
+                    </td>
+                    <td className="px-5 py-3 text-[#374151]">{inv.customer.fullName}</td>
+                    <td className="px-5 py-3 text-right font-medium text-[#111827] tabular-nums">{formatCurrency(inv.amountPaise, inv.currency)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {/* Recent orders */}
+        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827]">Recent Orders</h2>
+            <Link href="/admin/orders" className="text-[12px] font-medium text-[#6B7280] hover:text-[#111827] transition-colors">View all →</Link>
+          </div>
+          {recentOrders.length === 0 ? (
+            <div className="px-5 py-8 text-center"><p className="text-[13px] text-[#9CA3AF]">No orders yet.</p></div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-[#F3F4F6] text-left text-[11px] uppercase tracking-[0.06em] text-[#9CA3AF]">
+                    <th className="px-5 py-2.5 font-medium">Order</th>
+                    <th className="px-5 py-2.5 font-medium">Customer</th>
+                    <th className="px-5 py-2.5 font-medium text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrders.map((order) => (
+                    <tr key={order.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                      <td className="px-5 py-3">
+                        <Link href={`/admin/orders/${order.id}`} className="font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                          {order.orderNumber}
+                        </Link>
+                        <p className="text-[11px] text-[#9CA3AF] mt-0.5">{formatDate(order.createdAt)}</p>
+                      </td>
+                      <td className="px-5 py-3 text-[#374151]">{order.customer.fullName}</td>
+                      <td className="px-5 py-3 text-right">
+                        <span className="font-medium text-[#111827] tabular-nums">{formatCurrency(order.amountPaise, order.currency)}</span>
+                        <span className={`ml-2 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                          order.fulfillmentStatus === "delivered" ? "bg-[#ECFDF5] text-[#059669]"
+                            : order.fulfillmentStatus === "shipped" ? "bg-[#EEF2FF] text-[#4F46E5]"
+                            : "bg-[#FEF3C7] text-[#D97706]"
+                        }`}>
+                          {order.fulfillmentStatus}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
 
-function StatCard({
-  label,
-  value,
-  href,
-  accent,
-}: {
-  label: string;
-  value: string;
-  href?: string;
-  accent?: boolean;
-}) {
-  const inner = (
-    <article
-      className={`rounded-xl border p-4 shadow-sm transition-colors ${
-        accent
-          ? "border-indigo-200 bg-indigo-50 hover:bg-indigo-100"
-          : "border-slate-200 bg-white hover:bg-slate-50"
-      } ${href ? "cursor-pointer" : ""}`}
-    >
-      <p className="text-xs font-semibold uppercase tracking-[0.13em] text-slate-500">{label}</p>
-      <p className={`mt-2 text-2xl font-semibold ${accent ? "text-indigo-700" : "text-slate-900"}`}>
-        {value}
-      </p>
+function PeriodTab({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link href={href} className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-all ${
+      active ? "bg-[#111827] text-white shadow-[0_1px_2px_rgba(0,0,0,0.1)]" : "text-[#6B7280] hover:text-[#111827]"
+    }`}>{label}</Link>
+  );
+}
+
+function StatCard({ label, value, subtitle, highlight }: { label: string; value: string; subtitle: string; highlight?: boolean }) {
+  return (
+    <article className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${
+      highlight ? "border-[#FDE68A] bg-[#FFFBEB]" : "border-[#E8ECF0] bg-white"
+    }`}>
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">{label}</p>
+      <p className={`mt-1.5 sm:mt-2 text-[18px] sm:text-[24px] font-bold tracking-[-0.02em] tabular-nums leading-none ${highlight ? "text-[#D97706]" : "text-[#111827]"}`}>{value}</p>
+      <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-[12px] text-[#9CA3AF] truncate">{subtitle}</p>
     </article>
   );
-
-  return href ? <Link href={href}>{inner}</Link> : inner;
 }
 
 function QuickLink({ href, title, description }: { href: string; title: string; description: string }) {
   return (
-    <Link
-      href={href}
-      className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-    >
-      <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-      <p className="mt-1 text-xs text-slate-500">{description}</p>
+    <Link href={href} className="group rounded-xl border border-[#E8ECF0] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-150 hover:border-[#D1D5DB] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5">
+      <h3 className="text-[13px] font-semibold text-[#111827] group-hover:text-[#4F46E5] transition-colors">{title}</h3>
+      <p className="mt-0.5 text-[12px] text-[#9CA3AF] leading-relaxed">{description}</p>
     </Link>
   );
 }

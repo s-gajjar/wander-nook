@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/orders", label: "Orders" },
   { href: "/admin/invoices", label: "Invoices" },
-  { href: "/admin/subscribers", label: "Subscribers" },
   { href: "/admin/events", label: "Events" },
   { href: "/admin/analytics", label: "Analytics" },
 ];
@@ -18,15 +18,15 @@ export default function AdminNav() {
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
   return (
-    <nav className="flex gap-1 overflow-x-auto px-4 py-2 sm:px-0 sm:py-0">
+    <nav className="flex gap-1 overflow-x-auto scrollbar-none">
       {navItems.map((item) => (
         <Link
           key={item.href}
           href={item.href}
-          className={`whitespace-nowrap rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
+          className={`whitespace-nowrap rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150 ${
             isActive(item.href)
-              ? "bg-slate-900 text-white"
-              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              ? "bg-[#111827] text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]"
+              : "text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#111827]"
           }`}
         >
           {item.label}

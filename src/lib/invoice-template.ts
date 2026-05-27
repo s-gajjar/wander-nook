@@ -393,7 +393,7 @@ function invoiceContent(input: InvoiceTemplateInput) {
           <p><strong>Razorpay Payment ID:</strong> ${escapeHtml(input.razorpayPaymentId)}</p>
           <p><strong>Razorpay Subscription ID:</strong> ${escapeHtml(input.razorpaySubscriptionId)}</p>
           ${input.razorpayInvoiceId ? `<p><strong>Razorpay Invoice ID:</strong> ${escapeHtml(input.razorpayInvoiceId)}</p>` : ""}
-          ${input.shopifyOrderName ? `<p><strong>Shopify Order:</strong> ${escapeHtml(input.shopifyOrderName)}</p>` : ""}
+          ${input.shopifyOrderName ? `<p><strong>Order:</strong> ${escapeHtml(input.shopifyOrderName)}</p>` : ""}
         </div>
       </section>
 

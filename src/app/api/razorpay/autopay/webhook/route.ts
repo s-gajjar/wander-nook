@@ -9,6 +9,12 @@ import {
   buildRazorpayPurchaseEventId,
   sendMetaPurchaseEvent,
 } from "@/src/lib/meta-conversions-api";
+import {
+  recordWebhookEvent,
+  markWebhookProcessed,
+  markWebhookFailed,
+  markWebhookSkipped,
+} from "@/src/lib/webhook-event-log";
 
 export const runtime = "nodejs";
 
@@ -203,8 +209,29 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // --- Webhook idempotency: record and deduplicate ---
+    const webhookEventId = request.headers.get("x-razorpay-event-id") || `${event}:${Date.now()}`;
+    const webhookRecord = await recordWebhookEvent({
+      provider: "razorpay",
+      eventType: event,
+      eventId: webhookEventId,
+      paymentId: body.payload?.payment?.entity?.id || body.payload?.invoice?.entity?.payment_id,
+      subscriptionId: body.payload?.subscription?.entity?.id || body.payload?.invoice?.entity?.subscription_id,
+      payload: body,
+    });
+
+    if (webhookRecord.isDuplicate) {
+      return NextResponse.json({
+        ok: true,
+        event,
+        deduplicated: true,
+        webhookRecordId: webhookRecord.id,
+      });
+    }
+
     const paymentDetails = await extractPaymentAndSubscriptionDetails(body);
     if (!paymentDetails) {
+      await markWebhookSkipped(webhookRecord.id, "missing_payment_or_subscription_reference");
       try {
         await reconcileRecentAutopayPayments({
           trigger: `webhook:${event}:missing_reference`,
@@ -329,6 +356,8 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error("Autopay reconciliation fallback failed after webhook processing", error);
     }
+
+    await markWebhookProcessed(webhookRecord.id);
 
     return NextResponse.json({
       ok: true,

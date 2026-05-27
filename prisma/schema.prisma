@@ -91,6 +91,7 @@ model Customer {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   invoices     Invoice[]
+  orders       Order[]
 }
 
 model Invoice {
@@ -135,6 +136,38 @@ model NewsletterSubscriber {
   updatedAt DateTime @updatedAt
 }
 
+model Order {
+  id                     String   @id @default(cuid())
+  orderNumber            String   @unique
+  customerId             String
+  planId                 String
+  planLabel              String
+  amountPaise            Int
+  currency               String   @default("INR")
+  status                 String   @default("paid")
+  fulfillmentStatus      String   @default("unfulfilled") // "unfulfilled" | "fulfilled" | "shipped" | "delivered"
+  paymentMethod          String // "razorpay-onetime" | "razorpay-autopay"
+  razorpayPaymentId      String   @unique
+  razorpayOrderId        String?  @unique
+  razorpaySubscriptionId String?
+  shippingAddress        Json?
+  notes                  String?
+  fulfilledAt            DateTime?
+  shippedAt              DateTime?
+  deliveredAt            DateTime?
+  trackingNumber         String?
+  trackingUrl            String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  customer               Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([customerId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([fulfillmentStatus])
+  @@index([status, fulfillmentStatus])
+  @@index([status, createdAt(sort: Desc)])
+}
+
 model ConversionEvent {
   id                     String   @id @default(cuid())
   eventName              String
@@ -146,4 +179,37 @@ model ConversionEvent {
   createdAt              DateTime @default(now())
 
   @@index([eventName, createdAt(sort: Desc)])
+}
+
+model WebhookEvent {
+  id            String    @id @default(cuid())
+  provider      String    // "razorpay"
+  eventType     String    // "invoice.paid", "payment.captured", etc.
+  eventId       String?   // Provider-supplied event ID for deduplication
+  paymentId     String?
+  subscriptionId String?
+  status        String    @default("received") // "received" | "processed" | "failed" | "skipped"
+  attempts      Int       @default(1)
+  payload       Json?     // Raw webhook body (for debugging)
+  error         String?   // Error message if failed
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider, status, createdAt(sort: Desc)])
+  @@index([paymentId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actor       String   // "admin", "system", "webhook"
+  action      String   // "order.fulfill", "order.ship", "invoice.resend", etc.
+  resourceType String  // "order", "invoice", "customer"
+  resourceId  String
+  metadata    Json?    // Before/after state, additional context
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([resourceType, resourceId, createdAt(sort: Desc)])
+  @@index([actor, createdAt(sort: Desc)])
 }
