@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
 import { formatCurrency } from "@/src/lib/invoice-template";
 import RevenueChart from "@/src/components/Admin/RevenueChart";
+import AnimatedStatCard from "@/src/components/Admin/AnimatedStatCard";
 
 export const dynamic = "force-dynamic";
 
@@ -201,12 +202,12 @@ async function AdminDashboardContent({
       {/* Header with period selector */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-[22px] sm:text-[26px] font-semibold text-[#111827] tracking-[-0.02em]">Dashboard</h1>
+          <h1 className="text-[22px] sm:text-[26px] font-semibold text-[#111827] dark:text-[#F9FAFB] tracking-[-0.02em]">Dashboard</h1>
           <p className="mt-1 text-[13px] sm:text-[14px] text-[#6B7280]">
-            Revenue and order overview · <span className="font-medium text-[#374151]">{periodLabel}</span>
+            Revenue and order overview · <span className="font-medium text-[#374151] dark:text-[#D1D5DB] dark:text-[#D1D5DB]">{periodLabel}</span>
           </p>
         </div>
-        <div className="flex rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] self-start sm:self-auto">
+        <div className="flex rounded-lg border border-[#E5E7EB] dark:border-[#374151] bg-white dark:bg-[#1F2937] p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] self-start sm:self-auto">
           <PeriodTab href="/admin?period=this-month" label="This Month" active={selectedPeriod === "this-month"} />
           <PeriodTab href="/admin?period=last-month" label="Last Month" active={selectedPeriod === "last-month"} />
           <PeriodTab href="/admin?period=all-time" label="All Time" active={selectedPeriod === "all-time"} />
@@ -215,20 +216,20 @@ async function AdminDashboardContent({
 
       {/* Stats cards */}
       <section className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard label="Total Revenue" value={formatCurrency(totalRevenuePaise, "INR")} subtitle={`${invoiceCount} inv + ${orderCount} ord`} />
-        <StatCard label="MRR" value={formatCurrency(mrr, "INR")} subtitle={`${subscriptions.length} active subs`} highlight={mrr === 0} />
-        <StatCard label="New This Month" value={String(newSubsThisMonth)} subtitle={`since ${thisMonthStart.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}`} />
-        <StatCard label="Active Subs" value={String(activeSubscriptions.length)} subtitle="Last 45d" />
+        <AnimatedStatCard label="Total Revenue" value={formatCurrency(totalRevenuePaise, "INR")} numericValue={totalRevenuePaise / 100} prefix="₹" subtitle={`${invoiceCount} inv + ${orderCount} ord`} />
+        <AnimatedStatCard label="MRR" value={formatCurrency(mrr, "INR")} numericValue={mrr / 100} prefix="₹" subtitle={`${subscriptions.length} active subs`} highlight={mrr === 0} />
+        <AnimatedStatCard label="New This Month" value={String(newSubsThisMonth)} numericValue={newSubsThisMonth} subtitle={`since ${thisMonthStart.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}`} />
+        <AnimatedStatCard label="Active Subs" value={String(activeSubscriptions.length)} numericValue={activeSubscriptions.length} subtitle="Last 45d" />
         <Link href="/admin/orders?fulfillment=unfulfilled" className="block">
-          <StatCard label="Unfulfilled" value={String(unfulfilledCount)} subtitle="Tap to view →" highlight={unfulfilledCount > 0} />
+          <AnimatedStatCard label="Unfulfilled" value={String(unfulfilledCount)} numericValue={unfulfilledCount} subtitle="Tap to view →" highlight={unfulfilledCount > 0} />
         </Link>
       </section>
 
       {/* Revenue chart */}
-      <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+      <section className="rounded-2xl border border-[#E8ECF0] dark:border-[#1F2937] bg-white dark:bg-[#111827] shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-[#F3F4F6] px-4 sm:px-6 py-4 gap-2">
           <div>
-            <h2 className="text-[14px] sm:text-[15px] font-semibold text-[#111827]">Revenue</h2>
+            <h2 className="text-[14px] sm:text-[15px] font-semibold text-[#111827] dark:text-[#F9FAFB]">Revenue</h2>
             <p className="text-[11px] sm:text-[12px] text-[#9CA3AF] mt-0.5">{chartSubtitle} · Daily breakdown</p>
           </div>
           <p className="text-[16px] sm:text-[18px] font-bold text-[#111827] tabular-nums">
@@ -251,9 +252,9 @@ async function AdminDashboardContent({
       {/* Tables */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent invoices */}
-        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
-            <h2 className="text-[15px] font-semibold text-[#111827]">Recent Invoices</h2>
+        <section className="rounded-2xl border border-[#E8ECF0] dark:border-[#1F2937] bg-white dark:bg-[#111827] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between border-b border-[#F3F4F6] dark:border-[#1F2937] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827] dark:text-[#F9FAFB]">Recent Invoices</h2>
             <Link href="/admin/invoices" className="text-[12px] font-medium text-[#6B7280] hover:text-[#111827] transition-colors">View all →</Link>
           </div>
           <div className="overflow-x-auto">
@@ -267,14 +268,14 @@ async function AdminDashboardContent({
               </thead>
               <tbody>
                 {recentInvoices.map((inv) => (
-                  <tr key={inv.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                  <tr key={inv.id} className="border-b border-[#F9FAFB] dark:border-[#1F2937] last:border-0 hover:bg-[#FAFBFC] dark:hover:bg-[#1F2937] transition-colors">
                     <td className="px-5 py-3">
-                      <Link href={`/invoice/${inv.publicToken}`} target="_blank" className="font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                      <Link href={`/invoice/${inv.publicToken}`} target="_blank" className="font-medium text-[#111827] dark:text-[#F9FAFB] hover:text-[#4F46E5] transition-colors">
                         {inv.invoiceNumber.slice(-12)}
                       </Link>
-                      <p className="text-[11px] text-[#9CA3AF] mt-0.5">{formatDate(inv.issuedAt)}</p>
+                      <p className="text-[11px] text-[#9CA3AF] dark:text-[#6B7280] mt-0.5">{formatDate(inv.issuedAt)}</p>
                     </td>
-                    <td className="px-5 py-3 text-[#374151]">{inv.customer.fullName}</td>
+                    <td className="px-5 py-3 text-[#374151] dark:text-[#D1D5DB]">{inv.customer.fullName}</td>
                     <td className="px-5 py-3 text-right font-medium text-[#111827] tabular-nums">{formatCurrency(inv.amountPaise, inv.currency)}</td>
                   </tr>
                 ))}
@@ -284,9 +285,9 @@ async function AdminDashboardContent({
         </section>
 
         {/* Recent orders */}
-        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="flex items-center justify-between border-b border-[#F3F4F6] px-5 py-4">
-            <h2 className="text-[15px] font-semibold text-[#111827]">Recent Orders</h2>
+        <section className="rounded-2xl border border-[#E8ECF0] dark:border-[#1F2937] bg-white dark:bg-[#111827] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="flex items-center justify-between border-b border-[#F3F4F6] dark:border-[#1F2937] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827] dark:text-[#F9FAFB]">Recent Orders</h2>
             <Link href="/admin/orders" className="text-[12px] font-medium text-[#6B7280] hover:text-[#111827] transition-colors">View all →</Link>
           </div>
           {recentOrders.length === 0 ? (
@@ -303,14 +304,14 @@ async function AdminDashboardContent({
                 </thead>
                 <tbody>
                   {recentOrders.map((order) => (
-                    <tr key={order.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#FAFBFC] transition-colors">
+                    <tr key={order.id} className="border-b border-[#F9FAFB] dark:border-[#1F2937] last:border-0 hover:bg-[#FAFBFC] dark:hover:bg-[#1F2937] transition-colors">
                       <td className="px-5 py-3">
-                        <Link href={`/admin/orders/${order.id}`} className="font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                        <Link href={`/admin/orders/${order.id}`} className="font-medium text-[#111827] dark:text-[#F9FAFB] hover:text-[#4F46E5] transition-colors">
                           {order.orderNumber}
                         </Link>
-                        <p className="text-[11px] text-[#9CA3AF] mt-0.5">{formatDate(order.createdAt)}</p>
+                        <p className="text-[11px] text-[#9CA3AF] dark:text-[#6B7280] mt-0.5">{formatDate(order.createdAt)}</p>
                       </td>
-                      <td className="px-5 py-3 text-[#374151]">{order.customer.fullName}</td>
+                      <td className="px-5 py-3 text-[#374151] dark:text-[#D1D5DB]">{order.customer.fullName}</td>
                       <td className="px-5 py-3 text-right">
                         <span className="font-medium text-[#111827] tabular-nums">{formatCurrency(order.amountPaise, order.currency)}</span>
                         <span className={`ml-2 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
@@ -333,19 +334,19 @@ async function AdminDashboardContent({
       {/* City/State Breakdown + Expiring Subs + Churn */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* City breakdown */}
-        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="border-b border-[#F3F4F6] px-5 py-4">
-            <h2 className="text-[15px] font-semibold text-[#111827]">Customers by City</h2>
+        <section className="rounded-2xl border border-[#E8ECF0] dark:border-[#1F2937] bg-white dark:bg-[#111827] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-[#F3F4F6] dark:border-[#1F2937] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827] dark:text-[#F9FAFB]">Customers by City</h2>
           </div>
           {cityBreakdown.length === 0 ? (
             <div className="px-5 py-8 text-center"><p className="text-[13px] text-[#9CA3AF]">No data yet.</p></div>
           ) : (
-            <div className="divide-y divide-[#F9FAFB]">
+            <div className="divide-y divide-[#F9FAFB] dark:divide-[#1F2937]">
               {cityBreakdown.map((item) => (
                 <div key={`${item.city}-${item.state}`} className="flex items-center justify-between px-5 py-3">
                   <div>
-                    <p className="text-[13px] font-medium text-[#111827]">{item.city}</p>
-                    <p className="text-[11px] text-[#9CA3AF]">{item.state}</p>
+                    <p className="text-[13px] font-medium text-[#111827] dark:text-[#F9FAFB]">{item.city}</p>
+                    <p className="text-[11px] text-[#9CA3AF] dark:text-[#6B7280]">{item.state}</p>
                   </div>
                   <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-semibold tabular-nums">{item._count}</span>
                 </div>
@@ -355,26 +356,26 @@ async function AdminDashboardContent({
         </section>
 
         {/* Expiring Annual Subscriptions */}
-        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="border-b border-[#F3F4F6] px-5 py-4">
-            <h2 className="text-[15px] font-semibold text-[#111827]">Expiring Soon</h2>
-            <p className="text-[11px] text-[#9CA3AF] mt-0.5">Annual subs expiring in 30 days</p>
+        <section className="rounded-2xl border border-[#E8ECF0] dark:border-[#1F2937] bg-white dark:bg-[#111827] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-[#F3F4F6] dark:border-[#1F2937] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827] dark:text-[#F9FAFB]">Expiring Soon</h2>
+            <p className="text-[11px] text-[#9CA3AF] dark:text-[#6B7280] mt-0.5">Annual subs expiring in 30 days</p>
           </div>
           {expiringSubscriptions.length === 0 ? (
             <div className="px-5 py-8 text-center"><p className="text-[13px] text-[#9CA3AF]">None expiring soon 🎉</p></div>
           ) : (
-            <div className="divide-y divide-[#F9FAFB]">
+            <div className="divide-y divide-[#F9FAFB] dark:divide-[#1F2937]">
               {expiringSubscriptions.map((sub) => (
                 <div key={sub.id} className="px-5 py-3">
                   <div className="flex items-center justify-between">
-                    <Link href={`/admin/customers/${sub.customerId}`} className="text-[13px] font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                    <Link href={`/admin/customers/${sub.customerId}`} className="text-[13px] font-medium text-[#111827] dark:text-[#F9FAFB] hover:text-[#4F46E5] transition-colors">
                       {sub.customer.fullName}
                     </Link>
                     <span className="text-[11px] text-[#D97706] font-medium">
                       {sub.expiresAt ? formatDate(sub.expiresAt) : "—"}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#9CA3AF] mt-0.5">{sub.planLabel} · ₹{(sub.amountPaise / 100).toFixed(0)}</p>
+                  <p className="text-[11px] text-[#9CA3AF] dark:text-[#6B7280] mt-0.5">{sub.planLabel} · ₹{(sub.amountPaise / 100).toFixed(0)}</p>
                 </div>
               ))}
             </div>
@@ -382,19 +383,19 @@ async function AdminDashboardContent({
         </section>
 
         {/* Recent Churn / Failed */}
-        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <div className="border-b border-[#F3F4F6] px-5 py-4">
-            <h2 className="text-[15px] font-semibold text-[#111827]">Churn & Failures</h2>
-            <p className="text-[11px] text-[#9CA3AF] mt-0.5">Cancelled or failed subscriptions</p>
+        <section className="rounded-2xl border border-[#E8ECF0] dark:border-[#1F2937] bg-white dark:bg-[#111827] shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-[#F3F4F6] dark:border-[#1F2937] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827] dark:text-[#F9FAFB]">Churn & Failures</h2>
+            <p className="text-[11px] text-[#9CA3AF] dark:text-[#6B7280] mt-0.5">Cancelled or failed subscriptions</p>
           </div>
           {failedSubscriptions.length === 0 ? (
             <div className="px-5 py-8 text-center"><p className="text-[13px] text-[#9CA3AF]">No churn — all good! ✅</p></div>
           ) : (
-            <div className="divide-y divide-[#F9FAFB]">
+            <div className="divide-y divide-[#F9FAFB] dark:divide-[#1F2937]">
               {failedSubscriptions.map((sub) => (
                 <div key={sub.id} className="px-5 py-3">
                   <div className="flex items-center justify-between">
-                    <Link href={`/admin/customers/${sub.customerId}`} className="text-[13px] font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                    <Link href={`/admin/customers/${sub.customerId}`} className="text-[13px] font-medium text-[#111827] dark:text-[#F9FAFB] hover:text-[#4F46E5] transition-colors">
                       {sub.customer.fullName}
                     </Link>
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -403,7 +404,7 @@ async function AdminDashboardContent({
                       {sub.status}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#9CA3AF] mt-0.5">
+                  <p className="text-[11px] text-[#9CA3AF] dark:text-[#6B7280] mt-0.5">
                     {sub.planLabel} · {sub.failureReason || (sub.status === "cancelled" ? "Customer cancelled" : "Payment issue")}
                   </p>
                 </div>
@@ -419,7 +420,7 @@ async function AdminDashboardContent({
 function PeriodTab({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
     <Link href={href} className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-all ${
-      active ? "bg-[#111827] text-white shadow-[0_1px_2px_rgba(0,0,0,0.1)]" : "text-[#6B7280] hover:text-[#111827]"
+      active ? "bg-[#111827] dark:bg-white text-white dark:text-[#111827] shadow-[0_1px_2px_rgba(0,0,0,0.1)]" : "text-[#6B7280] hover:text-[#111827] dark:hover:text-white"
     }`}>{label}</Link>
   );
 }
@@ -427,20 +428,20 @@ function PeriodTab({ href, label, active }: { href: string; label: string; activ
 function StatCard({ label, value, subtitle, highlight }: { label: string; value: string; subtitle: string; highlight?: boolean }) {
   return (
     <article className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${
-      highlight ? "border-[#FDE68A] bg-[#FFFBEB]" : "border-[#E8ECF0] bg-white"
+      highlight ? "border-[#FDE68A] bg-[#FFFBEB] dark:border-[#92400E] dark:bg-[#78350F]/20" : "border-[#E8ECF0] bg-white dark:border-[#1F2937] dark:bg-[#111827]"
     }`}>
-      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF]">{label}</p>
-      <p className={`mt-1.5 sm:mt-2 text-[18px] sm:text-[24px] font-bold tracking-[-0.02em] tabular-nums leading-none ${highlight ? "text-[#D97706]" : "text-[#111827]"}`}>{value}</p>
-      <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-[12px] text-[#9CA3AF] truncate">{subtitle}</p>
+      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF] dark:text-[#6B7280]">{label}</p>
+      <p className={`mt-1.5 sm:mt-2 text-[18px] sm:text-[24px] font-bold tracking-[-0.02em] tabular-nums leading-none ${highlight ? "text-[#D97706]" : "text-[#111827] dark:text-[#F9FAFB]"}`}>{value}</p>
+      <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-[12px] text-[#9CA3AF] dark:text-[#6B7280] truncate">{subtitle}</p>
     </article>
   );
 }
 
 function QuickLink({ href, title, description }: { href: string; title: string; description: string }) {
   return (
-    <Link href={href} className="group rounded-xl border border-[#E8ECF0] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-150 hover:border-[#D1D5DB] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5">
-      <h3 className="text-[13px] font-semibold text-[#111827] group-hover:text-[#4F46E5] transition-colors">{title}</h3>
-      <p className="mt-0.5 text-[12px] text-[#9CA3AF] leading-relaxed">{description}</p>
+    <Link href={href} className="group rounded-xl border border-[#E8ECF0] dark:border-[#1F2937] bg-white dark:bg-[#111827] p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-150 hover:border-[#D1D5DB] dark:hover:border-[#374151] hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:-translate-y-0.5">
+      <h3 className="text-[13px] font-semibold text-[#111827] dark:text-[#F9FAFB] group-hover:text-[#4F46E5] transition-colors">{title}</h3>
+      <p className="mt-0.5 text-[12px] text-[#9CA3AF] dark:text-[#6B7280] leading-relaxed">{description}</p>
     </Link>
   );
 }

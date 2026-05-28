@@ -5,6 +5,8 @@ import Link from "next/link";
 import AdminNav from "@/src/components/Admin/AdminNav";
 import CommandPalette from "@/src/components/Admin/CommandPalette";
 import SearchTrigger from "@/src/components/Admin/SearchTrigger";
+import { ThemeProvider } from "@/src/components/Admin/ThemeProvider";
+import ThemeToggle from "@/src/components/Admin/ThemeToggle";
 
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   // On Preview, Vercel Deployment Protection handles access control.
@@ -20,8 +22,9 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FB]">
-      <header className="sticky top-0 z-30 border-b border-[#E8ECF0] bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60">
+    <ThemeProvider>
+    <div className="min-h-screen bg-[#F8F9FB] dark:bg-[#0F1117] transition-colors">
+      <header className="sticky top-0 z-30 border-b border-[#E8ECF0] dark:border-[#1F2937] bg-white/80 dark:bg-[#111827]/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-[#111827]/60">
         <div className="mx-auto flex max-w-[1400px] items-center justify-between px-4 sm:px-5 py-3">
           <div className="flex items-center gap-4 sm:gap-8">
             <Link href="/admin" className="flex items-center gap-2">
@@ -30,7 +33,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
                 alt="WanderNook"
                 width={120}
                 height={32}
-                className="h-7 w-auto sm:h-8"
+                className="h-7 w-auto sm:h-8 dark:invert"
               />
             </Link>
             <div className="hidden md:block">
@@ -39,10 +42,11 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
           </div>
           <div className="flex items-center gap-3">
             <SearchTrigger />
+            <ThemeToggle />
             <form action="/api/admin/logout" method="POST">
               <button
                 type="submit"
-                className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-1.5 sm:px-3.5 sm:py-2 text-[12px] sm:text-[13px] font-medium text-[#DC2626] hover:bg-[#FEE2E2] transition-colors"
+                className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-1.5 sm:px-3.5 sm:py-2 text-[12px] sm:text-[13px] font-medium text-[#DC2626] hover:bg-[#FEE2E2] transition-colors dark:border-[#7F1D1D] dark:bg-[#450A0A] dark:text-[#FCA5A5] dark:hover:bg-[#7F1D1D]"
               >
                 Logout
               </button>
@@ -50,7 +54,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
           </div>
         </div>
         {/* Mobile nav */}
-        <div className="border-t border-[#F3F4F6] md:hidden">
+        <div className="border-t border-[#F3F4F6] dark:border-[#1F2937] md:hidden">
           <div className="px-3 py-2 overflow-x-auto scrollbar-none">
             <AdminNav />
           </div>
@@ -59,5 +63,6 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
       <main className="mx-auto max-w-[1400px] px-4 sm:px-5 py-5 sm:py-8">{children}</main>
       <CommandPalette />
     </div>
+    </ThemeProvider>
   );
 }

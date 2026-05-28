@@ -117,9 +117,9 @@ export default function CommandPalette() {
 
       {/* Palette */}
       <div className="fixed inset-x-0 top-[15%] z-50 mx-auto w-full max-w-[560px] px-4">
-        <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-2xl shadow-black/20 animate-in slide-in-from-top-2 duration-200">
+        <div className="overflow-hidden rounded-2xl border border-[#E5E7EB] dark:border-[#374151] bg-white dark:bg-[#1F2937] shadow-2xl shadow-black/20 animate-in slide-in-from-top-2 duration-200">
           {/* Input */}
-          <div className="flex items-center gap-3 border-b border-[#F3F4F6] px-4 py-3">
+          <div className="flex items-center gap-3 border-b border-[#F3F4F6] dark:border-[#374151] px-4 py-3">
             <svg className="w-5 h-5 text-[#9CA3AF] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -129,7 +129,7 @@ export default function CommandPalette() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Search customers, orders, pages..."
-              className="flex-1 text-[15px] text-[#111827] placeholder:text-[#9CA3AF] outline-none bg-transparent"
+              className="flex-1 text-[15px] text-[#111827] dark:text-[#F9FAFB] placeholder:text-[#9CA3AF] outline-none bg-transparent"
             />
             {loading && (
               <div className="w-4 h-4 border-2 border-[#E5E7EB] border-t-[#6366F1] rounded-full animate-spin" />
@@ -187,7 +187,7 @@ export default function CommandPalette() {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-[#F3F4F6] px-4 py-2 flex items-center gap-4 text-[11px] text-[#9CA3AF]">
+          <div className="border-t border-[#F3F4F6] dark:border-[#374151] px-4 py-2 flex items-center gap-4 text-[11px] text-[#9CA3AF]">
             <span className="flex items-center gap-1"><kbd className="font-mono">↑↓</kbd> navigate</span>
             <span className="flex items-center gap-1"><kbd className="font-mono">↵</kbd> select</span>
             <span className="flex items-center gap-1"><kbd className="font-mono">esc</kbd> close</span>
