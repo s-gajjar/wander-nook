@@ -242,35 +242,30 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     size: 14,
     color: COLOR_INK,
   });
-  drawTextBlock({
-    page,
-    text: `Email ID: ${safeText(company.email)}`,
-    x: issuerInfoX,
-    top: issuerTop + 38,
-    maxWidth: 250,
-    font: regularFont,
-    size: 10.5,
-    color: COLOR_MUTED,
-  });
-  drawTextBlock({
-    page,
-    text: `Contact Number: ${safeText(company.phone)}`,
-    x: issuerInfoX,
-    top: issuerTop + 54,
-    maxWidth: 250,
-    font: regularFont,
-    size: 10.5,
-    color: COLOR_MUTED,
-  });
-  drawTextBlock({
-    page,
-    text: `GST Number: ${safeText(company.gstNumber)}`,
-    x: issuerInfoX,
-    top: issuerTop + 70,
-    maxWidth: 250,
-    font: regularFont,
-    size: 10.5,
-    color: COLOR_MUTED,
+
+  // Draw label+value pairs with bold labels
+  const issuerDetails = [
+    { label: "Email ID: ", value: safeText(company.email) },
+    { label: "Contact Number: ", value: safeText(company.phone) },
+    { label: "GST Number: ", value: safeText(company.gstNumber) },
+  ];
+  issuerDetails.forEach((item, idx) => {
+    const yPos = issuerTop + 36 + idx * 16;
+    const labelWidth = boldFont.widthOfTextAtSize(item.label, 10.5);
+    page.drawText(sanitizePdfText(item.label), {
+      x: issuerInfoX,
+      y: topToBottomY(yPos, 10.5),
+      size: 10.5,
+      font: boldFont,
+      color: COLOR_INK,
+    });
+    page.drawText(sanitizePdfText(item.value), {
+      x: issuerInfoX + labelWidth,
+      y: topToBottomY(yPos, 10.5),
+      size: 10.5,
+      font: regularFont,
+      color: COLOR_MUTED,
+    });
   });
 
   if (primaryLogo) {
@@ -289,41 +284,37 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     page,
     text: "Tax Invoice",
     x: marginX + 14,
-    top: taxHeaderTop + 14,
+    top: taxHeaderTop + 12,
     maxWidth: 260,
     font: boldFont,
-    size: 24,
+    size: 22,
     color: COLOR_BRAND,
   });
-  drawTextBlock({
-    page,
-    text: `Invoice No: ${safeText(input.invoiceNumber)}`,
-    x: marginX + 14,
-    top: taxHeaderTop + 48,
-    maxWidth: 280,
-    font: regularFont,
-    size: 11,
-    color: COLOR_MUTED,
-  });
-  drawTextBlock({
-    page,
-    text: `Issue Date: ${formatDate(input.issuedAt)}`,
-    x: marginX + 14,
-    top: taxHeaderTop + 63,
-    maxWidth: 280,
-    font: regularFont,
-    size: 11,
-    color: COLOR_MUTED,
-  });
-  drawTextBlock({
-    page,
-    text: `Payment Date: ${formatDate(input.paymentCapturedAt || input.issuedAt)}`,
-    x: marginX + 14,
-    top: taxHeaderTop + 78,
-    maxWidth: 320,
-    font: regularFont,
-    size: 11,
-    color: COLOR_MUTED,
+
+  // Invoice meta with bold labels
+  const invoiceMeta = [
+    { label: "Invoice No: ", value: safeText(input.invoiceNumber) },
+    { label: "Issue Date: ", value: formatDate(input.issuedAt) },
+    { label: "Payment Date: ", value: formatDate(input.paymentCapturedAt || input.issuedAt) },
+  ];
+  invoiceMeta.forEach((item, idx) => {
+    const yPos = taxHeaderTop + 42 + idx * 14;
+    const metaX = marginX + 14;
+    const labelW = boldFont.widthOfTextAtSize(item.label, 10.5);
+    page.drawText(sanitizePdfText(item.label), {
+      x: metaX,
+      y: topToBottomY(yPos, 10.5),
+      size: 10.5,
+      font: boldFont,
+      color: COLOR_INK,
+    });
+    page.drawText(sanitizePdfText(item.value), {
+      x: metaX + labelW,
+      y: topToBottomY(yPos, 10.5),
+      size: 10.5,
+      font: regularFont,
+      color: COLOR_MUTED,
+    });
   });
 
   const customerAddress = [
@@ -343,7 +334,7 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   const leftInfoX = marginX;
   const rightInfoX = marginX + infoBoxW + infoGap;
 
-  const renderInfoBox = (title: string, lines: string[], x: number) => {
+  const renderInfoBox = (title: string, lines: { label?: string; value: string }[], x: number) => {
     drawBox(page, x, bodyTop, infoBoxW, infoBoxH);
     drawTextBlock({
       page,
@@ -355,26 +346,51 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
       size: 10,
       color: COLOR_MUTED,
     });
-    drawTextBlock({
-      page,
-      text: lines.join("\n"),
-      x: x + 10,
-      top: bodyTop + 24,
-      maxWidth: infoBoxW - 20,
-      font: regularFont,
-      size: 10.5,
-      color: COLOR_INK,
-      lineHeight: 14,
-    });
+    let lineY = bodyTop + 26;
+    for (const item of lines) {
+      if (item.label) {
+        const labelW = boldFont.widthOfTextAtSize(item.label, 10);
+        page.drawText(sanitizePdfText(item.label), {
+          x: x + 10,
+          y: topToBottomY(lineY, 10),
+          size: 10,
+          font: boldFont,
+          color: COLOR_INK,
+        });
+        const valLines = wrapText(item.value, regularFont, 10, infoBoxW - 24 - labelW);
+        valLines.forEach((vl, vi) => {
+          page.drawText(sanitizePdfText(vl), {
+            x: x + 10 + labelW,
+            y: topToBottomY(lineY + vi * 13, 10),
+            size: 10,
+            font: regularFont,
+            color: COLOR_INK,
+          });
+        });
+        lineY += Math.max(1, valLines.length) * 13;
+      } else {
+        const valLines = wrapText(item.value, regularFont, 10, infoBoxW - 20);
+        valLines.forEach((vl, vi) => {
+          page.drawText(sanitizePdfText(vl), {
+            x: x + 10,
+            y: topToBottomY(lineY + vi * 13, 10),
+            size: 10,
+            font: regularFont,
+            color: COLOR_INK,
+          });
+        });
+        lineY += Math.max(1, valLines.length) * 13;
+      }
+    }
   };
 
   renderInfoBox(
     "Billed To",
     [
-      safeText(input.customer.fullName),
-      safeText(input.customer.email),
-      safeText(input.customer.phone),
-      safeText(customerAddress),
+      { value: safeText(input.customer.fullName) },
+      { value: safeText(input.customer.email) },
+      { value: safeText(input.customer.phone) },
+      { value: safeText(customerAddress) },
     ],
     leftInfoX
   );
@@ -382,13 +398,13 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   renderInfoBox(
     "Payment Reference",
     [
-      `${safeText(input.planLabel)} (${safeText(input.billingCycle)})`,
-      `Period: ${formatDate(input.periodStart)} - ${formatDate(input.periodEnd)}`,
-      `Payment ID: ${safeText(input.razorpayPaymentId)}`,
-      `Subscription ID: ${safeText(input.razorpaySubscriptionId)}`,
-      input.razorpayInvoiceId ? `Invoice ID: ${safeText(input.razorpayInvoiceId)}` : "",
-      input.shopifyOrderName ? `Order: ${safeText(input.shopifyOrderName)}` : "",
-    ].filter(Boolean),
+      { label: "Plan: ", value: `${safeText(input.planLabel)} (${safeText(input.billingCycle)})` },
+      { label: "Period: ", value: `${formatDate(input.periodStart)} - ${formatDate(input.periodEnd)}` },
+      { label: "Payment ID: ", value: safeText(input.razorpayPaymentId) },
+      ...(input.razorpaySubscriptionId ? [{ label: "Subscription ID: ", value: safeText(input.razorpaySubscriptionId) }] : []),
+      ...(input.razorpayInvoiceId ? [{ label: "Invoice ID: ", value: safeText(input.razorpayInvoiceId) }] : []),
+      ...(input.shopifyOrderName ? [{ label: "Order: ", value: safeText(input.shopifyOrderName) }] : []),
+    ],
     rightInfoX
   );
 
@@ -396,7 +412,9 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   const tableTop = bodyTop + infoBoxH + 16;
   const tableWidth = contentWidth;
   const headerHeight = 28;
-  const rowHeight = 42;
+  const rowHeight = 32;
+  const periodColX = tableX + tableWidth - 260;
+  const periodColW = 150;
 
   drawBox(page, tableX, tableTop, tableWidth, headerHeight, COLOR_TABLE_HEAD);
   drawTextBlock({
@@ -411,10 +429,10 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   });
   drawTextBlock({
     page,
-    text: "PERIOD",
-    x: tableX + tableWidth - 220,
+    text: "SUBSCRIPTION PERIOD",
+    x: periodColX,
     top: tableTop + 10,
-    maxWidth: 90,
+    maxWidth: periodColW,
     font: boldFont,
     size: 9.5,
     color: COLOR_MUTED,
@@ -434,8 +452,8 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     page,
     text: `${safeText(input.planLabel)} subscription charge`,
     x: tableX + 8,
-    top: tableTop + 44,
-    maxWidth: tableWidth - 240,
+    top: tableTop + headerHeight + 11,
+    maxWidth: periodColX - tableX - 16,
     font: regularFont,
     size: 10.5,
     color: COLOR_INK,
@@ -443,9 +461,9 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
   drawTextBlock({
     page,
     text: `${formatDate(input.periodStart)} - ${formatDate(input.periodEnd)}`,
-    x: tableX + tableWidth - 220,
-    top: tableTop + 44,
-    maxWidth: 90,
+    x: periodColX,
+    top: tableTop + headerHeight + 11,
+    maxWidth: periodColW,
     font: regularFont,
     size: 10.5,
     color: COLOR_INK,
@@ -454,14 +472,14 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     page,
     text: formatCurrencyForPdf(input.amountPaise, input.currency),
     rightX: tableX + tableWidth - 18,
-    top: tableTop + 44,
+    top: tableTop + headerHeight + 11,
     font: regularFont,
     size: 10.5,
     color: COLOR_INK,
   });
 
   const summaryX = tableX + tableWidth - 250;
-  const summaryTop = tableTop + 90;
+  const summaryTop = tableTop + headerHeight + rowHeight + 14;
   const summaryW = 250;
 
   drawBox(page, summaryX, summaryTop, summaryW, 24);
