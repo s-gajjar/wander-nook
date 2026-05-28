@@ -102,8 +102,11 @@ async function AdminDashboardContent({
     return sum;
   }, 0);
 
-  // Revenue forecast: MRR + known annual renewals this month
-  const forecastNextMonth = mrr; // MRR is the baseline forecast
+  // New subs this month
+  const thisMonthStart = getMonthRange(0).start;
+  const newSubsThisMonth = await prisma.subscription.count({
+    where: { startedAt: { gte: thisMonthStart } },
+  });
 
   // City/State breakdown
   const cityBreakdown = await prisma.customer.groupBy({
@@ -214,7 +217,7 @@ async function AdminDashboardContent({
       <section className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard label="Total Revenue" value={formatCurrency(totalRevenuePaise, "INR")} subtitle={`${invoiceCount} inv + ${orderCount} ord`} />
         <StatCard label="MRR" value={formatCurrency(mrr, "INR")} subtitle={`${subscriptions.length} active subs`} highlight={mrr === 0} />
-        <StatCard label="Forecast" value={formatCurrency(forecastNextMonth, "INR")} subtitle="Expected next month" />
+        <StatCard label="New This Month" value={String(newSubsThisMonth)} subtitle={`since ${thisMonthStart.toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}`} />
         <StatCard label="Active Subs" value={String(activeSubscriptions.length)} subtitle="Last 45d" />
         <Link href="/admin/orders?fulfillment=unfulfilled" className="block">
           <StatCard label="Unfulfilled" value={String(unfulfilledCount)} subtitle="Tap to view →" highlight={unfulfilledCount > 0} />
