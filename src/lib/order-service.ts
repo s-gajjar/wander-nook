@@ -27,6 +27,7 @@ export type CreateOrderInput = {
 export type CreateOrderResult = {
   orderId: string;
   orderNumber: string;
+  customerId: string;
   created: boolean;
   notificationSent: boolean;
   customerEmailSent: boolean;
@@ -265,12 +266,14 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   // Check for existing order (idempotency via razorpayPaymentId unique constraint)
   const existing = await prisma.order.findUnique({
     where: { razorpayPaymentId: input.razorpayPaymentId },
+    select: { id: true, orderNumber: true, customerId: true },
   });
 
   if (existing) {
     return {
       orderId: existing.id,
       orderNumber: existing.orderNumber,
+      customerId: existing.customerId,
       created: false,
       notificationSent: false,
       customerEmailSent: false,
@@ -384,6 +387,7 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   return {
     orderId: order.id,
     orderNumber: order.orderNumber,
+    customerId: customer.id,
     created: true,
     notificationSent,
     customerEmailSent,

@@ -135,28 +135,27 @@ function invoiceStyles() {
 
     .issuer-row {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 18px;
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 12px 14px;
+      padding: 14px 16px;
       margin-bottom: 12px;
       background: #ffffff;
     }
 
     .issuer {
       display: flex;
-      align-items: flex-start;
-      gap: 12px;
+      align-items: center;
+      gap: 14px;
     }
 
     .issuer .stamp {
-      width: 54px;
-      height: 54px;
+      width: 56px;
+      height: 56px;
       object-fit: contain;
       flex: 0 0 auto;
-      margin-top: 2px;
     }
 
     .issuer-name {
@@ -168,7 +167,7 @@ function invoiceStyles() {
     }
 
     .issuer-detail {
-      margin: 1px 0;
+      margin: 2px 0;
       font-size: 13px;
       color: #334155;
       line-height: 1.45;
@@ -181,26 +180,30 @@ function invoiceStyles() {
 
     .top {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      border-bottom: 1px solid var(--line);
-      padding-bottom: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px 16px;
       margin-bottom: 14px;
+      background: #ffffff;
     }
 
     .title {
-      margin: 0;
+      margin: 0 0 6px;
       color: var(--brand);
       font-size: 24px;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
+      font-weight: 800;
     }
 
     .meta {
-      margin: 3px 0 0;
+      margin: 2px 0;
       font-size: 13px;
       color: var(--muted);
+      line-height: 1.5;
     }
 
     .wordmark {
@@ -426,9 +429,16 @@ function invoiceContent(input: InvoiceTemplateInput) {
       </div>
 
       <div class="note">
-        This is a computer-generated invoice for subscription payment. GST Number: <strong>${escapeHtml(
-          company.gstNumber
-        )}</strong>.
+        <p style="margin: 0 0 8px; font-size: 12px; color: #334155; font-weight: 600;">Important Information:</p>
+        <ul style="margin: 0 0 10px; padding-left: 18px; font-size: 12px; color: #475569; line-height: 1.7;">
+          <li>We dispatch on the 1st and 16th of every month. You should typically receive it within 2–3 days.</li>
+          <li>Your subscription begins from the earliest 1st or 16th.</li>
+        </ul>
+        <p style="margin: 0; font-size: 11px; color: #64748b; border-top: 1px dashed #ced6e3; padding-top: 8px;">
+          This is a computer-generated invoice for subscription payment. GST Number: <strong>${escapeHtml(
+            company.gstNumber
+          )}</strong>.
+        </p>
       </div>
 
       <p class="footer">For support, write to contact@wandernook.in.</p>

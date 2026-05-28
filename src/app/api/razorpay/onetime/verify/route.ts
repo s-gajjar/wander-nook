@@ -5,6 +5,7 @@ import {
   razorpayRequest,
 } from "@/src/lib/razorpay-server";
 import { createOrder } from "@/src/lib/order-service";
+import { ensureInvoiceForOnetimePayment } from "@/src/lib/invoice-service";
 import { trackConversionEvent } from "@/src/lib/conversion-tracking";
 import {
   buildRazorpayPurchaseEventId,
@@ -139,6 +140,36 @@ export async function POST(request: NextRequest) {
       paymentMethod: "razorpay-onetime",
     });
 
+    // Create invoice + send invoice email with PDF
+    let invoice:
+      | {
+          invoiceId: string;
+          invoiceNumber: string;
+          publicToken: string;
+          created: boolean;
+          emailSent: boolean;
+          emailSkippedReason?: string;
+        }
+      | undefined;
+    let invoiceError: string | undefined;
+
+    try {
+      invoice = await ensureInvoiceForOnetimePayment({
+        paymentId,
+        razorpayOrderId: orderId,
+        sourceEvent: "onetime_verify",
+        customerId: orderResult.customerId,
+        planId: plan.id,
+        planLabel: plan.displayName,
+        amountPaise: plan.amountPaise,
+        currency: plan.currency,
+        durationMonths: plan.durationMonths,
+      });
+    } catch (error) {
+      invoiceError = error instanceof Error ? error.message : "Failed to generate invoice.";
+      console.error("One-time verify invoice generation failed", error);
+    }
+
     // Track conversion
     await trackConversionEvent({
       eventName: "onetime_payment_verified",
@@ -202,6 +233,8 @@ export async function POST(request: NextRequest) {
         id: orderResult.orderId,
         orderNumber: orderResult.orderNumber,
       },
+      invoice,
+      invoiceError,
     });
   } catch (error) {
     console.error("Failed to verify Razorpay one-time payment", error);

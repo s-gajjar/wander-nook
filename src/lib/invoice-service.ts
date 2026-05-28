@@ -610,3 +610,125 @@ export async function renderInvoicePdf(publicToken: string) {
 
   return generateInvoicePdfBuffer(toTemplateInput(invoice));
 }
+
+// --- One-time payment invoice ---
+
+export type EnsureInvoiceForOnetimePaymentOptions = {
+  paymentId: string;
+  razorpayOrderId: string;
+  sourceEvent: string;
+  customerId: string;
+  planId: string;
+  planLabel: string;
+  amountPaise: number;
+  currency: string;
+  durationMonths: number;
+};
+
+export async function ensureInvoiceForOnetimePayment(
+  options: EnsureInvoiceForOnetimePaymentOptions
+): Promise<EnsureInvoiceForAutopayPaymentResult> {
+  const paymentId = normalizeText(options.paymentId, 80);
+  if (!paymentId) {
+    throw new Error("Missing payment ID for invoice creation.");
+  }
+
+  // Check if invoice already exists for this payment
+  const existing = await getInvoiceByPaymentId(paymentId);
+  if (existing) {
+    const needsEmail = !existing.emailSentAt;
+    if (!needsEmail) {
+      return {
+        invoiceId: existing.id,
+        invoiceNumber: existing.invoiceNumber,
+        publicToken: existing.publicToken,
+        created: false,
+        emailSent: true,
+      };
+    }
+    const emailResult = await deliverInvoiceEmail(existing);
+    return {
+      invoiceId: existing.id,
+      invoiceNumber: existing.invoiceNumber,
+      publicToken: existing.publicToken,
+      created: false,
+      emailSent: emailResult.emailSent,
+      emailSkippedReason: emailResult.emailSkippedReason,
+    };
+  }
+
+  // Get customer
+  const customer = await prisma.customer.findUnique({
+    where: { id: options.customerId },
+  });
+  if (!customer) {
+    throw new Error("Customer not found for invoice creation.");
+  }
+
+  const issuedAt = new Date();
+  const periodStart = new Date(issuedAt);
+  const periodEnd = new Date(issuedAt);
+  periodEnd.setMonth(periodEnd.getMonth() + options.durationMonths);
+
+  const invoiceNumber = buildInvoiceNumber(paymentId, issuedAt);
+
+  let invoice: NonNullable<InvoiceWithCustomer>;
+
+  try {
+    invoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        customerId: customer.id,
+        planId: options.planId,
+        planLabel: options.planLabel,
+        billingCycle: options.durationMonths >= 12 ? "yearly" : "monthly",
+        amountPaise: options.amountPaise,
+        currency: options.currency,
+        periodStart,
+        periodEnd,
+        issuedAt,
+        paymentCapturedAt: issuedAt,
+        razorpayPaymentId: paymentId,
+        razorpaySubscriptionId: options.razorpayOrderId, // Store order ID in subscription field for reference
+        sourceEvent: normalizeText(options.sourceEvent, 120) || "onetime_verify",
+      },
+      include: { customer: true },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      const existingInvoice = await getInvoiceByPaymentId(paymentId);
+      if (existingInvoice) {
+        if (existingInvoice.emailSentAt) {
+          return {
+            invoiceId: existingInvoice.id,
+            invoiceNumber: existingInvoice.invoiceNumber,
+            publicToken: existingInvoice.publicToken,
+            created: false,
+            emailSent: true,
+          };
+        }
+        const emailResult = await deliverInvoiceEmail(existingInvoice);
+        return {
+          invoiceId: existingInvoice.id,
+          invoiceNumber: existingInvoice.invoiceNumber,
+          publicToken: existingInvoice.publicToken,
+          created: false,
+          emailSent: emailResult.emailSent,
+          emailSkippedReason: emailResult.emailSkippedReason,
+        };
+      }
+    }
+    throw error;
+  }
+
+  const emailResult = await deliverInvoiceEmail(invoice);
+
+  return {
+    invoiceId: invoice.id,
+    invoiceNumber: invoice.invoiceNumber,
+    publicToken: invoice.publicToken,
+    created: true,
+    emailSent: emailResult.emailSent,
+    emailSkippedReason: emailResult.emailSkippedReason,
+  };
+}

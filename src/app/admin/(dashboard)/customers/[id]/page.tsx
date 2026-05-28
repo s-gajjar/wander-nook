@@ -30,7 +30,15 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   if (!customer) notFound();
 
+  // Total paid = sum of invoices + sum of paid orders without a matching invoice
+  const invoicePaymentIds = new Set(customer.invoices.map(inv => inv.razorpayPaymentId));
+  const ordersWithoutInvoice = customer.orders.filter(
+    o => o.status === "paid" && !invoicePaymentIds.has(o.razorpayPaymentId || "")
+  );
   const totalInvoiceRevenue = customer.invoices.reduce((sum, inv) => sum + inv.amountPaise, 0);
+  const totalOrderOnlyRevenue = ordersWithoutInvoice.reduce((sum, o) => sum + o.amountPaise, 0);
+  const totalRevenue = totalInvoiceRevenue + totalOrderOnlyRevenue;
+  const totalPayments = customer.invoices.length + ordersWithoutInvoice.length;
 
   const recentInvoice = customer.invoices.find(
     (inv) => inv.issuedAt.getTime() > Date.now() - 45 * 24 * 60 * 60 * 1000
@@ -131,7 +139,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         <div className="lg:col-span-2 space-y-5 sm:space-y-6">
           {/* Stats */}
           <section className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-            <StatCard label="Total Paid" value={formatCurrency(totalInvoiceRevenue, "INR")} subtitle={`${customer.invoices.length} payment${customer.invoices.length !== 1 ? "s" : ""}`} />
+            <StatCard label="Total Paid" value={formatCurrency(totalRevenue, "INR")} subtitle={`${totalPayments} payment${totalPayments !== 1 ? "s" : ""}`} />
             <StatCard label="Current Plan" value={currentPlan} subtitle={amountPerCycle ? `${formatCurrency(amountPerCycle, "INR")}/${billingCycle}` : "—"} />
             <StatCard label="Months Active" value={`${monthsActive} month${monthsActive !== 1 ? "s" : ""}`} subtitle={`since ${formatDate(firstPaymentDate)}`} />
           </section>
