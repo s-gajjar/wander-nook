@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/src/lib/prisma";
 import { ensureAutopayOrder, type AutopayCustomerDetails } from "@/src/lib/autopay-order";
 import { reconcileRecentAutopayPayments } from "@/src/lib/autopay-reconcile";
 import { razorpayRequest } from "@/src/lib/razorpay-server";
@@ -15,6 +16,11 @@ import {
   markWebhookFailed,
   markWebhookSkipped,
 } from "@/src/lib/webhook-event-log";
+import {
+  ensureSubscription,
+  handlePaymentFailure,
+  handleSubscriptionCancelled,
+} from "@/src/lib/subscription-service";
 
 export const runtime = "nodejs";
 
@@ -200,7 +206,7 @@ export async function POST(request: NextRequest) {
 
     const body = JSON.parse(rawBody) as RazorpayWebhookPayload;
     const event = sanitizeText(body.event, 80);
-    const handledEvents = new Set(["invoice.paid", "subscription.charged", "payment.captured"]);
+    const handledEvents = new Set(["invoice.paid", "subscription.charged", "payment.captured", "payment.failed", "subscription.cancelled", "subscription.halted"]);
     if (!handledEvents.has(event)) {
       return NextResponse.json({
         ok: true,
@@ -227,6 +233,50 @@ export async function POST(request: NextRequest) {
         deduplicated: true,
         webhookRecordId: webhookRecord.id,
       });
+    }
+
+    // --- Handle payment failures ---
+    if (event === "payment.failed") {
+      const paymentEntity = body.payload?.payment?.entity;
+      const subscriptionId = body.payload?.subscription?.entity?.id || (paymentEntity as Record<string, unknown>)?.invoice_id as string | undefined;
+      
+      try {
+        await handlePaymentFailure({
+          razorpaySubscriptionId: subscriptionId || "unknown",
+          razorpayPaymentId: paymentEntity?.id,
+          reason: (paymentEntity as Record<string, unknown>)?.error_description as string || "Payment failed",
+          customerEmail: (paymentEntity as Record<string, unknown>)?.email as string,
+          customerName: (paymentEntity as Record<string, unknown>)?.contact as string,
+        });
+      } catch (error) {
+        console.error("Failed to handle payment failure", error);
+      }
+
+      await markWebhookProcessed(webhookRecord.id);
+      return NextResponse.json({ ok: true, event, handled: "payment_failure_recorded" });
+    }
+
+    // --- Handle subscription cancellation ---
+    if (event === "subscription.cancelled" || event === "subscription.halted") {
+      const subscriptionId = body.payload?.subscription?.entity?.id;
+      
+      if (subscriptionId) {
+        try {
+          if (event === "subscription.cancelled") {
+            await handleSubscriptionCancelled({ razorpaySubscriptionId: subscriptionId });
+          } else {
+            await handlePaymentFailure({
+              razorpaySubscriptionId: subscriptionId,
+              reason: "Subscription halted due to repeated payment failures",
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to handle ${event}`, error);
+        }
+      }
+
+      await markWebhookProcessed(webhookRecord.id);
+      return NextResponse.json({ ok: true, event, handled: "subscription_status_updated" });
     }
 
     const paymentDetails = await extractPaymentAndSubscriptionDetails(body);
@@ -355,6 +405,28 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       console.error("Autopay reconciliation fallback failed after webhook processing", error);
+    }
+
+    // Track subscription status
+    try {
+      if (ensureResult.order && paymentDetails.subscriptionId) {
+        const fullOrder = await prisma.order.findUnique({
+          where: { id: ensureResult.order.id },
+          select: { customerId: true, planId: true, planLabel: true, amountPaise: true },
+        });
+        if (fullOrder) {
+          await ensureSubscription({
+            customerId: fullOrder.customerId,
+            razorpaySubscriptionId: paymentDetails.subscriptionId,
+            planId: fullOrder.planId,
+            planLabel: fullOrder.planLabel,
+            amountPaise: fullOrder.amountPaise,
+            cycle: fullOrder.planId.includes("annual") ? "yearly" : "monthly",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update subscription record", error);
     }
 
     await markWebhookProcessed(webhookRecord.id);

@@ -78,20 +78,50 @@ model SampleRequest {
 }
 
 model Customer {
-  id           String    @id @default(cuid())
+  id           String         @id @default(cuid())
   fullName     String
-  email        String    @unique
+  email        String         @unique
   phone        String
   addressLine1 String
   addressLine2 String?
   city         String
   state        String
   pincode      String
-  country      String    @default("India")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  country      String         @default("India")
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   invoices     Invoice[]
   orders       Order[]
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                     String    @id @default(cuid())
+  customerId             String
+  razorpaySubscriptionId String    @unique
+  planId                 String
+  planLabel              String
+  amountPaise            Int
+  currency               String    @default("INR")
+  cycle                  String    // "monthly" | "yearly"
+  status                 String    @default("active") // "active" | "cancelled" | "paused" | "expired" | "halted"
+  startedAt              DateTime  @default(now())
+  cancelledAt            DateTime?
+  pausedAt               DateTime?
+  expiresAt              DateTime? // For annual plans: when it ends
+  lastPaymentAt          DateTime?
+  failedAt               DateTime? // Last payment failure
+  failureReason          String?
+  totalPaid              Int       @default(0) // Running total in paise
+  paymentCount           Int       @default(0)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  customer               Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([customerId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([status, expiresAt])
 }
 
 model Invoice {

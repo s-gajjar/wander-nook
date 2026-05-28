@@ -23,6 +23,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     include: {
       invoices: { orderBy: { issuedAt: "desc" } },
       orders: { orderBy: { createdAt: "desc" } },
+      subscriptions: { orderBy: { updatedAt: "desc" } },
     },
   });
 
@@ -62,13 +63,30 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             Customer since {formatDate(customer.createdAt)}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {hasActiveSubscription && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {customer.subscriptions.length > 0 ? (
+            customer.subscriptions.map((sub) => (
+              <span key={sub.id} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-semibold ${
+                sub.status === "active" ? "bg-[#ECFDF5] text-[#059669] border-[#D1FAE5]"
+                  : sub.status === "cancelled" ? "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]"
+                  : sub.status === "halted" ? "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]"
+                  : sub.status === "paused" ? "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]"
+                  : "bg-[#FEF3C7] text-[#D97706] border-[#FDE68A]"
+              }`}>
+                <span className={`w-2 h-2 rounded-full ${
+                  sub.status === "active" ? "bg-[#10B981]"
+                    : sub.status === "cancelled" ? "bg-[#EF4444]"
+                    : "bg-[#F59E0B]"
+                }`}></span>
+                {sub.planLabel} — {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+              </span>
+            ))
+          ) : hasActiveSubscription ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-[#ECFDF5] text-[#059669] border border-[#D1FAE5] px-3 py-1.5 text-[12px] font-semibold">
               <span className="w-2 h-2 rounded-full bg-[#10B981]"></span>
               Active Subscription
             </span>
-          )}
+          ) : null}
         </div>
       </div>
 

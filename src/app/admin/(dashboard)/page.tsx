@@ -91,6 +91,48 @@ async function AdminDashboardContent({
       }),
     ]);
 
+  // MRR calculation: active monthly subs × price + active annual subs ÷ 12
+  const subscriptions = await prisma.subscription.findMany({
+    where: { status: "active" },
+    select: { amountPaise: true, cycle: true },
+  });
+  const mrr = subscriptions.reduce((sum, sub) => {
+    if (sub.cycle === "monthly") return sum + sub.amountPaise;
+    if (sub.cycle === "yearly") return sum + Math.round(sub.amountPaise / 12);
+    return sum;
+  }, 0);
+
+  // Revenue forecast: MRR + known annual renewals this month
+  const forecastNextMonth = mrr; // MRR is the baseline forecast
+
+  // City/State breakdown
+  const cityBreakdown = await prisma.customer.groupBy({
+    by: ["city", "state"],
+    _count: true,
+    orderBy: { _count: { city: "desc" } },
+    take: 10,
+  });
+
+  // Expiring annual subscriptions (next 30 days)
+  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const expiringSubscriptions = await prisma.subscription.findMany({
+    where: {
+      status: "active",
+      cycle: "yearly",
+      expiresAt: { lte: thirtyDaysFromNow, gte: new Date() },
+    },
+    include: { customer: true },
+    orderBy: { expiresAt: "asc" },
+  });
+
+  // Failed/halted subscriptions
+  const failedSubscriptions = await prisma.subscription.findMany({
+    where: { status: { in: ["halted", "cancelled"] } },
+    include: { customer: true },
+    orderBy: { updatedAt: "desc" },
+    take: 5,
+  });
+
   const totalRevenuePaise = (invoiceRevenue._sum.amountPaise || 0) + (onetimeOrderRevenue._sum.amountPaise || 0);
 
   // Chart data respects the selected period
@@ -171,10 +213,12 @@ async function AdminDashboardContent({
       {/* Stats cards */}
       <section className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard label="Total Revenue" value={formatCurrency(totalRevenuePaise, "INR")} subtitle={`${invoiceCount} inv + ${orderCount} ord`} />
-        <StatCard label="Customers" value={String(customerCount)} subtitle="Total registered" />
+        <StatCard label="MRR" value={formatCurrency(mrr, "INR")} subtitle={`${subscriptions.length} active subs`} highlight={mrr === 0} />
+        <StatCard label="Forecast" value={formatCurrency(forecastNextMonth, "INR")} subtitle="Expected next month" />
         <StatCard label="Active Subs" value={String(activeSubscriptions.length)} subtitle="Last 45d" />
-        <StatCard label="Orders" value={String(orderCount)} subtitle={periodLabel} />
-        <StatCard label="Unfulfilled" value={String(unfulfilledCount)} subtitle="Awaiting shipment" highlight={unfulfilledCount > 0} />
+        <Link href="/admin/orders?fulfillment=unfulfilled" className="block">
+          <StatCard label="Unfulfilled" value={String(unfulfilledCount)} subtitle="Tap to view →" highlight={unfulfilledCount > 0} />
+        </Link>
       </section>
 
       {/* Revenue chart */}
@@ -278,6 +322,89 @@ async function AdminDashboardContent({
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* City/State Breakdown + Expiring Subs + Churn */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* City breakdown */}
+        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-[#F3F4F6] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827]">Customers by City</h2>
+          </div>
+          {cityBreakdown.length === 0 ? (
+            <div className="px-5 py-8 text-center"><p className="text-[13px] text-[#9CA3AF]">No data yet.</p></div>
+          ) : (
+            <div className="divide-y divide-[#F9FAFB]">
+              {cityBreakdown.map((item) => (
+                <div key={`${item.city}-${item.state}`} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-[13px] font-medium text-[#111827]">{item.city}</p>
+                    <p className="text-[11px] text-[#9CA3AF]">{item.state}</p>
+                  </div>
+                  <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-semibold tabular-nums">{item._count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Expiring Annual Subscriptions */}
+        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-[#F3F4F6] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827]">Expiring Soon</h2>
+            <p className="text-[11px] text-[#9CA3AF] mt-0.5">Annual subs expiring in 30 days</p>
+          </div>
+          {expiringSubscriptions.length === 0 ? (
+            <div className="px-5 py-8 text-center"><p className="text-[13px] text-[#9CA3AF]">None expiring soon 🎉</p></div>
+          ) : (
+            <div className="divide-y divide-[#F9FAFB]">
+              {expiringSubscriptions.map((sub) => (
+                <div key={sub.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between">
+                    <Link href={`/admin/customers/${sub.customerId}`} className="text-[13px] font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                      {sub.customer.fullName}
+                    </Link>
+                    <span className="text-[11px] text-[#D97706] font-medium">
+                      {sub.expiresAt ? formatDate(sub.expiresAt) : "—"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#9CA3AF] mt-0.5">{sub.planLabel} · ₹{(sub.amountPaise / 100).toFixed(0)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Recent Churn / Failed */}
+        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+          <div className="border-b border-[#F3F4F6] px-5 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827]">Churn & Failures</h2>
+            <p className="text-[11px] text-[#9CA3AF] mt-0.5">Cancelled or failed subscriptions</p>
+          </div>
+          {failedSubscriptions.length === 0 ? (
+            <div className="px-5 py-8 text-center"><p className="text-[13px] text-[#9CA3AF]">No churn — all good! ✅</p></div>
+          ) : (
+            <div className="divide-y divide-[#F9FAFB]">
+              {failedSubscriptions.map((sub) => (
+                <div key={sub.id} className="px-5 py-3">
+                  <div className="flex items-center justify-between">
+                    <Link href={`/admin/customers/${sub.customerId}`} className="text-[13px] font-medium text-[#111827] hover:text-[#4F46E5] transition-colors">
+                      {sub.customer.fullName}
+                    </Link>
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      sub.status === "cancelled" ? "bg-[#FEF2F2] text-[#DC2626]" : "bg-[#FEF3C7] text-[#D97706]"
+                    }`}>
+                      {sub.status}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#9CA3AF] mt-0.5">
+                    {sub.planLabel} · {sub.failureReason || (sub.status === "cancelled" ? "Customer cancelled" : "Payment issue")}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </section>
