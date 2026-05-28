@@ -8,10 +8,10 @@ type DataPoint = {
 };
 
 export default function RevenueChart({ data }: { data: DataPoint[] }) {
-  if (data.length === 0) return null;
-
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  if (data.length === 0) return null;
 
   const gridColor = isDark ? "#374151" : "#F3F4F6";
   const labelColor = isDark ? "#6B7280" : "#9CA3AF";

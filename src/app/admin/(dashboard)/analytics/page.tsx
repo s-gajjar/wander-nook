@@ -472,7 +472,6 @@ function buildCohortRetention(
   const cohorts = new Map<string, { total: number; subs: typeof subscriptions }>();
 
   for (const sub of subscriptions) {
-    const startMonth = sub.startedAt.getFullYear() * 12 + sub.startedAt.getMonth();
     const label = sub.startedAt.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
     if (!cohorts.has(label)) {
       cohorts.set(label, { total: 0, subs: [] });

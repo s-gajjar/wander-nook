@@ -75,7 +75,7 @@ async function AdminDashboardContent({
   const invoiceWhere = selectedPeriod === "all-time" ? {} : { issuedAt: dateFilter };
   const orderWhere = selectedPeriod === "all-time" ? { status: "paid" as const } : { status: "paid" as const, createdAt: dateFilter };
 
-  const [customerCount, invoiceCount, orderCount, invoiceRevenue, onetimeOrderRevenue, recentInvoices, recentOrders, activeSubscriptions] =
+  const [, invoiceCount, orderCount, invoiceRevenue, onetimeOrderRevenue, recentInvoices, recentOrders, activeSubscriptions] =
     await Promise.all([
       prisma.customer.count(),
       prisma.invoice.count({ where: invoiceWhere }),
@@ -422,18 +422,6 @@ function PeriodTab({ href, label, active }: { href: string; label: string; activ
     <Link href={href} className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-all ${
       active ? "bg-[#111827] dark:bg-white text-white dark:text-[#111827] shadow-[0_1px_2px_rgba(0,0,0,0.1)]" : "text-[#6B7280] hover:text-[#111827] dark:hover:text-white"
     }`}>{label}</Link>
-  );
-}
-
-function StatCard({ label, value, subtitle, highlight }: { label: string; value: string; subtitle: string; highlight?: boolean }) {
-  return (
-    <article className={`rounded-xl sm:rounded-2xl border p-3.5 sm:p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] ${
-      highlight ? "border-[#FDE68A] bg-[#FFFBEB] dark:border-[#92400E] dark:bg-[#78350F]/20" : "border-[#E8ECF0] bg-white dark:border-[#1F2937] dark:bg-[#111827]"
-    }`}>
-      <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9CA3AF] dark:text-[#6B7280]">{label}</p>
-      <p className={`mt-1.5 sm:mt-2 text-[18px] sm:text-[24px] font-bold tracking-[-0.02em] tabular-nums leading-none ${highlight ? "text-[#D97706]" : "text-[#111827] dark:text-[#F9FAFB]"}`}>{value}</p>
-      <p className="mt-1.5 sm:mt-2 text-[11px] sm:text-[12px] text-[#9CA3AF] dark:text-[#6B7280] truncate">{subtitle}</p>
-    </article>
   );
 }
 

@@ -13,7 +13,6 @@ import {
 import {
   recordWebhookEvent,
   markWebhookProcessed,
-  markWebhookFailed,
   markWebhookSkipped,
 } from "@/src/lib/webhook-event-log";
 import {
