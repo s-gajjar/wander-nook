@@ -88,21 +88,22 @@ export default async function AdminCustomersPage({
             </thead>
             <tbody>
               {customers.map((c) => (
-                <tr key={c.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#F3F4F6] transition-colors relative">
+                <tr key={c.id} className="border-b border-[#F9FAFB] last:border-0 hover:bg-[#F3F4F6] transition-colors">
                   <td className="px-5 py-3.5 font-medium text-[#111827]">
-                    <Link href={`/admin/customers/${c.id}`} className="absolute inset-0" aria-label={`View ${c.fullName}`} />
-                    <span className="relative pointer-events-none">{c.fullName}</span>
+                    <Link href={`/admin/customers/${c.id}`} className="hover:text-[#4F46E5] transition-colors">
+                      {c.fullName}
+                    </Link>
                   </td>
-                  <td className="px-5 py-3.5 text-[#6B7280] relative pointer-events-none">{c.email}</td>
-                  <td className="px-5 py-3.5 text-[#6B7280] tabular-nums relative pointer-events-none">{c.phone}</td>
-                  <td className="px-5 py-3.5 text-[#6B7280] relative pointer-events-none">{c.city}, {c.state}</td>
-                  <td className="px-5 py-3.5 relative pointer-events-none">
+                  <td className="px-5 py-3.5 text-[#6B7280]">{c.email}</td>
+                  <td className="px-5 py-3.5 text-[#6B7280] tabular-nums">{c.phone}</td>
+                  <td className="px-5 py-3.5 text-[#6B7280]">{c.city}, {c.state}</td>
+                  <td className="px-5 py-3.5">
                     <span className="inline-flex rounded-full bg-[#EEF2FF] text-[#4F46E5] px-2 py-0.5 text-[11px] font-medium">{c._count.invoices}</span>
                   </td>
-                  <td className="px-5 py-3.5 relative pointer-events-none">
+                  <td className="px-5 py-3.5">
                     <span className="inline-flex rounded-full bg-[#FFF7ED] text-[#C2410C] px-2 py-0.5 text-[11px] font-medium">{c._count.orders}</span>
                   </td>
-                  <td className="px-5 py-3.5 text-[#9CA3AF] relative pointer-events-none">{formatDate(c.createdAt)}</td>
+                  <td className="px-5 py-3.5 text-[#9CA3AF]">{formatDate(c.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
