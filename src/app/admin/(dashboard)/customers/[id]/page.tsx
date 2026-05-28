@@ -29,13 +29,25 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   if (!customer) notFound();
 
   const totalInvoiceRevenue = customer.invoices.reduce((sum, inv) => sum + inv.amountPaise, 0);
-  const totalOrderRevenue = customer.orders.filter((o) => o.status === "paid").reduce((sum, o) => sum + o.amountPaise, 0);
 
   // Active subscription = at least 1 invoice in last 45 days
   const recentInvoice = customer.invoices.find(
     (inv) => inv.issuedAt.getTime() > Date.now() - 45 * 24 * 60 * 60 * 1000
   );
   const hasActiveSubscription = !!recentInvoice;
+
+  // Current plan from most recent invoice
+  const currentPlan = customer.invoices[0]?.planLabel || customer.orders[0]?.planLabel || "—";
+  const amountPerCycle = customer.invoices[0]?.amountPaise || customer.orders[0]?.amountPaise || 0;
+  const billingCycle = customer.invoices[0]?.billingCycle || "month";
+
+  // Months active = months between first invoice and now (or first order if no invoices)
+  const firstPaymentDate = customer.invoices.length > 0
+    ? customer.invoices[customer.invoices.length - 1].issuedAt
+    : customer.orders.length > 0
+      ? customer.orders[customer.orders.length - 1].createdAt
+      : customer.createdAt;
+  const monthsActive = Math.max(1, Math.ceil((Date.now() - firstPaymentDate.getTime()) / (30 * 24 * 60 * 60 * 1000)));
 
   return (
     <div className="space-y-6">
@@ -65,9 +77,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         <div className="lg:col-span-2 space-y-6">
           {/* Stats */}
           <section className="grid gap-4 sm:grid-cols-3">
-            <StatCard label="Total Paid (Invoices)" value={formatCurrency(totalInvoiceRevenue, "INR")} subtitle={`${customer.invoices.length} invoices`} />
-            <StatCard label="Total Paid (Orders)" value={formatCurrency(totalOrderRevenue, "INR")} subtitle={`${customer.orders.length} orders`} />
-            <StatCard label="Lifetime Value" value={formatCurrency(totalInvoiceRevenue + totalOrderRevenue, "INR")} subtitle="All-time" />
+            <StatCard label="Total Paid" value={formatCurrency(totalInvoiceRevenue, "INR")} subtitle={`${customer.invoices.length} payment${customer.invoices.length !== 1 ? "s" : ""}`} />
+            <StatCard label="Current Plan" value={currentPlan} subtitle={amountPerCycle ? `${formatCurrency(amountPerCycle, "INR")}/${billingCycle}` : "—"} />
+            <StatCard label="Months Active" value={`${monthsActive} month${monthsActive !== 1 ? "s" : ""}`} subtitle={`since ${formatDate(firstPaymentDate)}`} />
           </section>
 
           {/* Invoices */}
