@@ -23,14 +23,13 @@ function sanitizePdfText(text: string) {
   return text.replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-function formatCurrencyForPdf(amountPaise: number, currency: string) {
+function formatCurrencyForPdf(amountPaise: number, _currency: string) {
   const amount = amountPaise / 100;
-  const normalizedCurrency = (currency || "INR").toUpperCase();
   const amountText = new Intl.NumberFormat("en-IN", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
-  return `${normalizedCurrency} ${amountText}`;
+  return `Rs. ${amountText}`;
 }
 
 function formatDate(value: Date | null | undefined) {
@@ -508,11 +507,44 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     color: COLOR_BRAND,
   });
 
+  // Dispatch notes
+  const dispatchTop = summaryTop + 66;
+  drawTextBlock({
+    page,
+    text: "Important Information:",
+    x: tableX,
+    top: dispatchTop,
+    maxWidth: tableWidth,
+    font: boldFont,
+    size: 9.5,
+    color: COLOR_INK,
+  });
+  drawTextBlock({
+    page,
+    text: "- We dispatch on the 1st and 16th of every month. You should typically receive it within 2-3 days.",
+    x: tableX + 8,
+    top: dispatchTop + 16,
+    maxWidth: tableWidth - 16,
+    font: regularFont,
+    size: 9,
+    color: COLOR_MUTED,
+  });
+  drawTextBlock({
+    page,
+    text: "- Your subscription begins from the earliest 1st or 16th.",
+    x: tableX + 8,
+    top: dispatchTop + 30,
+    maxWidth: tableWidth - 16,
+    font: regularFont,
+    size: 9,
+    color: COLOR_MUTED,
+  });
+
   drawTextBlock({
     page,
     text: `This is a computer-generated invoice. GST Number: ${safeText(company.gstNumber)}.`,
     x: tableX,
-    top: summaryTop + 66,
+    top: dispatchTop + 52,
     maxWidth: tableWidth,
     font: regularFont,
     size: 9.5,
@@ -522,7 +554,7 @@ export async function generateInvoicePdfBuffer(input: InvoiceTemplateInput): Pro
     page,
     text: "For support, write to contact@wandernook.in.",
     x: tableX,
-    top: summaryTop + 82,
+    top: dispatchTop + 68,
     maxWidth: tableWidth,
     font: regularFont,
     size: 9.5,
