@@ -42,6 +42,77 @@ body {
   font-family: var(--font-geist-plus-jakarta);
 }
 
+/* Dark mode overrides for admin panel */
+.dark {
+  color-scheme: dark;
+}
+
+/* Card/section backgrounds - scoped to avoid palette conflicts */
+.dark .bg-white {
+  background-color: #111827 !important;
+}
+.dark .bg-\[\#FAFBFC\] {
+  background-color: #1F2937 !important;
+}
+.dark .bg-\[\#F8F9FB\] {
+  background-color: #0F1117 !important;
+}
+.dark .bg-\[\#F9FAFB\] {
+  background-color: #1F2937 !important;
+}
+.dark .bg-\[\#F3F4F6\] {
+  background-color: #374151 !important;
+}
+
+/* Borders */
+.dark .border-\[\#E8ECF0\],
+.dark .border-\[\#E5E7EB\],
+.dark .border-\[\#F3F4F6\],
+.dark .border-\[\#F9FAFB\] {
+  border-color: #1F2937 !important;
+}
+.dark .divide-\[\#F9FAFB\] > :not(:last-child),
+.dark .divide-\[\#F3F4F6\] > :not(:last-child) {
+  border-color: #1F2937 !important;
+}
+
+/* Text colors */
+.dark .text-\[\#111827\] {
+  color: #F9FAFB !important;
+}
+.dark .text-\[\#374151\] {
+  color: #D1D5DB !important;
+}
+.dark .text-\[\#6B7280\] {
+  color: #9CA3AF !important;
+}
+.dark .text-\[\#9CA3AF\] {
+  color: #6B7280 !important;
+}
+
+/* Inputs */
+.dark input,
+.dark select {
+  background-color: #1F2937 !important;
+  border-color: #374151 !important;
+  color: #F9FAFB !important;
+}
+.dark input::placeholder {
+  color: #6B7280 !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-\[\#FAFBFC\]:hover,
+.dark .hover\:bg-\[\#F9FAFB\]:hover,
+.dark .hover\:bg-\[\#F3F4F6\]:hover {
+  background-color: #1F2937 !important;
+}
+
+/* Shadows - softer in dark mode */
+.dark [class*="shadow-"] {
+  --tw-shadow-color: rgba(0, 0, 0, 0.3) !important;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

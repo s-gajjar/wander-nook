@@ -152,7 +152,7 @@ export default function CommandPalette() {
                   onClick={() => navigate(result)}
                   onMouseEnter={() => setSelectedIndex(i)}
                   className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                    i === selectedIndex ? "bg-[#F3F4FF]" : "hover:bg-[#F9FAFB]"
+                    i === selectedIndex ? "bg-[#F3F4FF] dark:bg-[#374151]" : "hover:bg-[#F9FAFB] dark:hover:bg-[#374151]"
                   }`}
                 >
                   {/* Icon */}
