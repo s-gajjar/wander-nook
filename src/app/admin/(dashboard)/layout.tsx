@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import AdminNav from "@/src/components/Admin/AdminNav";
+import CommandPalette from "@/src/components/Admin/CommandPalette";
+import SearchTrigger from "@/src/components/Admin/SearchTrigger";
 
 export default async function AdminDashboardLayout({ children }: { children: React.ReactNode }) {
   // On Preview, Vercel Deployment Protection handles access control.
@@ -36,6 +38,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <SearchTrigger />
             <form action="/api/admin/logout" method="POST">
               <button
                 type="submit"
@@ -54,6 +57,7 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
         </div>
       </header>
       <main className="mx-auto max-w-[1400px] px-4 sm:px-5 py-5 sm:py-8">{children}</main>
+      <CommandPalette />
     </div>
   );
 }
