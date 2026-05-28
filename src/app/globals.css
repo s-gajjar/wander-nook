@@ -51,6 +51,9 @@ body {
 .dark .bg-white {
   background-color: #111827 !important;
 }
+.dark .bg-white\/95 {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+}
 .dark .bg-\[\#FAFBFC\] {
   background-color: #1F2937 !important;
 }
@@ -92,12 +95,14 @@ body {
 
 /* Inputs */
 .dark input,
-.dark select {
+.dark select,
+.dark textarea {
   background-color: #1F2937 !important;
   border-color: #374151 !important;
   color: #F9FAFB !important;
 }
-.dark input::placeholder {
+.dark input::placeholder,
+.dark textarea::placeholder {
   color: #6B7280 !important;
 }
 
@@ -106,6 +111,64 @@ body {
 .dark .hover\:bg-\[\#F9FAFB\]:hover,
 .dark .hover\:bg-\[\#F3F4F6\]:hover {
   background-color: #1F2937 !important;
+}
+
+/* Badge/pill backgrounds in dark mode */
+.dark .bg-\[\#EEF2FF\] {
+  background-color: rgba(79, 70, 229, 0.15) !important;
+}
+.dark .bg-\[\#ECFDF5\] {
+  background-color: rgba(5, 150, 105, 0.15) !important;
+}
+.dark .bg-\[\#F0FDF4\] {
+  background-color: rgba(22, 163, 74, 0.15) !important;
+}
+.dark .bg-\[\#FEF3C7\] {
+  background-color: rgba(217, 119, 6, 0.15) !important;
+}
+.dark .bg-\[\#FEF2F2\] {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+}
+.dark .bg-\[\#FFF7ED\] {
+  background-color: rgba(194, 65, 12, 0.15) !important;
+}
+.dark .bg-\[\#F5F3FF\] {
+  background-color: rgba(109, 40, 217, 0.15) !important;
+}
+.dark .bg-\[\#DBEAFE\] {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+.dark .bg-\[\#FFFBEB\] {
+  background-color: rgba(217, 119, 6, 0.1) !important;
+}
+.dark .bg-\[\#F3F4F6\]:not(:hover) {
+  background-color: rgba(75, 85, 99, 0.2) !important;
+}
+
+/* Badge borders in dark mode */
+.dark .border-\[\#D1FAE5\] {
+  border-color: rgba(5, 150, 105, 0.3) !important;
+}
+.dark .border-\[\#C7D2FE\] {
+  border-color: rgba(79, 70, 229, 0.3) !important;
+}
+.dark .border-\[\#FDE68A\] {
+  border-color: rgba(217, 119, 6, 0.3) !important;
+}
+.dark .border-\[\#FECACA\] {
+  border-color: rgba(220, 38, 38, 0.3) !important;
+}
+.dark .border-\[\#FED7AA\] {
+  border-color: rgba(194, 65, 12, 0.3) !important;
+}
+.dark .border-\[\#DDD6FE\] {
+  border-color: rgba(109, 40, 217, 0.3) !important;
+}
+.dark .border-\[\#BBF7D0\] {
+  border-color: rgba(22, 163, 74, 0.3) !important;
+}
+.dark .border-\[\#FEE2E2\] {
+  border-color: rgba(220, 38, 38, 0.3) !important;
 }
 
 /* Shadows - softer in dark mode */
