@@ -31,6 +31,7 @@ export default async function AdminAnalyticsPage() {
     revenue,
     eventCount,
     recentInvoices,
+    allSubscriptions,
     posthogTraffic,
     posthogTopPages,
     posthogSessions,
@@ -51,6 +52,9 @@ export default async function AdminAnalyticsPage() {
       take: 500,
       select: { issuedAt: true, amountPaise: true },
     }),
+    prisma.subscription.findMany({
+      select: { customerId: true, startedAt: true, status: true, lastPaymentAt: true },
+    }),
     fetchPostHogTrafficStats("-30d"),
     fetchPostHogTopPages(),
     fetchPostHogSessionRecordings(20),
@@ -62,6 +66,9 @@ export default async function AdminAnalyticsPage() {
     fetchPostHogBreakdown("$referring_domain"),
     fetchPostHogWebVitals(),
   ]);
+
+  // Build cohort retention data
+  const cohortData = buildCohortRetention(allSubscriptions);
 
   // Revenue by day (last 30 days)
   const now = new Date();
@@ -112,6 +119,50 @@ export default async function AdminAnalyticsPage() {
         <MetricCard label="Invoices Last Month" value={String(invoicesLastMonth)} />
         <MetricCard label="Conversion Events" value={String(eventCount)} />
       </section>
+
+      {/* Cohort Retention Table */}
+      {cohortData.length > 0 && (
+        <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+          <div className="border-b border-[#F3F4F6] px-6 py-4">
+            <h2 className="text-[15px] font-semibold text-[#111827]">Cohort Retention</h2>
+            <p className="text-[12px] text-[#9CA3AF] mt-0.5">How many subscribers from each month are still active</p>
+          </div>
+          <div className="px-6 py-5 overflow-x-auto">
+            <table className="min-w-full text-[12px]">
+              <thead>
+                <tr className="text-left text-[10px] uppercase tracking-[0.08em] text-[#9CA3AF]">
+                  <th className="px-3 py-2 font-medium">Cohort</th>
+                  <th className="px-3 py-2 font-medium text-center">Joined</th>
+                  {Array.from({ length: Math.min(6, Math.max(...cohortData.map(c => c.months.length))) }, (_, i) => (
+                    <th key={i} className="px-3 py-2 font-medium text-center">Mo {i + 1}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {cohortData.map((cohort) => (
+                  <tr key={cohort.label} className="border-t border-[#F3F4F6]">
+                    <td className="px-3 py-2.5 font-medium text-[#111827] whitespace-nowrap">{cohort.label}</td>
+                    <td className="px-3 py-2.5 text-center font-semibold text-[#111827] tabular-nums">{cohort.total}</td>
+                    {Array.from({ length: Math.min(6, Math.max(...cohortData.map(c => c.months.length))) }, (_, i) => {
+                      const month = cohort.months[i];
+                      if (month === undefined) return <td key={i} className="px-3 py-2.5 text-center text-[#D1D5DB]">—</td>;
+                      const pct = cohort.total > 0 ? Math.round((month / cohort.total) * 100) : 0;
+                      const intensity = pct >= 80 ? "bg-[#ECFDF5] text-[#059669]" : pct >= 50 ? "bg-[#FEF3C7] text-[#D97706]" : "bg-[#FEF2F2] text-[#DC2626]";
+                      return (
+                        <td key={i} className="px-3 py-2.5 text-center">
+                          <span className={`inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums ${intensity}`}>
+                            {pct}%
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* Daily revenue chart */}
       <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
@@ -403,4 +454,63 @@ function VitalCard({ label, value, unit, good, poor }: { label: string; value: n
       <p className="mt-0.5 text-[10px] capitalize font-medium">{status.replace("-", " ")}</p>
     </div>
   );
+}
+
+type CohortRow = {
+  label: string;
+  total: number;
+  months: number[]; // retained count for month 1, 2, 3...
+};
+
+function buildCohortRetention(
+  subscriptions: Array<{ customerId: string; startedAt: Date; status: string; lastPaymentAt: Date | null }>
+): CohortRow[] {
+  const now = new Date();
+  const currentMonth = now.getFullYear() * 12 + now.getMonth();
+
+  // Group by start month
+  const cohorts = new Map<string, { total: number; subs: typeof subscriptions }>();
+
+  for (const sub of subscriptions) {
+    const startMonth = sub.startedAt.getFullYear() * 12 + sub.startedAt.getMonth();
+    const label = sub.startedAt.toLocaleDateString("en-IN", { month: "short", year: "numeric" });
+    if (!cohorts.has(label)) {
+      cohorts.set(label, { total: 0, subs: [] });
+    }
+    const cohort = cohorts.get(label)!;
+    cohort.total++;
+    cohort.subs.push(sub);
+  }
+
+  const rows: CohortRow[] = [];
+
+  for (const [label, cohort] of cohorts) {
+    const firstSub = cohort.subs[0];
+    const cohortStartMonth = firstSub.startedAt.getFullYear() * 12 + firstSub.startedAt.getMonth();
+    const monthsSinceCohort = currentMonth - cohortStartMonth;
+
+    const months: number[] = [];
+    for (let m = 0; m < Math.min(monthsSinceCohort, 6); m++) {
+      // A sub is retained at month m if their lastPaymentAt is at least m months after start
+      // OR they are still active
+      const retained = cohort.subs.filter((sub) => {
+        if (sub.status === "active") return true;
+        if (!sub.lastPaymentAt) return m === 0;
+        const lastMonth = sub.lastPaymentAt.getFullYear() * 12 + sub.lastPaymentAt.getMonth();
+        return (lastMonth - cohortStartMonth) >= m;
+      }).length;
+      months.push(retained);
+    }
+
+    rows.push({ label, total: cohort.total, months });
+  }
+
+  // Sort newest first
+  rows.sort((a, b) => {
+    const aDate = new Date(a.label);
+    const bDate = new Date(b.label);
+    return bDate.getTime() - aDate.getTime();
+  });
+
+  return rows.slice(0, 8); // Last 8 months max
 }

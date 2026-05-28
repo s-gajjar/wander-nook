@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/src/lib/prisma";
 import { formatCurrency } from "@/src/lib/invoice-template";
+import CopyAddressButton from "@/src/components/Admin/CopyAddressButton";
 
 export const dynamic = "force-dynamic";
 
@@ -229,6 +230,16 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
               <InfoRow label="Phone" value={customer.phone} />
               <InfoRow label="Email" value={customer.email} />
               <InfoRow label="Joined" value={formatDateTime(customer.createdAt)} />
+              {/* WhatsApp button */}
+              <a
+                href={`https://wa.me/91${customer.phone.replace(/\D/g, "").replace(/^91/, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full rounded-lg bg-[#25D366] text-white px-4 py-2.5 text-[13px] font-semibold hover:bg-[#1DA851] transition-colors mt-2"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.108-1.128l-.29-.174-2.868.852.852-2.868-.174-.29A8 8 0 1112 20z"/></svg>
+                WhatsApp
+              </a>
             </div>
           </section>
 
@@ -237,13 +248,16 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             <div className="border-b border-[#F3F4F6] px-5 py-4">
               <h2 className="text-[15px] font-semibold text-[#111827]">Address</h2>
             </div>
-            <div className="px-5 py-5 text-[14px] text-[#374151] leading-relaxed space-y-1">
-              <p className="font-medium text-[#111827]">{customer.fullName}</p>
-              <p>{customer.addressLine1}</p>
-              {customer.addressLine2 && <p>{customer.addressLine2}</p>}
-              <p>{customer.city}, {customer.state} {customer.pincode}</p>
-              <p>{customer.country}</p>
-              <p className="pt-2 text-[13px] text-[#6B7280] tabular-nums">{customer.phone}</p>
+            <div className="px-5 py-5 space-y-4">
+              <div className="text-[14px] text-[#374151] leading-relaxed space-y-1">
+                <p className="font-medium text-[#111827]">{customer.fullName}</p>
+                <p>{customer.addressLine1}</p>
+                {customer.addressLine2 && <p>{customer.addressLine2}</p>}
+                <p>{customer.city}, {customer.state} {customer.pincode}</p>
+                <p>{customer.country}</p>
+                <p className="pt-2 text-[13px] text-[#6B7280] tabular-nums">{customer.phone}</p>
+              </div>
+              <CopyAddressButton address={[customer.fullName, customer.addressLine1, customer.addressLine2, `${customer.city}, ${customer.state} ${customer.pincode}`, customer.country, customer.phone].filter(Boolean).join("\n")} />
             </div>
           </section>
 
@@ -263,6 +277,41 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           )}
         </div>
       </div>
+
+      {/* Activity Timeline */}
+      <section className="rounded-2xl border border-[#E8ECF0] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="border-b border-[#F3F4F6] px-5 py-4">
+          <h2 className="text-[15px] font-semibold text-[#111827]">Activity Timeline</h2>
+        </div>
+        <div className="px-5 py-5">
+          <div className="relative pl-6 space-y-0">
+            {/* Build timeline events */}
+            {buildTimeline(customer).map((event, i) => (
+              <div key={i} className="relative pb-6 last:pb-0">
+                {/* Vertical line */}
+                <div className="absolute left-[-17px] top-2 bottom-0 w-px bg-[#E5E7EB]" />
+                {/* Dot */}
+                <div className={`absolute left-[-21px] top-[6px] w-[9px] h-[9px] rounded-full border-2 border-white ${
+                  event.type === "payment" ? "bg-[#10B981]"
+                    : event.type === "shipped" ? "bg-[#6366F1]"
+                    : event.type === "delivered" ? "bg-[#059669]"
+                    : event.type === "subscribed" ? "bg-[#8B5CF6]"
+                    : event.type === "failed" ? "bg-[#EF4444]"
+                    : event.type === "cancelled" ? "bg-[#DC2626]"
+                    : "bg-[#9CA3AF]"
+                }`} />
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[13px] font-medium text-[#111827]">{event.title}</p>
+                    {event.subtitle && <p className="text-[11px] text-[#6B7280] mt-0.5">{event.subtitle}</p>}
+                  </div>
+                  <span className="text-[11px] text-[#9CA3AF] whitespace-nowrap tabular-nums">{formatDate(event.date)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -284,4 +333,61 @@ function InfoRow({ label, value, mono }: { label: string; value: string; mono?: 
       <p className={`mt-0.5 text-[13px] text-[#111827] font-medium break-all ${mono ? "font-mono text-[12px]" : ""}`}>{value}</p>
     </div>
   );
+}
+
+type TimelineEvent = {
+  type: "subscribed" | "payment" | "shipped" | "delivered" | "failed" | "cancelled" | "email" | "order";
+  title: string;
+  subtitle?: string;
+  date: Date;
+};
+
+function buildTimeline(customer: {
+  createdAt: Date;
+  invoices: Array<{ issuedAt: Date; planLabel: string; amountPaise: number; currency: string; emailSentAt: Date | null; invoiceNumber: string }>;
+  orders: Array<{ createdAt: Date; orderNumber: string; planLabel: string; fulfillmentStatus: string; shippedAt: Date | null; deliveredAt: Date | null }>;
+  subscriptions: Array<{ startedAt: Date; planLabel: string; status: string; cancelledAt: Date | null; failedAt: Date | null; failureReason: string | null }>;
+}): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+
+  // Customer created
+  events.push({ type: "subscribed", title: "Customer registered", date: customer.createdAt });
+
+  // Subscription starts
+  for (const sub of customer.subscriptions) {
+    events.push({ type: "subscribed", title: `Subscribed to ${sub.planLabel}`, date: sub.startedAt });
+    if (sub.cancelledAt) {
+      events.push({ type: "cancelled", title: `Cancelled ${sub.planLabel}`, date: sub.cancelledAt });
+    }
+    if (sub.failedAt && sub.failureReason) {
+      events.push({ type: "failed", title: "Payment failed", subtitle: sub.failureReason, date: sub.failedAt });
+    }
+  }
+
+  // Invoices (payments)
+  for (const inv of customer.invoices) {
+    events.push({
+      type: "payment",
+      title: `Payment received — ₹${(inv.amountPaise / 100).toFixed(0)}`,
+      subtitle: `${inv.invoiceNumber} · ${inv.planLabel}`,
+      date: inv.issuedAt,
+    });
+    if (inv.emailSentAt) {
+      events.push({ type: "email", title: "Invoice emailed", subtitle: inv.invoiceNumber, date: inv.emailSentAt });
+    }
+  }
+
+  // Orders (shipped/delivered)
+  for (const order of customer.orders) {
+    if (order.shippedAt) {
+      events.push({ type: "shipped", title: `Shipped — ${order.orderNumber}`, date: order.shippedAt });
+    }
+    if (order.deliveredAt) {
+      events.push({ type: "delivered", title: `Delivered — ${order.orderNumber}`, date: order.deliveredAt });
+    }
+  }
+
+  // Sort newest first
+  events.sort((a, b) => b.date.getTime() - a.date.getTime());
+  return events;
 }
