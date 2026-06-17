@@ -24,6 +24,17 @@ export type CreateOrderInput = {
   paymentMethod: "razorpay-onetime" | "razorpay-autopay";
 };
 
+type OrderNotificationPlanDetails = {
+  displayName: string;
+  amountInr: number;
+};
+
+type OrderPaymentReference = {
+  razorpayPaymentId: string;
+  referenceLabel: string;
+  referenceValue: string;
+};
+
 export type CreateOrderResult = {
   orderId: string;
   orderNumber: string;
@@ -45,9 +56,8 @@ function buildOrderNumber(razorpayOrderId: string) {
 function buildOrderNotificationHtml(input: {
   orderNumber: string;
   customer: OrderCustomerDetails;
-  plan: RazorpayOnetimePlanConfig;
-  razorpayPaymentId: string;
-  razorpayOrderId: string;
+  plan: OrderNotificationPlanDetails;
+  payment: OrderPaymentReference;
   createdAt: Date;
 }) {
   const address = [
@@ -118,11 +128,11 @@ function buildOrderNotificationHtml(input: {
   <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
     <tr>
       <td style="padding: 6px 0; color: #6b7280; width: 140px;">Payment ID</td>
-      <td style="padding: 6px 0; font-family: monospace; font-size: 13px;">${input.razorpayPaymentId}</td>
+      <td style="padding: 6px 0; font-family: monospace; font-size: 13px;">${input.payment.razorpayPaymentId}</td>
     </tr>
     <tr>
-      <td style="padding: 6px 0; color: #6b7280;">Order ID</td>
-      <td style="padding: 6px 0; font-family: monospace; font-size: 13px;">${input.razorpayOrderId}</td>
+      <td style="padding: 6px 0; color: #6b7280;">${input.payment.referenceLabel}</td>
+      <td style="padding: 6px 0; font-family: monospace; font-size: 13px;">${input.payment.referenceValue}</td>
     </tr>
   </table>
 
@@ -136,9 +146,8 @@ function buildOrderNotificationHtml(input: {
 function buildOrderNotificationText(input: {
   orderNumber: string;
   customer: OrderCustomerDetails;
-  plan: RazorpayOnetimePlanConfig;
-  razorpayPaymentId: string;
-  razorpayOrderId: string;
+  plan: OrderNotificationPlanDetails;
+  payment: OrderPaymentReference;
 }) {
   return [
     `New Order: ${input.orderNumber}`,
@@ -151,8 +160,8 @@ function buildOrderNotificationText(input: {
     `  Address: ${input.customer.addressLine1}${input.customer.addressLine2 ? ", " + input.customer.addressLine2 : ""}, ${input.customer.city}, ${input.customer.state}, ${input.customer.pincode}`,
     "",
     "Payment:",
-    `  Razorpay Payment ID: ${input.razorpayPaymentId}`,
-    `  Razorpay Order ID: ${input.razorpayOrderId}`,
+    `  Razorpay Payment ID: ${input.payment.razorpayPaymentId}`,
+    `  ${input.payment.referenceLabel}: ${input.payment.referenceValue}`,
   ].join("\n");
 }
 
@@ -260,6 +269,34 @@ function buildCustomerConfirmationText(input: {
   ].join("\n");
 }
 
+export async function sendOrderNotificationEmail(input: {
+  orderNumber: string;
+  customer: OrderCustomerDetails;
+  plan: OrderNotificationPlanDetails;
+  payment: OrderPaymentReference;
+  createdAt?: Date;
+}) {
+  const result = await sendTransactionalEmail({
+    to: ORDER_NOTIFICATION_EMAIL,
+    subject: `New Order ${input.orderNumber} - ${input.customer.name} (₹${input.plan.amountInr})`,
+    html: buildOrderNotificationHtml({
+      orderNumber: input.orderNumber,
+      customer: input.customer,
+      plan: input.plan,
+      payment: input.payment,
+      createdAt: input.createdAt ?? new Date(),
+    }),
+    text: buildOrderNotificationText({
+      orderNumber: input.orderNumber,
+      customer: input.customer,
+      plan: input.plan,
+      payment: input.payment,
+    }),
+  });
+
+  return result.sent;
+}
+
 export async function createOrder(input: CreateOrderInput): Promise<CreateOrderResult> {
   const orderNumber = buildOrderNumber(input.razorpayOrderId);
 
@@ -335,27 +372,16 @@ export async function createOrder(input: CreateOrderInput): Promise<CreateOrderR
   // Send notification email to business
   let notificationSent = false;
   try {
-    const now = new Date();
-    const result = await sendTransactionalEmail({
-      to: ORDER_NOTIFICATION_EMAIL,
-      subject: `New Order ${orderNumber} - ${input.customer.name} (₹${input.plan.amountInr})`,
-      html: buildOrderNotificationHtml({
-        orderNumber,
-        customer: input.customer,
-        plan: input.plan,
+    notificationSent = await sendOrderNotificationEmail({
+      orderNumber,
+      customer: input.customer,
+      plan: input.plan,
+      payment: {
         razorpayPaymentId: input.razorpayPaymentId,
-        razorpayOrderId: input.razorpayOrderId,
-        createdAt: now,
-      }),
-      text: buildOrderNotificationText({
-        orderNumber,
-        customer: input.customer,
-        plan: input.plan,
-        razorpayPaymentId: input.razorpayPaymentId,
-        razorpayOrderId: input.razorpayOrderId,
-      }),
+        referenceLabel: "Razorpay Order ID",
+        referenceValue: input.razorpayOrderId,
+      },
     });
-    notificationSent = result.sent;
   } catch (error) {
     console.error("Failed to send order notification email", error);
   }

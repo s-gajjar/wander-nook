@@ -5,6 +5,7 @@ import {
   type RazorpayAutopayPlanConfig,
 } from "@/src/lib/razorpay-server";
 import { prisma } from "@/src/lib/prisma";
+import { sendOrderNotificationEmail } from "@/src/lib/order-service";
 
 const SUPPORTED_CURRENCY = "INR";
 
@@ -409,6 +410,32 @@ export async function ensureAutopayOrder({
           `Local autopay order created after verified Razorpay payment ${normalizedPaymentId}. Subscription: ${normalizedSubscriptionId}.`,
       },
     });
+
+    try {
+      await sendOrderNotificationEmail({
+        orderNumber: order.orderNumber,
+        customer: {
+          name: resolvedCustomer.name,
+          email: resolvedCustomer.email,
+          phone: resolvedCustomer.phone,
+          addressLine1: resolvedCustomer.addressLine1,
+          addressLine2: resolvedCustomer.addressLine2,
+          city: resolvedCustomer.city,
+          state: resolvedCustomer.state,
+          pincode: resolvedCustomer.pincode,
+          country: resolvedCustomer.country,
+        },
+        plan,
+        payment: {
+          razorpayPaymentId: normalizedPaymentId,
+          referenceLabel: "Razorpay Subscription ID",
+          referenceValue: normalizedSubscriptionId,
+        },
+        createdAt: order.createdAt,
+      });
+    } catch (error) {
+      console.error("Failed to send autopay order notification email", error);
+    }
 
     return {
       status: "created" as const,
